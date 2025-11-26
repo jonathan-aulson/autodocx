@@ -1,0 +1,2 @@
+bs_ownerpercent: =If(bs_percenttocharge >= 0, 100 - bs_percenttocharge, 0)
+bs_totalduetoowner: =bs_profitamount - bs_totalduetotownepark

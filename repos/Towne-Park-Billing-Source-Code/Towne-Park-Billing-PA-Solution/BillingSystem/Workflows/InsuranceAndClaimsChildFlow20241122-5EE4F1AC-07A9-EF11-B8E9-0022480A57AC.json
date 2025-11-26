@@ -1,0 +1,1715 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sql-1": {
+        "api": {
+          "name": "shared_sql"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "bs_TowneParkEDW"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "title": "ServicePeriodStart",
+                  "type": "string",
+                  "format": "date",
+                  "x-ms-dynamically-added": true,
+                  "description": "Start date for service period",
+                  "x-ms-content-hint": "DATE"
+                },
+                "number_1": {
+                  "title": "InvoiceGroup",
+                  "type": "number",
+                  "x-ms-dynamically-added": true,
+                  "description": "Target invoice group",
+                  "x-ms-content-hint": "NUMBER"
+                },
+                "text": {
+                  "title": "SiteNumber",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Customer Site number (i.e. \"0452\")",
+                  "x-ms-content-hint": "TEXT"
+                },
+                "date_1": {
+                  "title": "ServiceEndDate",
+                  "type": "string",
+                  "format": "date",
+                  "x-ms-dynamically-added": true,
+                  "description": "End date for service period",
+                  "x-ms-content-hint": "DATE"
+                },
+                "text_1": {
+                  "description": "Please enter billable account object",
+                  "title": "BillableAccountsObject",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "text_2": {
+                  "description": "Please enter contract types",
+                  "title": "ContractType",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "text_3": {
+                  "description": "Please enter management agreement object",
+                  "title": "ManagementAgreementObject",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "text_4": {
+                  "description": "Please enter billable account line items",
+                  "title": "BillableAccountLineItems",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "text_5": {
+                  "description": "Corresponding GL String for Site Number",
+                  "title": "GLString",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "date_2": {
+                  "description": "Start Date of Contract",
+                  "format": "date",
+                  "title": "ContractStartDate",
+                  "type": "string",
+                  "x-ms-content-hint": "DATE",
+                  "x-ms-dynamically-added": true
+                }
+              },
+              "required": [
+                "date",
+                "number_1",
+                "text",
+                "date_1",
+                "text_1",
+                "text_2",
+                "text_3",
+                "text_4",
+                "text_5",
+                "date_2"
+              ]
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "8320850f-96e4-451f-99e3-2ed5ca00cb3b"
+          }
+        }
+      },
+      "actions": {
+        "Condition_-_are_parameters_empty": {
+          "type": "If",
+          "expression": {
+            "or": [
+              {
+                "equals": [
+                  "@triggerBody()['date']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()['text']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()['date_1']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()['number_1']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['text_1']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['text_3']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['text_4']",
+                  "@null"
+                ]
+              }
+            ]
+          },
+          "actions": {
+            "Respond_Empty_To_Parent": {
+              "type": "Response",
+              "kind": "PowerApp",
+              "inputs": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "invoicesubtotal": {
+                      "title": "InvoiceSubTotal",
+                      "x-ms-dynamically-added": true,
+                      "type": "number"
+                    },
+                    "lineitems": {
+                      "title": "LineItems",
+                      "x-ms-dynamically-added": true,
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": {}
+                },
+                "statusCode": 200,
+                "body": {
+                  "invoicesubtotal": "@variables('SubTotal')",
+                  "lineitems": "@{variables('LineItems')}"
+                }
+              },
+              "operationOptions": "Asynchronous",
+              "metadata": {
+                "operationMetadataId": "54fce644-4301-4783-9265-7e828967c21f"
+              }
+            },
+            "Terminate": {
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Succeeded"
+              },
+              "runAfter": {
+                "Respond_Empty_To_Parent": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "7c7352b5-4a00-46ce-a406-3f8a185c31e3"
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "Initialize_LineItems_variable": [
+              "Succeeded"
+            ],
+            "Initialize_SubTotal_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "562702e7-2a18-40d4-9106-ca1001dadfd0"
+          }
+        },
+        "Respond_To_Parent": {
+          "type": "Response",
+          "kind": "PowerApp",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "invoicesubtotal": {
+                  "title": "InvoiceSubTotal",
+                  "x-ms-dynamically-added": true,
+                  "type": "number"
+                },
+                "lineitems": {
+                  "title": "LineItems",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                }
+              },
+              "additionalProperties": {}
+            },
+            "statusCode": 200,
+            "body": {
+              "invoicesubtotal": "@float(formatNumber(variables('SubTotal'),'N2'))",
+              "lineitems": "@{variables('LineItems')}"
+            }
+          },
+          "runAfter": {
+            "Condition_-_is_insurance_or_claims_enabled": [
+              "Succeeded"
+            ]
+          },
+          "operationOptions": "Asynchronous",
+          "metadata": {
+            "operationMetadataId": "54fce644-4301-4783-9265-7e828967c21f"
+          }
+        },
+        "Condition_Check_If_Contract_Does_not_Contain_Management_Agreement": {
+          "type": "If",
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@contains(triggerBody()?['text_2'], '126840009')",
+                  "@false"
+                ]
+              }
+            ]
+          },
+          "actions": {
+            "Terminate_2": {
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Succeeded"
+              },
+              "runAfter": {
+                "Respond_Empty_To_Parent-copy_2": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "b3bd6280-8871-4a56-a916-3c36cc8e523c"
+              }
+            },
+            "Respond_Empty_To_Parent-copy_2": {
+              "type": "Response",
+              "kind": "PowerApp",
+              "inputs": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "invoicesubtotal": {
+                      "title": "InvoiceSubTotal",
+                      "x-ms-dynamically-added": true,
+                      "type": "number"
+                    },
+                    "lineitems": {
+                      "title": "LineItems",
+                      "x-ms-dynamically-added": true,
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": {}
+                },
+                "statusCode": 200,
+                "body": {
+                  "invoicesubtotal": "@variables('SubTotal')",
+                  "lineitems": "@{variables('LineItems')}"
+                }
+              },
+              "operationOptions": "Asynchronous",
+              "metadata": {
+                "operationMetadataId": "54fce644-4301-4783-9265-7e828967c21f"
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "Condition_-_are_parameters_empty": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "96805da2-a442-417c-9556-70633b9cf328"
+          }
+        },
+        "Parse_JSON_-_Billable_Accounts_Object": {
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@triggerBody()?['text_1']",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "@@odata.type": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_payrollaccountsdata": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_payrollaccountsinvoicegroup": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_payrollaccountslinetitle": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_payrolltaxesbillingtype@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_payrolltaxesbillingtype": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_payrolltaxesenabled@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_payrolltaxesenabled": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "bs_payrolltaxeslinetitle": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_payrolltaxespercentage@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_payrolltaxespercentage": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_payrollsupportenabled": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "bs_payrollsupportlinetitle": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_payrollsupportbillingtype@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_payrollsupportbillingtype": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_payrollsupportpayrolltype@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_payrollsupportpayrolltype": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_payrollsupportamount": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_expenseaccountsdata": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_expenseaccountsinvoicegroup": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_expenseaccountslinetitle": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Condition_Check_If_Contract_Does_not_Contain_Management_Agreement": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "9d97ae81-2653-4ed9-b440-6a0a50ec1b07"
+          }
+        },
+        "Initialize_LineItems_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "LineItems",
+                "type": "array",
+                "value": "@outputs('Compose_Line_Items')"
+              }
+            ]
+          },
+          "runAfter": {
+            "Compose_Line_Items": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "fcf742e8-6bd4-44c2-8c4d-0d1df0c51842"
+          }
+        },
+        "Initialize_SubTotal_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "SubTotal",
+                "type": "float",
+                "value": "@body('Parse_JSON_billable_accounts_line_items')?['invoicesubtotal']"
+              }
+            ]
+          },
+          "runAfter": {
+            "Compose_Line_Items": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "4bfb229e-eba7-492d-8f45-7a773054a4cb"
+          }
+        },
+        "Parse_JSON_billable_accounts_line_items": {
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@triggerBody()?['text_4']",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "invoicesubtotal": {
+                  "type": "number"
+                },
+                "lineitems": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "runAfter": {}
+        },
+        "Parse_JSON_-_Management_Agreement_Object": {
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@triggerBody()?['text_3']",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "bs_invoicegroup@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_invoicegroup": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_managementagreementtype@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_managementagreementtype": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_fixedfeeamount@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_fixedfeeamount": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_perlaborhourjobcode": {},
+                  "bs_perlaborhourrate@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_perlaborhourrate": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_perlaborhourovertimerate@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_perlaborhourovertimerate": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_revenuepercentageamount@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_revenuepercentageamount": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_claimstype": {},
+                  "bs_claimslinetitle": {},
+                  "bs_claimsenabled@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_claimsenabled": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "bs_claimscapamount": {},
+                  "bs_insuranceadditionalpercentage@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_insuranceadditionalpercentage": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_insuranceenabled@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_insuranceenabled": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "bs_insurancefixedfeeamount@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_insurancefixedfeeamount": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_insurancelinetitle": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_insurancetype@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_insurancetype": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_validationthresholdamount": {},
+                  "bs_validationthresholdenabled@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_validationthresholdenabled": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "bs_validationthresholdtype": {},
+                  "bs_profitshareaccumulationtype": {},
+                  "bs_profitshareenabled@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_profitshareenabled": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "bs_profitsharetierdata": {},
+                  "bs_managementagreementid": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Condition_Check_If_Contract_Does_not_Contain_Management_Agreement": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Condition_-_is_insurance_or_claims_enabled": {
+          "type": "If",
+          "expression": {
+            "or": [
+              {
+                "equals": [
+                  "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_insuranceenabled",
+                  "@true"
+                ]
+              },
+              {
+                "equals": [
+                  "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_claimsenabled",
+                  "@true"
+                ]
+              }
+            ]
+          },
+          "actions": {
+            "Condition_-_is_insurance_enabled": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_insuranceenabled",
+                      "@true"
+                    ]
+                  }
+                ]
+              },
+              "actions": {
+                "Condition_Insurance_based_on_billable_accounts": {
+                  "type": "If",
+                  "expression": {
+                    "and": [
+                      {
+                        "equals": [
+                          "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_insurancetype",
+                          126840000
+                        ]
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "Scope_-_Insurance_based_on_billable_accounts": {
+                      "type": "Scope",
+                      "actions": {
+                        "Compose_Insurance_Line_Item_Title": {
+                          "type": "Compose",
+                          "inputs": "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_insurancelinetitle"
+                        },
+                        "Filter_array_-_Active_Insurance_Accounts": {
+                          "type": "Query",
+                          "inputs": {
+                            "from": "@body('Filter_Expense_Accounts_array_to_enabled_codes')",
+                            "where": "@or(equals(item()?['code'], '7080'), equals(item()?['code'], '7082'), equals(item()?['code'], '7085'))"
+                          },
+                          "runAfter": {
+                            "Compose_Insurance_Line_Item_Title": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Select_Insurance_Codes": {
+                          "type": "Select",
+                          "inputs": {
+                            "from": "@body('Filter_array_-_Active_Insurance_Accounts')",
+                            "select": "@item()?['code']"
+                          },
+                          "runAfter": {
+                            "Filter_array_-_Active_Insurance_Accounts": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Compose_Insurance_account_data_query_string": {
+                          "type": "Compose",
+                          "inputs": "@concat('(MAIN_ACCOUNT eq ''', join(body('Select_Insurance_codes'), ''' OR MAIN_ACCOUNT eq '''), ''')')",
+                          "runAfter": {
+                            "Select_Insurance_Codes": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "ce443f00-6cf2-479e-93f8-9cc4bdcb2772"
+                          }
+                        },
+                        "Get_Insurance_accounts_total_amount": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "parameters": {
+                              "server": "default",
+                              "database": "default",
+                              "table": "[dbo].[ACCOUNT_SUMMARY]",
+                              "$apply": "filter(\n    PERIOD eq @{formatDateTime(triggerBody()?['date'],'yyyyMM')} \n    AND COST_CENTER eq '@{triggerBody()?['text']}' \n    AND @{outputs('Compose_Insurance_account_data_query_string')}\n)\n/aggregate(\n    BALANCE with sum as Insurance\n)",
+                              "$select": "Insurance"
+                            },
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+                              "operationId": "GetItems_V2",
+                              "connectionName": "shared_sql-1"
+                            },
+                            "retryPolicy": {
+                              "type": "fixed",
+                              "count": 3,
+                              "interval": "PT30S"
+                            }
+                          },
+                          "runAfter": {
+                            "Compose_Insurance_account_data_query_string": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Filter_array_-_Billable_Expense_Line_Item": {
+                          "type": "Query",
+                          "inputs": {
+                            "from": "@variables('LineItems')",
+                            "where": "@equals(item()?['metaData']?['isBillableExpenseAccounts'],true)"
+                          }
+                        },
+                        "Filter_array_-_Remove_Billable_Expense_Line_Item": {
+                          "type": "Query",
+                          "inputs": {
+                            "from": "@variables('LineItems')",
+                            "where": "@equals(not(equals(item()?['metaData']?['isBillableExpenseAccounts'], true)),true)"
+                          }
+                        },
+                        "Set_variable_LineItems_-_Remove_Billable_Expense_Line_Item": {
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "LineItems",
+                            "value": "@body('Filter_array_-_Remove_Billable_Expense_Line_Item')"
+                          },
+                          "runAfter": {
+                            "Filter_array_-_Remove_Billable_Expense_Line_Item": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Compose_Insurance_Total_Amount": {
+                          "type": "Compose",
+                          "inputs": "@coalesce(first(outputs('Get_Insurance_accounts_total_amount')?['body/value'])?['Insurance'],0)",
+                          "runAfter": {
+                            "Get_Insurance_accounts_total_amount": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Compose_Updated_Billable_Expense_Line_Item": {
+                          "type": "Compose",
+                          "inputs": {
+                            "title": "@first(body('Filter_array_-_Billable_Expense_Line_Item')).title",
+                            "description": "@first(body('Filter_array_-_Billable_Expense_Line_Item')).description",
+                            "code": "@first(body('Filter_array_-_Billable_Expense_Line_Item')).code",
+                            "amount": "@sub(first(body('Filter_array_-_Billable_Expense_Line_Item')).amount, outputs('Compose_Insurance_Total_Amount'))",
+                            "metaData": "@first(body('Filter_array_-_Billable_Expense_Line_Item')).metaData"
+                          },
+                          "runAfter": {
+                            "Compose_Insurance_Total_Amount": [
+                              "Succeeded"
+                            ],
+                            "Set_variable_LineItems_-_Remove_Billable_Expense_Line_Item": [
+                              "Succeeded"
+                            ],
+                            "Filter_array_-_Billable_Expense_Line_Item": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Compose_Insurance_Line_Item": {
+                          "type": "Compose",
+                          "inputs": {
+                            "title": "@{first(body('Parse_JSON_-_Management_Agreement_Object')).bs_insurancelinetitle}",
+                            "description": "",
+                            "code": "4791",
+                            "amount": "@outputs('Compose_Insurance_LineItem_Amount')",
+                            "metaData": {
+                              "lineItemType": "insurance",
+                              "isInsurance": true,
+                              "isProfitDeduction": true
+                            }
+                          },
+                          "runAfter": {
+                            "Compose_Insurance_LineItem_Amount": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Append_updated_billable_expense_to_LineItems": {
+                          "type": "AppendToArrayVariable",
+                          "inputs": {
+                            "name": "LineItems",
+                            "value": "@outputs('Compose_Updated_Billable_Expense_Line_Item')"
+                          },
+                          "runAfter": {
+                            "Compose_Updated_Billable_Expense_Line_Item": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Append_Insurance_LineItem_to_LineItems": {
+                          "type": "AppendToArrayVariable",
+                          "inputs": {
+                            "name": "LineItems",
+                            "value": "@outputs('Compose_Insurance_Line_Item')"
+                          },
+                          "runAfter": {
+                            "Compose_Insurance_Line_Item": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Compose_Insurance_LineItem_Amount": {
+                          "type": "Compose",
+                          "inputs": "@float(formatNumber(\r\n    mul(\r\n        float(outputs('Compose_Insurance_Total_Amount')),\r\n        div(\r\n            add(\r\n                float(first(body('Parse_JSON_-_Management_Agreement_Object')).bs_insuranceadditionalpercentage),\r\n                100\r\n            ),\r\n            100\r\n        )\r\n    ),\r\n    'N2'\r\n)\r\n)",
+                          "runAfter": {
+                            "Compose_Insurance_Total_Amount": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Decrement_SubTotal_variable": {
+                          "type": "DecrementVariable",
+                          "inputs": {
+                            "name": "SubTotal",
+                            "value": "@outputs('Compose_Insurance_Total_Amount')"
+                          },
+                          "runAfter": {
+                            "Compose_Updated_Billable_Expense_Line_Item": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Increment_SubTotal_variable": {
+                          "type": "IncrementVariable",
+                          "inputs": {
+                            "name": "SubTotal",
+                            "value": "@outputs('Compose_Insurance_LineItem_Amount')"
+                          },
+                          "runAfter": {
+                            "Compose_Insurance_Line_Item": [
+                              "Succeeded"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {}
+                  }
+                },
+                "Condition_Insurance_based_on_fixed_fee": {
+                  "type": "If",
+                  "expression": {
+                    "and": [
+                      {
+                        "equals": [
+                          "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_insurancetype",
+                          126840001
+                        ]
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "Scope_-_Insurance_based_on_fixed_fee": {
+                      "type": "Scope",
+                      "actions": {
+                        "Compose_Fixed_Fee_Insurance_LineItem": {
+                          "type": "Compose",
+                          "inputs": {
+                            "title": "@{first(body('Parse_JSON_-_Management_Agreement_Object')).bs_insurancelinetitle}",
+                            "description": "",
+                            "code": "4791",
+                            "amount": "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_insurancefixedfeeamount",
+                            "metaData": {
+                              "lineItemType": "insurance",
+                              "isInsurance": true,
+                              "isProfitDeduction": true
+                            }
+                          }
+                        },
+                        "Append_Fixed_Fee_Insurance_LineItem_to_LineItems": {
+                          "type": "AppendToArrayVariable",
+                          "inputs": {
+                            "name": "LineItems",
+                            "value": "@outputs('Compose_Fixed_Fee_Insurance_LineItem')"
+                          },
+                          "runAfter": {
+                            "Compose_Fixed_Fee_Insurance_LineItem": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Increment_SubTotal_variable_Fixed_Fee": {
+                          "type": "IncrementVariable",
+                          "inputs": {
+                            "name": "SubTotal",
+                            "value": "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_insurancefixedfeeamount"
+                          },
+                          "runAfter": {
+                            "Compose_Fixed_Fee_Insurance_LineItem": [
+                              "Succeeded"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {}
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "Filter_Expense_Accounts_array_to_enabled_codes": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Parse_JSON_-_Expense_Accounts_Data": {
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@first(body('Parse_JSON_-_Billable_Accounts_Object')).bs_expenseaccountsdata",
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "code": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "isEnabled": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "Filter_Expense_Accounts_array_to_enabled_codes": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Parse_JSON_-_Expense_Accounts_Data')",
+                "where": "@equals(item()['isEnabled'],true)"
+              },
+              "runAfter": {
+                "Parse_JSON_-_Expense_Accounts_Data": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "09febf72-bc7a-414f-ac8a-1e645ef27f98"
+              }
+            },
+            "Condition_-_Is_Claims_Enabled": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_claimsenabled",
+                      "@true"
+                    ]
+                  }
+                ]
+              },
+              "actions": {
+                "Filter_array_-_Active_Claims_Accounts": {
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@body('Filter_Expense_Accounts_array_to_enabled_codes')",
+                    "where": "@or(equals(item()?['code'], '7099'), equals(item()?['code'], '7100'), equals(item()?['code'], '7101'), equals(item()?['code'], '7102'))"
+                  }
+                },
+                "Select_Claims_Codes": {
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@body('Filter_array_-_Active_Claims_Accounts')",
+                    "select": "@item()?['code']"
+                  },
+                  "runAfter": {
+                    "Filter_array_-_Active_Claims_Accounts": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "For_Each_Code_in_Claims_Codes": {
+                  "type": "Foreach",
+                  "foreach": "@body('Select_Claims_Codes')",
+                  "actions": {
+                    "Append_to_array_variable": {
+                      "type": "AppendToArrayVariable",
+                      "inputs": {
+                        "name": "ClaimsSQLQueries",
+                        "value": "@outputs('Compose')"
+                      },
+                      "runAfter": {
+                        "Compose": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Compose": {
+                      "type": "Compose",
+                      "inputs": "@concat(triggerBody()?['text_5'], items('For_Each_Code_in_Claims_Codes'), '-', triggerBody()?['text'])"
+                    }
+                  },
+                  "runAfter": {
+                    "Compose_claims_query": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Compose_1": {
+                  "type": "Compose",
+                  "inputs": "@concat(\r\n    '(',\r\n    'startsWith(ACCOUNT_INDEX, ''',\r\n    join(variables('ClaimsSQLQueries'), ''') or startsWith(ACCOUNT_INDEX, ''' ),\r\n    ''')',\r\n    ')'\r\n)\r\n",
+                  "runAfter": {
+                    "For_Each_Code_in_Claims_Codes": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Compose_-_Start_Date": {
+                  "type": "Compose",
+                  "inputs": "@formatDateTime(triggerBody()?['date'], 'yyyy-MM-dd')",
+                  "runAfter": {
+                    "For_Each_Code_in_Claims_Codes": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Compose_-_End_Date": {
+                  "type": "Compose",
+                  "inputs": "@formatDateTime(triggerBody()?['date_1'], 'yyyy-MM-dd')",
+                  "runAfter": {
+                    "For_Each_Code_in_Claims_Codes": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Condition_-_Is_Claims_Type_Annual": {
+                  "type": "If",
+                  "expression": {
+                    "or": [
+                      {
+                        "equals": [
+                          "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_claimstype",
+                          126840001
+                        ]
+                      },
+                      {
+                        "equals": [
+                          "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_claimstype",
+                          126840002
+                        ]
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "Compose_Claim_Start_Date": {
+                      "type": "Compose",
+                      "inputs": "@if(\r\n    equals(\r\n        first(body('Parse_JSON_-_Management_Agreement_Object')).bs_claimstype, \r\n        126840001\r\n    ),\r\n    concat(\r\n        formatDateTime(utcNow(), 'yyyy'), \r\n        '-01-01'\r\n    ),\r\n    if(\r\n        greaterOrEquals(\r\n            formatDateTime(utcNow(), 'MMdd'), \r\n            formatDateTime(triggerBody()?['date_2'], 'MM-dd')\r\n        ),\r\n        concat(\r\n            formatDateTime(utcNow(), 'yyyy'), \r\n            '-', \r\n            formatDateTime(triggerBody()?['date_2'], 'MM-dd')\r\n        ),\r\n        concat(\r\n            sub(\r\n                int(formatDateTime(utcNow(), 'yyyy')), \r\n                1\r\n            ), \r\n            '-', \r\n            formatDateTime(triggerBody()?['date_2'], 'MM-dd')\r\n        )\r\n    )\r\n)\r\n"
+                    },
+                    "Get_rows_(V2)-copy": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "parameters": {
+                          "server": "default",
+                          "database": "default",
+                          "table": "[dbo].[ACCOUNT_SUMMARY]",
+                          "$apply": "filter(\n    PERIOD ge @{formatDateTime(outputs('Compose_Claim_Start_Date'), 'yyyyMM')}\n    AND PERIOD lt @{formatDateTime(triggerBody()?['date'], 'yyyyMM')}\n    AND COST_CENTER eq '@{triggerBody()?['text']}'\n    AND @{outputs('Compose_claims_query')}\n)\n/aggregate(BALANCE with sum as SUM_OF_CLAIMS)",
+                          "$select": "SUM_OF_CLAIMS"
+                        },
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+                          "operationId": "GetItems_V2",
+                          "connectionName": "shared_sql-1"
+                        },
+                        "retryPolicy": {
+                          "type": "fixed",
+                          "count": 3,
+                          "interval": "PT30S"
+                        }
+                      },
+                      "runAfter": {
+                        "Compose_Claim_Start_Date": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Set_AnnualClaimsAmount": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "AnnualClaimsAmount",
+                        "value": "@coalesce(body('Get_rows_(V2)-copy')?['value']?[0]?['SUM_OF_CLAIMS'],0)\r\n"
+                      },
+                      "runAfter": {
+                        "Get_rows_(V2)-copy": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {}
+                  },
+                  "runAfter": {
+                    "Set_CurrentPeriodClaimsAmount": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Get_rows_(V2)": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "server": "default",
+                      "database": "default",
+                      "table": "[dbo].[ACCOUNT_SUMMARY]",
+                      "$apply": "filter(\n    PERIOD eq @{formatDateTime(triggerBody()?['date'],'yyyyMM')} \n    AND COST_CENTER eq '@{triggerBody()?['text']}' \n    AND @{outputs('Compose_claims_query')}\n)\n/aggregate(\n    BALANCE with sum as SUM_OF_CLAIMS\n)",
+                      "$select": "SUM_OF_CLAIMS"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+                      "operationId": "GetItems_V2",
+                      "connectionName": "shared_sql-1"
+                    },
+                    "retryPolicy": {
+                      "type": "fixed",
+                      "count": 3,
+                      "interval": "PT30S"
+                    }
+                  },
+                  "runAfter": {
+                    "Compose_1": [
+                      "Succeeded"
+                    ],
+                    "Compose_-_Start_Date": [
+                      "Succeeded"
+                    ],
+                    "Compose_-_End_Date": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Set_CurrentPeriodClaimsAmount": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "CurrentPeriodClaimsAmount",
+                    "value": "@coalesce(body('Get_rows_(V2)')?['value']?[0]?['SUM_OF_CLAIMS'],0)"
+                  },
+                  "runAfter": {
+                    "Get_rows_(V2)": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Compose_-_Subtract_AnnualClaimsAmount_from_ClaimsCapAmount": {
+                  "type": "Compose",
+                  "inputs": "@sub(first(body('Parse_JSON_-_Management_Agreement_Object')).bs_claimscapamount, variables('AnnualClaimsAmount'))",
+                  "runAfter": {
+                    "Condition_-_Is_Claims_Type_Annual": [
+                      "SUCCEEDED"
+                    ]
+                  }
+                },
+                "Compose_-_Claims_Subtotal": {
+                  "type": "Compose",
+                  "inputs": "@if(less(outputs('Compose_-_Subtract_AnnualClaimsAmount_from_ClaimsCapAmount'), 0), 0, \r\noutputs('Compose_-_Subtract_AnnualClaimsAmount_from_ClaimsCapAmount'))",
+                  "runAfter": {
+                    "Compose_-_Subtract_AnnualClaimsAmount_from_ClaimsCapAmount": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Compose_Claims_Line_Item": {
+                  "type": "Compose",
+                  "inputs": {
+                    "title": "@{first(body('Parse_JSON_-_Management_Agreement_Object')).bs_claimslinetitle}",
+                    "description": "",
+                    "code": "4791",
+                    "amount": "@outputs('Compose_-_Annual_claim_amount')",
+                    "metaData": {
+                      "lineItemType": "claims",
+                      "isClaims": true,
+                      "isProfitDeduction": true
+                    }
+                  },
+                  "runAfter": {
+                    "Compose_-_Annual_claim_amount": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Append_Claims_LineItem_to_LineItems": {
+                  "type": "AppendToArrayVariable",
+                  "inputs": {
+                    "name": "LineItems",
+                    "value": "@if(equals(first(body('Parse_JSON_-_Management_Agreement_Object')).bs_claimstype, 126840000), \r\noutputs('Compose_Per_Claim_Line_Item'), outputs('Compose_Claims_Line_Item'))"
+                  },
+                  "runAfter": {
+                    "Compose_Claims_Line_Item": [
+                      "Succeeded"
+                    ],
+                    "Scope_-_subtract_billable_expense_amount_from_line_item": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Scope_-_subtract_billable_expense_amount_from_line_item": {
+                  "type": "Scope",
+                  "actions": {
+                    "Filter_array_-_Remove_Billable_Expense_Line_Item-copy": {
+                      "type": "Query",
+                      "inputs": {
+                        "from": "@variables('LineItems')",
+                        "where": "@equals(not(equals(item()?['metaData']?['isBillableExpenseAccounts'], true)),true)"
+                      }
+                    },
+                    "Set_variable_LineItems_-_Remove_Billable_Expense_Line_Item-copy": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "LineItems",
+                        "value": "@body('Filter_array_-_Remove_Billable_Expense_Line_Item-copy')"
+                      },
+                      "runAfter": {
+                        "Filter_array_-_Remove_Billable_Expense_Line_Item-copy": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Filter_array_-_Billable_Expense_Line_Item-copy": {
+                      "type": "Query",
+                      "inputs": {
+                        "from": "@variables('LineItems')",
+                        "where": "@equals(item()?['metaData']?['isBillableExpenseAccounts'],true)"
+                      }
+                    },
+                    "Compose_Updated_Billable_Expense_Line_Item-copy": {
+                      "type": "Compose",
+                      "inputs": {
+                        "title": "@first(body('Filter_array_-_Billable_Expense_Line_Item-copy')).title",
+                        "description": "@first(body('Filter_array_-_Billable_Expense_Line_Item-copy')).description",
+                        "code": "@first(body('Filter_array_-_Billable_Expense_Line_Item-copy')).code",
+                        "amount": "@sub(first(body('Filter_array_-_Billable_Expense_Line_Item-copy')).amount, outputs('Compose_Claims_Account_Summary_amount'))",
+                        "metaData": "@first(body('Filter_array_-_Billable_Expense_Line_Item-copy')).metaData"
+                      },
+                      "runAfter": {
+                        "Set_variable_LineItems_-_Remove_Billable_Expense_Line_Item-copy": [
+                          "Succeeded"
+                        ],
+                        "Filter_array_-_Billable_Expense_Line_Item-copy": [
+                          "Succeeded"
+                        ],
+                        "Compose_Per_Claim_Line_Item": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Append_updated_billable_expense_to_LineItems-copy": {
+                      "type": "AppendToArrayVariable",
+                      "inputs": {
+                        "name": "LineItems",
+                        "value": "@outputs('Compose_Updated_Billable_Expense_Line_Item-copy')"
+                      },
+                      "runAfter": {
+                        "Compose_Updated_Billable_Expense_Line_Item-copy": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Decrement_SubTotal_variable-copy": {
+                      "type": "DecrementVariable",
+                      "inputs": {
+                        "name": "SubTotal",
+                        "value": "@outputs('Compose_Claims_Account_Summary_amount')"
+                      },
+                      "runAfter": {
+                        "Compose_Updated_Billable_Expense_Line_Item-copy": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Get_Claims_Account_Summary_amount": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "parameters": {
+                          "server": "default",
+                          "database": "default",
+                          "table": "[dbo].[ACCOUNT_SUMMARY]",
+                          "$apply": "filter(\n    PERIOD eq @{formatDateTime(triggerBody()?['date'],'yyyyMM')} \n    AND COST_CENTER eq '@{triggerBody()?['text']}' \n    AND @{outputs('Compose_claims_query')}\n)\n/aggregate(\n    BALANCE with sum as Claims\n)",
+                          "$select": "Claims"
+                        },
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+                          "operationId": "GetItems_V2",
+                          "connectionName": "shared_sql-1"
+                        },
+                        "retryPolicy": {
+                          "type": "fixed",
+                          "count": 3,
+                          "interval": "PT30S"
+                        }
+                      }
+                    },
+                    "Compose_Claims_Account_Summary_amount": {
+                      "type": "Compose",
+                      "inputs": "@coalesce(first(outputs('Get_Claims_Account_Summary_amount')?['body/value'])?['Claims'],0)",
+                      "runAfter": {
+                        "Get_Claims_Account_Summary_amount": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Compose_Per_Claim_Line_Item": {
+                      "type": "Compose",
+                      "inputs": {
+                        "title": "@{first(body('Parse_JSON_-_Management_Agreement_Object')).bs_claimslinetitle}",
+                        "description": "",
+                        "code": "4791",
+                        "amount": "@outputs('Compose_Claims_Account_Summary_amount')",
+                        "metaData": {
+                          "lineItemType": "claims",
+                          "isClaims": true,
+                          "isProfitDeduction": true
+                        }
+                      },
+                      "runAfter": {
+                        "Compose_Claims_Account_Summary_amount": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Compose_-_Claims_Subtotal": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Increment_SubTotal_variable_-add_claims_amount_": {
+                  "type": "IncrementVariable",
+                  "inputs": {
+                    "name": "SubTotal",
+                    "value": "@if(equals(first(body('Parse_JSON_-_Management_Agreement_Object')).bs_claimstype, 126840000), \r\noutputs('Compose_Claims_Account_Summary_amount'), outputs('Compose_-_Annual_claim_amount'))"
+                  },
+                  "runAfter": {
+                    "Compose_2": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Compose_2": {
+                  "type": "Compose",
+                  "inputs": "@variables('LineItems')",
+                  "runAfter": {
+                    "Append_Claims_LineItem_to_LineItems": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Compose_-_Annual_claim_amount": {
+                  "type": "Compose",
+                  "inputs": "@if(\r\n  lessOrEquals(\r\n    add(\r\n      variables('AnnualClaimsAmount'),\r\n      variables('CurrentPeriodClaimsAmount')\r\n    ),\r\n    first(body('Parse_JSON_-_Management_Agreement_Object')).bs_claimscapamount\r\n  ),\r\n  variables('CurrentPeriodClaimsAmount'),\r\n  if(\r\n    greater(\r\n      add(\r\n        variables('AnnualClaimsAmount'),\r\n        variables('CurrentPeriodClaimsAmount')\r\n      ),\r\n      first(body('Parse_JSON_-_Management_Agreement_Object')).bs_claimscapamount\r\n    ),\r\n    outputs('Compose_-_Claims_Subtotal'),\r\n    0\r\n  )\r\n)",
+                  "runAfter": {
+                    "Compose_-_Claims_Subtotal": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Compose_claims_query": {
+                  "type": "Compose",
+                  "inputs": "@concat('(MAIN_ACCOUNT eq ''', join(body('Select_Claims_Codes'), ''' OR MAIN_ACCOUNT eq '''), ''')')",
+                  "runAfter": {
+                    "Select_Claims_Codes": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "Condition_-_is_insurance_enabled": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "Initialize_-_ClaimsSQLQueries": [
+              "Succeeded"
+            ],
+            "Initialize_-_CurrentPeriodClaimsAmount": [
+              "Succeeded"
+            ],
+            "Initialize_-_AnnualClaimsAmount": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Condition_Management_Agreement_is_not_on_invoice": {
+          "type": "If",
+          "expression": {
+            "and": [
+              {
+                "not": {
+                  "equals": [
+                    "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_invoicegroup",
+                    "@triggerBody()?['number_1']"
+                  ]
+                }
+              }
+            ]
+          },
+          "actions": {
+            "Respond_Empty_To_Parent-copy_3": {
+              "type": "Response",
+              "kind": "PowerApp",
+              "inputs": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "invoicesubtotal": {
+                      "title": "InvoiceSubTotal",
+                      "x-ms-dynamically-added": true,
+                      "type": "number"
+                    },
+                    "lineitems": {
+                      "title": "LineItems",
+                      "x-ms-dynamically-added": true,
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": {}
+                },
+                "statusCode": 200,
+                "body": {
+                  "invoicesubtotal": "@variables('SubTotal')",
+                  "lineitems": "@{variables('LineItems')}"
+                }
+              },
+              "operationOptions": "Asynchronous",
+              "metadata": {
+                "operationMetadataId": "54fce644-4301-4783-9265-7e828967c21f"
+              }
+            },
+            "Terminate_3": {
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Succeeded"
+              },
+              "runAfter": {
+                "Respond_Empty_To_Parent-copy_3": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "b3bd6280-8871-4a56-a916-3c36cc8e523c"
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "Parse_JSON_-_Billable_Accounts_Object": [
+              "Succeeded"
+            ],
+            "Parse_JSON_-_Management_Agreement_Object": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Compose_Line_Items": {
+          "type": "Compose",
+          "inputs": "@json(body('Parse_JSON_billable_accounts_line_items')?['lineitems'])",
+          "runAfter": {
+            "Parse_JSON_billable_accounts_line_items": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Initialize_-_ClaimsSQLQueries": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "ClaimsSQLQueries",
+                "type": "array",
+                "value": []
+              }
+            ]
+          },
+          "runAfter": {
+            "Condition_Management_Agreement_is_not_on_invoice": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Initialize_-_CurrentPeriodClaimsAmount": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "CurrentPeriodClaimsAmount",
+                "type": "float",
+                "value": 0
+              }
+            ]
+          },
+          "runAfter": {
+            "Condition_Management_Agreement_is_not_on_invoice": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Initialize_-_AnnualClaimsAmount": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "AnnualClaimsAmount",
+                "type": "float",
+                "value": 0
+              }
+            ]
+          },
+          "runAfter": {
+            "Condition_Management_Agreement_is_not_on_invoice": [
+              "Succeeded"
+            ]
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

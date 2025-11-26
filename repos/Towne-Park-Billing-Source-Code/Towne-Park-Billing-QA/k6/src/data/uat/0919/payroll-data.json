@@ -1,0 +1,2085 @@
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "customerSiteId": "02e9e450-91d8-ef11-8eea-0022480a57ac",
+  "siteNumber": "0919",
+  "name": "Chelsea Hospital",
+  "billingPeriod": "2025-08",
+  "payrollForecastMode": "Code",
+  "forecastPayroll": [
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-01",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-01",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-02",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-02",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-03",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-03",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-04",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-04",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-05",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-05",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-06",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-06",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-07",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-07",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-08",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-08",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-09",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-09",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-10",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-10",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-11",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-11",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-12",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-12",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-13",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-13",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-14",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-14",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-15",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-15",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 22.5,
+      "date": "2025-08-16",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 22.5,
+          "date": "2025-08-16",
+          "forecastPayrollCost": 407.70000000000005,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 407.70000000000005,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-17",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-17",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-18",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-18",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-19",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-19",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-20",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-20",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-21",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-21",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-22",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-22",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-23",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-23",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-24",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-24",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-25",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-25",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-26",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-26",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-27",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-27",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-28",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-28",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-29",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-29",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-30",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-30",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    },
+    {
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "forecastHours": 0,
+      "date": "2025-08-31",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "01028",
+          "forecastHours": 0,
+          "date": "2025-08-31",
+          "forecastPayrollCost": 0,
+          "forecastPayrollRevenue": 0
+        }
+      ],
+      "forecastPayrollCost": 0,
+      "forecastPayrollRevenue": 0
+    }
+  ],
+  "budgetPayroll": [
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-01",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-01",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-02",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-02",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-03",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-03",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-04",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-04",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-05",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-05",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-06",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-06",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-07",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-07",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-08",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-08",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-09",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-09",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-10",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-10",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-11",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-11",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-12",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-12",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-13",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-13",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-14",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-14",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-15",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-15",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-16",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-16",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-17",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-17",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-18",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-18",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-19",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-19",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-20",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-20",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-21",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-21",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-22",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-22",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-23",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-23",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-24",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-24",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-25",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-25",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-26",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-26",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-27",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-27",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-28",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-28",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-29",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-29",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-30",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-30",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "budgetHours": 0,
+      "date": "2025-08-31",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "budgetHours": 0,
+          "date": "2025-08-31",
+          "budgetPayrollCost": 0,
+          "budgetPayrollRevenue": null
+        }
+      ],
+      "budgetPayrollCost": 0,
+      "budgetPayrollRevenue": 0
+    }
+  ],
+  "actualPayroll": [
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "actualHours": 8.12,
+      "date": "2025-08-01",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "actualHours": 8.12,
+          "date": "2025-08-01",
+          "actualPayrollCost": 150.3,
+          "actualPayrollRevenue": null
+        }
+      ],
+      "actualPayrollCost": 150.3,
+      "actualPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "actualHours": 0,
+      "date": "2025-08-02",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "actualHours": 0,
+          "date": "2025-08-02",
+          "actualPayrollCost": 0,
+          "actualPayrollRevenue": null
+        }
+      ],
+      "actualPayrollCost": 0,
+      "actualPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "actualHours": 0,
+      "date": "2025-08-03",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "actualHours": 0,
+          "date": "2025-08-03",
+          "actualPayrollCost": 0,
+          "actualPayrollRevenue": null
+        }
+      ],
+      "actualPayrollCost": 0,
+      "actualPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "actualHours": 8.1,
+      "date": "2025-08-04",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "actualHours": 8.1,
+          "date": "2025-08-04",
+          "actualPayrollCost": 145.8,
+          "actualPayrollRevenue": null
+        }
+      ],
+      "actualPayrollCost": 145.8,
+      "actualPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "actualHours": 8.1,
+      "date": "2025-08-05",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "actualHours": 8.1,
+          "date": "2025-08-05",
+          "actualPayrollCost": 145.8,
+          "actualPayrollRevenue": null
+        }
+      ],
+      "actualPayrollCost": 145.8,
+      "actualPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "actualHours": 0,
+      "date": "2025-08-06",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "actualHours": 0,
+          "date": "2025-08-06",
+          "actualPayrollCost": 0,
+          "actualPayrollRevenue": null
+        }
+      ],
+      "actualPayrollCost": 0,
+      "actualPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "actualHours": 0,
+      "date": "2025-08-07",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "actualHours": 0,
+          "date": "2025-08-07",
+          "actualPayrollCost": 0,
+          "actualPayrollRevenue": null
+        }
+      ],
+      "actualPayrollCost": 0,
+      "actualPayrollRevenue": 0
+    }
+  ],
+  "scheduledPayroll": [
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 8,
+      "date": "2025-08-01",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 8,
+          "date": "2025-08-01",
+          "scheduledPayrollCost": 144.96,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 144.96,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-02",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-02",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-03",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-03",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 8,
+      "date": "2025-08-04",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 8,
+          "date": "2025-08-04",
+          "scheduledPayrollCost": 144.96,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 144.96,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 8,
+      "date": "2025-08-05",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 8,
+          "date": "2025-08-05",
+          "scheduledPayrollCost": 144.96,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 144.96,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 8,
+      "date": "2025-08-06",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 8,
+          "date": "2025-08-06",
+          "scheduledPayrollCost": 144.96,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 144.96,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 8,
+      "date": "2025-08-07",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 8,
+          "date": "2025-08-07",
+          "scheduledPayrollCost": 144.96,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 144.96,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 8,
+      "date": "2025-08-08",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 8,
+          "date": "2025-08-08",
+          "scheduledPayrollCost": 144.96,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 144.96,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-09",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-09",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-10",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-10",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-11",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-11",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-12",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-12",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-13",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-13",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-14",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-14",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-15",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-15",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-16",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-16",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-17",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-17",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-18",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-18",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-19",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-19",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-20",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-20",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-21",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-21",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-22",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-22",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-23",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-23",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-24",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-24",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-25",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-25",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-26",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-26",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-27",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-27",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-28",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-28",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-29",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-29",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-30",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-30",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    },
+    {
+      "id": null,
+      "jobGroupId": "d7cc1030-8c5b-f011-bec1-7c1e5215fa99",
+      "jobGroupName": "Screener",
+      "scheduledHours": 0,
+      "date": "2025-08-31",
+      "jobCodes": [
+        {
+          "id": null,
+          "jobCodeId": "7fb79d77-845b-f011-bec1-00224832fbce",
+          "jobCode": "SCREENER",
+          "displayName": "Screener",
+          "scheduledHours": 0,
+          "date": "2025-08-31",
+          "scheduledPayrollCost": 0,
+          "scheduledPayrollRevenue": null
+        }
+      ],
+      "scheduledPayrollCost": 0,
+      "scheduledPayrollRevenue": 0
+    }
+  ]
+}

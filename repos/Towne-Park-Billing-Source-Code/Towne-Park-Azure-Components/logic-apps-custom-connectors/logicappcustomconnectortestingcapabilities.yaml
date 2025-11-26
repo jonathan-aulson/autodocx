@@ -1,0 +1,43 @@
+swagger: '2.0'
+info:
+  title: SOAP pass-through
+  description: >-
+    SOAP pass-through This is a sample description to be used until a more
+    appropriate connector description has been identified.
+  version: '1.0'
+host: p-gp18-app2:5556
+basePath: /SmartConnect.asmx
+consumes: []
+produces: []
+paths:
+  /SoapPassThrough: {}
+  /SmartConnect.asmx:
+    post:
+      operationId: SoapPassThrough
+      parameters:
+        - name: Content-Type
+          in: header
+          required: false
+          type: string
+        - name: SOAPAction
+          in: header
+          required: false
+          type: string
+        - name: body
+          in: body
+          required: false
+          schema:
+            type: object
+            properties: {}
+      responses:
+        '200':
+          description: OK
+      description: ''
+definitions: {}
+parameters: {}
+responses: {}
+securityDefinitions: {}
+security: []
+tags: []
+schemes:
+  - http

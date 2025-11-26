@@ -1,0 +1,814 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_7558e"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_commondataserviceforapps-1": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_7558e"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_office365": {
+        "api": {
+          "name": "shared_office365"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "bs_sharedoffice365_f188c"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_sql-1": {
+        "api": {
+          "name": "shared_sql"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "bs_TowneParkEDW"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_bs-5fsendmailbyserviceprincipal-5f4f4d8f3ae476f46d": {
+        "api": {
+          "name": "shared_bs-5fsendmailbyserviceprincipal-5f4f4d8f3ae476f46d",
+          "logicalName": "bs_5Fsendmailbyserviceprincipal"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "bs_sharedbs5fsendmailbyserviceprincipal5f4c81ae98d9d3b3ec_4c912"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "GP Integration Logic App Endpoint (bs_GPIntegrationLogicAppEndpoint)": {
+          "defaultValue": "https://prod-41.eastus2.logic.azure.com:443/workflows/336b67db07eb410fabdc5a8632efda32/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=6g13rdUYAddH0F33VXNtE4pbo3yUMdSEyiD2ym50OCg",
+          "type": "String",
+          "metadata": {
+            "schemaName": "bs_GPIntegrationLogicAppEndpoint"
+          }
+        },
+        "EnvironmentName (bs_environmentName)": {
+          "defaultValue": "DEV",
+          "type": "String",
+          "metadata": {
+            "schemaName": "bs_environmentName"
+          }
+        }
+      },
+      "triggers": {
+        "When_a_Unit_Account_Batch_row_is_added": {
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "parameters": {
+              "subscriptionRequest/message": 1,
+              "subscriptionRequest/entityname": "bs_unitaccountbatchprocess",
+              "subscriptionRequest/scope": 2,
+              "subscriptionRequest/name": "35657f52-8cf4-ef11-be21-6045bd096814"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "SubscribeWebhookTrigger",
+              "connectionName": "shared_commondataserviceforapps"
+            }
+          }
+        }
+      },
+      "actions": {
+        "Initialize_variable_DataSetContent": {
+          "runAfter": {
+            "Update_a_row_set_unit_account_batch_process_to_in_progress": [
+              "Succeeded"
+            ]
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "DataSetContent",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Run_a_Child_Flow_Get_Company_Name_Override": {
+          "runAfter": {
+            "Compose_Last_day_of_the_month": [
+              "Succeeded"
+            ]
+          },
+          "type": "Workflow",
+          "inputs": {
+            "host": {
+              "workflowReferenceName": "70e1a7ea-0ddd-ef11-a730-6045bd096814"
+            },
+            "body": {
+              "text": "GPCompanyNameOverride"
+            }
+          }
+        },
+        "Compose_First_day_of_the_month": {
+          "runAfter": {
+            "Initialize_variable_DataSetContent": [
+              "Succeeded"
+            ],
+            "Initialize_variable_BatchChunkNumber": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@startOfMonth(concat(substring(triggerOutputs()?['body/bs_period'], 0, 4), '-', substring(triggerOutputs()?['body/bs_period'], 5, 2), '-01'))"
+        },
+        "Compose_Last_day_of_the_month": {
+          "runAfter": {
+            "Compose_First_day_of_the_month": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@addDays(startOfMonth(addToTime(outputs('Compose_First_day_of_the_month'), 1, 'Month')), -1)"
+        },
+        "Update_a_row_set_unit_account_batch_process_to_in_progress": {
+          "runAfter": {},
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "bs_unitaccountbatchprocesses",
+              "recordId": "@triggerOutputs()?['body/bs_unitaccountbatchprocessid']",
+              "item/bs_status": 126840000
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "UpdateOnlyRecord",
+              "connectionName": "shared_commondataserviceforapps"
+            }
+          }
+        },
+        "Update_a_row_set_unit_account_batch_process_to_failed-copy": {
+          "runAfter": {
+            "For_each_chunk": [
+              "TimedOut",
+              "Skipped",
+              "Failed"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "bs_unitaccountbatchprocesses",
+              "recordId": "@triggerOutputs()?['body/bs_unitaccountbatchprocessid']",
+              "item/bs_status": 126840002
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "UpdateOnlyRecord",
+              "connectionName": "shared_commondataserviceforapps"
+            }
+          }
+        },
+        "Filter_array": {
+          "runAfter": {
+            "Condition_GL_has_missing_or_inactive_accounts": [
+              "Succeeded"
+            ]
+          },
+          "type": "Query",
+          "inputs": {
+            "from": "@body('Parse_JSON_spJoin_GP_STATS_with_GL_ACCOUNTS_results')",
+            "where": "@or(equals(item()?['SITE'], '0170'), equals(item()?['SITE'], '1965'))"
+          }
+        },
+        "Compose_split_array_into_chunks": {
+          "runAfter": {
+            "Filter_array": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@chunk(body('Parse_JSON_spJoin_GP_STATS_with_GL_ACCOUNTS_results'), 1000)"
+        },
+        "Parse_JSON_chunks": {
+          "runAfter": {
+            "Compose_split_array_into_chunks": [
+              "Succeeded"
+            ]
+          },
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@outputs('Compose_split_array_into_chunks')",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "SITE": {
+                      "type": "string"
+                    },
+                    "MAIN_ACCOUNT": {
+                      "type": "string"
+                    },
+                    "REVENUE_CATEGORY": {
+                      "type": "string"
+                    },
+                    "CATEGORY": {
+                      "type": "string"
+                    },
+                    "GL_STRING": {
+                      "type": "string"
+                    },
+                    "VALUE": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "For_each_chunk": {
+          "foreach": "@outputs('Parse_JSON_chunks')['body']",
+          "actions": {
+            "For_each_row": {
+              "foreach": "@items('For_each_chunk')",
+              "actions": {
+                "Scope_compose_company_data": {
+                  "actions": {
+                    "Compose_GL_string_company_code": {
+                      "type": "Compose",
+                      "inputs": "@if(\r\n    or(\r\n        equals(substring(item()?['GL_STRING'],0,2), '07'),\r\n        equals(substring(item()?['GL_STRING'],0,2), '22')\r\n    ),\r\n    substring(item()?['GL_STRING'],0,2),\r\n    '02'\r\n)"
+                    },
+                    "Compose_Company_name": {
+                      "runAfter": {
+                        "Compose_GL_string_company_code": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "Compose",
+                      "inputs": "@if(\r\n    equals(\r\n        body('Run_a_Child_Flow_Get_Company_Name_Override')?['value'],\r\n        ''\r\n    ),\r\n    if(\r\n        equals(outputs('Compose_GL_string_company_code'), '07'),\r\n        'ENC',\r\n        if(\r\n            equals(outputs('Compose_GL_string_company_code'), '22'),\r\n            'UPP',\r\n            'TOWNE'\r\n        )\r\n    ),\r\n    body('Run_a_Child_Flow_Get_Company_Name_Override')?['value']\r\n)"
+                    }
+                  },
+                  "type": "Scope"
+                },
+                "Compose_GL_Table_Object": {
+                  "runAfter": {
+                    "Scope_compose_company_data": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Compose",
+                  "inputs": "        <Table>\n            <BATCHID>@{replace(triggerOutputs()?['body/bs_period'], '-', '')}POWERSTATS</BATCHID>\n            <TRANTYPE>N</TRANTYPE>\n            <TRANDATE>@{outputs('Compose_Last_day_of_the_month')}</TRANDATE>\n            <SRCDOC>GJ</SRCDOC>\n            <CURRID>US</CURRID>\n            <REFRENCE>@{formatDateTime(outputs('Compose_First_day_of_the_month'), 'MMMM yyyy')} Statistics</REFRENCE>\n            <ACCOUNT>@{item()?['GL_STRING']}</ACCOUNT>\n            <DEBIT>@{if(\n    greater(item()?['VALUE'], 0),\n    formatNumber(float(item()?['VALUE']), 'N2'),\n    '0.00'\n)}</DEBIT>\n            <CREDIT>@{if(\n    less(item()?['VALUE'], 0),\n    formatNumber(float(mul(item()?['VALUE'], -1)), 'N2'),\n    '0.00'\n)}</CREDIT>\n            <DISTREF>@{formatDateTime(outputs('Compose_First_day_of_the_month'), 'MMMM yyyy')} Statistics @{variables('BatchChunkNumber')}</DISTREF>\n            <REVDATE></REVDATE>\n            <COMPANY>@{outputs('Compose_Company_name')}</COMPANY>\n        </Table>"
+                },
+                "Append_to_DataSetContent_string_variable": {
+                  "runAfter": {
+                    "Compose_GL_Table_Object": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "AppendToStringVariable",
+                  "inputs": {
+                    "name": "DataSetContent",
+                    "value": "@outputs('Compose_GL_Table_Object')"
+                  }
+                }
+              },
+              "type": "Foreach"
+            },
+            "Increment_BatchChunkNumber_variable": {
+              "runAfter": {
+                "For_each_row": [
+                  "Succeeded"
+                ]
+              },
+              "type": "IncrementVariable",
+              "inputs": {
+                "name": "BatchChunkNumber",
+                "value": 1
+              }
+            },
+            "Compose_GL_xml_payload": {
+              "runAfter": {
+                "Increment_BatchChunkNumber_variable": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Compose",
+              "inputs": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:tem=\"http://tempuri.org\">\n  <soapenv:Header/>\n  <soapenv:Body>\n    <tem:RunMapDataTable>\n      <tem:mapID>GLIMP</tem:mapID>\n      <tem:interID>TOWNE</tem:interID>\n      <tem:xml>\n        <![CDATA[\n        <DataSet>\n          @{variables('DataSetContent')}\n        </DataSet>\n        ]]>\n      </tem:xml>\n    </tem:RunMapDataTable>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "Compose_GP_Integration_Endpoint": {
+              "runAfter": {
+                "Compose_GL_xml_payload": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Compose",
+              "inputs": "@parameters('GP Integration Logic App Endpoint (bs_GPIntegrationLogicAppEndpoint)')"
+            },
+            "HTTP_GL_request_to_logic_app": {
+              "runAfter": {
+                "Compose_GP_Integration_Endpoint": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "09e06d54-f119-4de0-88ae-ac9488cc4181"
+              },
+              "type": "Http",
+              "inputs": {
+                "uri": "@parameters('GP Integration Logic App Endpoint (bs_GPIntegrationLogicAppEndpoint)')",
+                "method": "POST",
+                "body": "@outputs('Compose_GL_xml_payload')"
+              },
+              "runtimeConfiguration": {
+                "contentTransfer": {
+                  "transferMode": "Chunked"
+                }
+              }
+            },
+            "Compose_request_for_logging": {
+              "runAfter": {
+                "Compose_GP_Integration_Endpoint": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Compose",
+              "inputs": "@substring(\r\n    replace(\r\n        replace(\r\n            replace(\r\n                replace(outputs('Compose_GL_xml_payload'), '\\\\n', ''), \r\n                '\\\\t', ''\r\n            ), \r\n            '\\\\r', ''\r\n        ), \r\n        '  ', ' '\r\n    ), \r\n    0, \r\n    min(length(replace(\r\n        replace(\r\n            replace(\r\n                replace(outputs('Compose_GL_xml_payload'), '\\\\n', ''), \r\n                '\\\\t', ''\r\n            ), \r\n            '\\\\r', ''\r\n        ), \r\n        '  ', ' '\r\n    )), 1048576)\r\n)"
+            },
+            "Add_a_new_GL_GL_log_row": {
+              "runAfter": {
+                "Compose_request_for_logging": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "8313ac46-696d-4644-b538-707aebe010f0"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "bs_glrequestlogs",
+                  "item/bs_requeststatus": 126840002,
+                  "item/bs_requestxml": "@outputs('Compose_request_for_logging')",
+                  "item/bs_sitenumber": "UNIT"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "CreateRecord",
+                  "connectionName": "shared_commondataserviceforapps"
+                }
+              }
+            },
+            "Condition_GL_response_contains_success": {
+              "actions": {
+                "Update_a_row_GL_Success": {
+                  "metadata": {
+                    "operationMetadataId": "7fc13b2a-5b64-4a18-bebd-395dffdb4ec3"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "entityName": "bs_glrequestlogs",
+                      "recordId": "@outputs('Add_a_new_GL_GL_log_row')?['body/bs_glrequestlogid']",
+                      "item/bs_requeststatus": 126840000,
+                      "item/bs_responsexml": "@body('HTTP_GL_request_to_logic_app')"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "operationId": "UpdateOnlyRecord",
+                      "connectionName": "shared_commondataserviceforapps-1"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "HTTP_GL_request_to_logic_app": [
+                  "Succeeded"
+                ],
+                "Add_a_new_GL_GL_log_row": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Send_an_GL_error_email_(V2)": {
+                    "runAfter": {
+                      "Run_a_Child_Flow_Get_EmailRecipientsOverride_value": [
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "be65a3bc-0c26-4fb9-8184-ccbe3c0bee53"
+                    },
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "parameters": {
+                        "emailMessage/To": "@body('Run_a_Child_Flow_Get_EmailRecipientsOverride_value')?['value']",
+                        "emailMessage/Subject": "@{concat('[', parameters('EnvironmentName (bs_environmentName)'), '] -')} GP request failed",
+                        "emailMessage/Body": "<p class=\"editor-paragraph\">This is to notify you that a request to the Great Plains General Ledger has failed during processing. Below are the details of the failed request:\n</p>\n\n\n<table style=\"border-collapse: collapse; width: 100%; font-family: Arial, sans-serif;\">\n<thead>\n<tr style=\"background-color: #f2f2f2; text-align: left;\">\n<th style=\"border: 1px solid #ddd; padding: 8px;\">Error Date</th>\n<th style=\"border: 1px solid #ddd; padding: 8px;\">Site</th>\n<th style=\"border: 1px solid #ddd; padding: 8px;\">Error Message</th>\n</tr>\n</thead>\n<tbody>\n<!-- Example Row -->\n<tr>\n<td style=\"border: 1px solid #ddd; padding: 8px;\">@{utcNow()}</td>\n<td style=\"border: 1px solid #ddd; padding: 8px;\">Unit Accounts Batch</td>\n<td style=\"border: 1px solid #ddd; padding: 8px;\">@{body('HTTP_GL_request_to_logic_app')}</td>\n</tr>\n<!-- Add more rows dynamically -->\n</tbody>\n</table>",
+                        "emailMessage/Importance": "Normal"
+                      },
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                        "operationId": "SendEmailV2",
+                        "connectionName": "shared_office365"
+                      }
+                    }
+                  },
+                  "Update_a_row_GL_Failure": {
+                    "metadata": {
+                      "operationMetadataId": "d5cf2826-1a05-4809-bb7c-b70251290a69"
+                    },
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "parameters": {
+                        "entityName": "bs_glrequestlogs",
+                        "recordId": "@outputs('Add_a_new_GL_GL_log_row')?['body/bs_glrequestlogid']",
+                        "item/bs_requeststatus": 126840001,
+                        "item/bs_responsexml": "@body('HTTP_GL_request_to_logic_app')"
+                      },
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                        "operationId": "UpdateOnlyRecord",
+                        "connectionName": "shared_commondataserviceforapps-1"
+                      }
+                    }
+                  },
+                  "Update_a_row_set_unit_account_batch_process_to_failed": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "parameters": {
+                        "entityName": "bs_unitaccountbatchprocesses",
+                        "recordId": "@triggerOutputs()?['body/bs_unitaccountbatchprocessid']",
+                        "item/bs_status": 126840002
+                      },
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                        "operationId": "UpdateOnlyRecord",
+                        "connectionName": "shared_commondataserviceforapps"
+                      }
+                    }
+                  },
+                  "Run_a_Child_Flow_Get_EmailRecipientsOverride_value": {
+                    "type": "Workflow",
+                    "inputs": {
+                      "host": {
+                        "workflowReferenceName": "70e1a7ea-0ddd-ef11-a730-6045bd096814"
+                      },
+                      "body": {
+                        "text": "GPErrorEmailOverride"
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "and": [
+                  {
+                    "contains": [
+                      "@body('HTTP_GL_request_to_logic_app')",
+                      "success"
+                    ]
+                  }
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "3b0e2a0d-14e2-446b-b89c-fed1097529e2"
+              },
+              "type": "If"
+            },
+            "Set_variable_Reset_DataSetContent": {
+              "runAfter": {
+                "Condition_GL_response_contains_success": [
+                  "Succeeded"
+                ]
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "DataSetContent",
+                "value": " "
+              }
+            }
+          },
+          "runAfter": {
+            "Parse_JSON_chunks": [
+              "Succeeded"
+            ]
+          },
+          "type": "Foreach"
+        },
+        "Initialize_variable_BatchChunkNumber": {
+          "runAfter": {
+            "Update_a_row_set_unit_account_batch_process_to_in_progress": [
+              "Succeeded"
+            ]
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "BatchChunkNumber",
+                "type": "integer",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "Update_a_row_set_unit_account_batch_process_to_completed": {
+          "runAfter": {
+            "For_each_chunk": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "bs_unitaccountbatchprocesses",
+              "recordId": "@triggerOutputs()?['body/bs_unitaccountbatchprocessid']",
+              "item/bs_status": 126840001
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "UpdateOnlyRecord",
+              "connectionName": "shared_commondataserviceforapps"
+            }
+          }
+        },
+        "Execute_stored_procedure_(V2)_spJoin_GP_STATS_with_GL_ACCOUNTS": {
+          "runAfter": {
+            "Compose_Last_day_of_the_month": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "server": "default",
+              "database": "default",
+              "procedure": "[dbo].[spJoin_GP_STATS_with_GL_ACCOUNTS]",
+              "parameters/StartDate": "@outputs('Compose_First_day_of_the_month')",
+              "parameters/EndDate": "@outputs('Compose_Last_day_of_the_month')"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+              "operationId": "ExecuteProcedure_V2",
+              "connectionName": "shared_sql-1"
+            },
+            "retryPolicy": {
+              "type": "fixed",
+              "count": 3,
+              "interval": "PT30S"
+            }
+          }
+        },
+        "Parse_JSON_spJoin_GP_STATS_with_GL_ACCOUNTS_results": {
+          "runAfter": {
+            "Execute_stored_procedure_(V2)_spJoin_GP_STATS_with_GL_ACCOUNTS": [
+              "Succeeded"
+            ]
+          },
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@outputs('Execute_stored_procedure_(V2)_spJoin_GP_STATS_with_GL_ACCOUNTS')?['body/resultsets']?['Table1']",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "SITE": {
+                    "type": "string"
+                  },
+                  "MAIN_ACCOUNT": {
+                    "type": "string"
+                  },
+                  "REVENUE_CATEGORY": {
+                    "type": "string"
+                  },
+                  "CATEGORY": {
+                    "type": "string"
+                  },
+                  "GL_STRING": {
+                    "type": "string"
+                  },
+                  "VALUE": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "ACCOUNT_DESCRIPTION": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "STATUS": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "Compose_Length": {
+          "runAfter": {
+            "Parse_JSON_spJoin_GP_STATS_with_GL_ACCOUNTS_results": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@length(body('Parse_JSON_spJoin_GP_STATS_with_GL_ACCOUNTS_results'))"
+        },
+        "Condition_GL_has_missing_or_inactive_accounts": {
+          "actions": {
+            "SendMail": {
+              "runAfter": {
+                "Create_HTML_table": [
+                  "Succeeded"
+                ],
+                "Select_Emails_into_Json_array": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "Content-Type": "application/json",
+                  "body/message/subject": "[@{parameters('EnvironmentName (bs_environmentName)')}] - GL has mssing or inactive accounts",
+                  "body/message/body/contentType": "html",
+                  "body/message/body/content": "<p style=\"font-family: Arial, sans-serif;\">\n  This is to notify you that the following accounts do not have a status of 'Active'. Below are the details:\n</p>\n@{replace(\r\n  replace(body('Create_HTML_table'), '<td>', '<td style=\"border:1px solid #ddd; padding:8px;\">'),\r\n  '<th>', \r\n  '<th style=\"border:1px solid #ddd; padding:8px; background-color:#f2f2f2;\">')}\n\n",
+                  "body/message/toRecipients": "@body('Select_Emails_into_Json_array')",
+                  "body/saveToSentItems": "false"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_bs-5fsendmailbyserviceprincipal-5f4f4d8f3ae476f46d",
+                  "operationId": "SendMail",
+                  "connectionName": "shared_bs-5fsendmailbyserviceprincipal-5f4f4d8f3ae476f46d"
+                }
+              }
+            },
+            "Terminate": {
+              "runAfter": {
+                "Update_a_row_set_unit_account_batch_process_to_failed_2": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Succeeded"
+              }
+            },
+            "Create_HTML_table": {
+              "type": "Table",
+              "inputs": {
+                "from": "@body('Filter_array_Remove_active_status_accounts')",
+                "format": "HTML",
+                "columns": [
+                  {
+                    "header": "Site",
+                    "value": "@item()?['SITE']"
+                  },
+                  {
+                    "header": "GL_STRING",
+                    "value": "@item()?['GL_STRING']"
+                  },
+                  {
+                    "header": "REVENUE_CATEGORY",
+                    "value": "@item()?['REVENUE_CATEGORY']"
+                  },
+                  {
+                    "header": "STATUS",
+                    "value": "@coalesce(item()?['STATUS'], 'Missing')"
+                  }
+                ]
+              }
+            },
+            "Run_a_Child_Flow_Get_EmailRecipientsOverride_value-copy": {
+              "type": "Workflow",
+              "inputs": {
+                "host": {
+                  "workflowReferenceName": "70e1a7ea-0ddd-ef11-a730-6045bd096814"
+                },
+                "body": {
+                  "text": "GPErrorEmailOverride"
+                }
+              }
+            },
+            "Select_Emails_into_Json_array": {
+              "runAfter": {
+                "Filter_array_Remove_invalid_emails": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Filter_array_Remove_invalid_emails')",
+                "select": {
+                  "emailAddress": {
+                    "address": "@{trim(item())}"
+                  }
+                }
+              }
+            },
+            "Filter_array_Remove_invalid_emails": {
+              "runAfter": {
+                "Run_a_Child_Flow_Get_EmailRecipientsOverride_value-copy": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "24d04c62-6b9c-4ac9-a312-51a7c8373615"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@split(outputs('Run_a_Child_Flow_Get_EmailRecipientsOverride_value-copy')?['body/value'], ';')",
+                "where": "@and(\r\n    contains(item(), '@'),\r\n    contains(item(), '.'),\r\n    not(equals(item(), ''))\r\n)"
+              }
+            },
+            "Update_a_row_set_unit_account_batch_process_to_failed_2": {
+              "runAfter": {
+                "SendMail": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "bs_unitaccountbatchprocesses",
+                  "recordId": "@triggerOutputs()?['body/bs_unitaccountbatchprocessid']",
+                  "item/bs_status": 126840002
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "UpdateOnlyRecord",
+                  "connectionName": "shared_commondataserviceforapps"
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Run_a_Child_Flow_Get_Company_Name_Override": [
+              "Succeeded"
+            ],
+            "Filter_array_Remove_active_status_accounts": [
+              "Succeeded"
+            ],
+            "Compose_Last_day_of_the_month": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {}
+          },
+          "expression": {
+            "and": [
+              {
+                "greater": [
+                  "@length(body('Filter_array_Remove_active_status_accounts'))",
+                  0
+                ]
+              }
+            ]
+          },
+          "type": "If"
+        },
+        "Filter_array_Remove_active_status_accounts": {
+          "runAfter": {
+            "Compose_Length": [
+              "Succeeded"
+            ]
+          },
+          "type": "Query",
+          "inputs": {
+            "from": "@body('Parse_JSON_spJoin_GP_STATS_with_GL_ACCOUNTS_results')",
+            "where": "@not(equals(toLower(coalesce(item()?['STATUS'], '')),'active'))"
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

@@ -1,0 +1,89 @@
+{
+  "properties": {
+    "connectionReferences": {},
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Http",
+          "inputs": {
+            "triggerAuthenticationType": "User",
+            "triggerAllowedUsers": "35cf157d-6d99-45a1-87a8-59786beac0f1;424319fb-c204-4b9d-9ae3-2b940518b7a4"
+          },
+          "metadata": {
+            "operationMetadataId": "451b9a48-c04b-4999-baea-0b36787cc4e4"
+          }
+        }
+      },
+      "actions": {
+        "Parse_JSON_BillingStatementId": {
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@triggerBody()",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "billingStatementId": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "0256ac2a-4299-4ce4-ae9a-35d82aef3fed"
+          }
+        },
+        "Run_Generate_Billing_Statement_PDF_Child_Flow": {
+          "type": "Workflow",
+          "inputs": {
+            "host": {
+              "workflowReferenceName": "be2cb400-7a03-f011-bae3-000d3a5ac294"
+            },
+            "body": {
+              "text": "@body('Parse_JSON_BillingStatementId')?['billingStatementId']"
+            }
+          },
+          "runAfter": {
+            "Parse_JSON_BillingStatementId": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "48a541b1-ef4e-46ba-8308-a4672746a37b"
+          }
+        },
+        "Response_PDF": {
+          "type": "Response",
+          "kind": "Http",
+          "inputs": {
+            "statusCode": 200,
+            "body": "@body('Run_Generate_Billing_Statement_PDF_Child_Flow')"
+          },
+          "runAfter": {
+            "Run_Generate_Billing_Statement_PDF_Child_Flow": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "a6d076e9-83bf-43ff-b967-04ec3fa0a0b8"
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

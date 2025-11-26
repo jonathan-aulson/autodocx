@@ -1,0 +1,116 @@
+<ImportExportXml version="9.2.25061.218" SolutionPackageVersion="9.2" languagecode="1033" generatedBy="CrmLive" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" OrganizationVersion="9.2.25061.218" OrganizationSchemaType="Standard" CRMServerServiceabilityVersion="9.2.25061.00218">
+  <SolutionManifest>
+    <UniqueName>BillingSystemMonitoring</UniqueName>
+    <LocalizedNames>
+      <LocalizedName description="Billing System Monitoring" languagecode="1033" />
+    </LocalizedNames>
+    <Descriptions />
+    <Version>1.0.0.1</Version>
+    <Managed>0</Managed>
+    <Publisher>
+      <UniqueName>Billing_System_Solution</UniqueName>
+      <LocalizedNames>
+        <LocalizedName description="Billing System" languagecode="1033" />
+      </LocalizedNames>
+      <Descriptions />
+      <EMailAddress xsi:nil="true"></EMailAddress>
+      <SupportingWebsiteUrl xsi:nil="true"></SupportingWebsiteUrl>
+      <CustomizationPrefix>bs</CustomizationPrefix>
+      <CustomizationOptionValuePrefix>12684</CustomizationOptionValuePrefix>
+      <Addresses>
+        <Address>
+          <AddressNumber>1</AddressNumber>
+          <AddressTypeCode>1</AddressTypeCode>
+          <City xsi:nil="true"></City>
+          <County xsi:nil="true"></County>
+          <Country xsi:nil="true"></Country>
+          <Fax xsi:nil="true"></Fax>
+          <FreightTermsCode xsi:nil="true"></FreightTermsCode>
+          <ImportSequenceNumber xsi:nil="true"></ImportSequenceNumber>
+          <Latitude xsi:nil="true"></Latitude>
+          <Line1 xsi:nil="true"></Line1>
+          <Line2 xsi:nil="true"></Line2>
+          <Line3 xsi:nil="true"></Line3>
+          <Longitude xsi:nil="true"></Longitude>
+          <Name xsi:nil="true"></Name>
+          <PostalCode xsi:nil="true"></PostalCode>
+          <PostOfficeBox xsi:nil="true"></PostOfficeBox>
+          <PrimaryContactName xsi:nil="true"></PrimaryContactName>
+          <ShippingMethodCode>1</ShippingMethodCode>
+          <StateOrProvince xsi:nil="true"></StateOrProvince>
+          <Telephone1 xsi:nil="true"></Telephone1>
+          <Telephone2 xsi:nil="true"></Telephone2>
+          <Telephone3 xsi:nil="true"></Telephone3>
+          <TimeZoneRuleVersionNumber xsi:nil="true"></TimeZoneRuleVersionNumber>
+          <UPSZone xsi:nil="true"></UPSZone>
+          <UTCOffset xsi:nil="true"></UTCOffset>
+          <UTCConversionTimeZoneCode xsi:nil="true"></UTCConversionTimeZoneCode>
+        </Address>
+        <Address>
+          <AddressNumber>2</AddressNumber>
+          <AddressTypeCode>1</AddressTypeCode>
+          <City xsi:nil="true"></City>
+          <County xsi:nil="true"></County>
+          <Country xsi:nil="true"></Country>
+          <Fax xsi:nil="true"></Fax>
+          <FreightTermsCode xsi:nil="true"></FreightTermsCode>
+          <ImportSequenceNumber xsi:nil="true"></ImportSequenceNumber>
+          <Latitude xsi:nil="true"></Latitude>
+          <Line1 xsi:nil="true"></Line1>
+          <Line2 xsi:nil="true"></Line2>
+          <Line3 xsi:nil="true"></Line3>
+          <Longitude xsi:nil="true"></Longitude>
+          <Name xsi:nil="true"></Name>
+          <PostalCode xsi:nil="true"></PostalCode>
+          <PostOfficeBox xsi:nil="true"></PostOfficeBox>
+          <PrimaryContactName xsi:nil="true"></PrimaryContactName>
+          <ShippingMethodCode>1</ShippingMethodCode>
+          <StateOrProvince xsi:nil="true"></StateOrProvince>
+          <Telephone1 xsi:nil="true"></Telephone1>
+          <Telephone2 xsi:nil="true"></Telephone2>
+          <Telephone3 xsi:nil="true"></Telephone3>
+          <TimeZoneRuleVersionNumber xsi:nil="true"></TimeZoneRuleVersionNumber>
+          <UPSZone xsi:nil="true"></UPSZone>
+          <UTCOffset xsi:nil="true"></UTCOffset>
+          <UTCConversionTimeZoneCode xsi:nil="true"></UTCConversionTimeZoneCode>
+        </Address>
+      </Addresses>
+    </Publisher>
+    <RootComponents>
+      <RootComponent type="29" id="{25a66470-1d5c-f011-bec1-7c1e5202188c}" behavior="0" />
+      <RootComponent type="29" id="{cc0d1317-dc4c-f011-877a-002248029144}" behavior="0" />
+    </RootComponents>
+    <MissingDependencies>
+      <MissingDependency>
+        <Required type="1" schemaName="bs_actionoverrides" displayName="Action Overrides" solution="Active" />
+        <Dependent type="29" displayName="Dataflow Monitor" id="{25a66470-1d5c-f011-bec1-7c1e5202188c}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="1" schemaName="bs_actionoverrides" displayName="Action Overrides" solution="Active" />
+        <Dependent type="29" displayName="Capacity Alert Flow" id="{cc0d1317-dc4c-f011-877a-002248029144}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="1" schemaName="msdyn_dataflowrefreshhistory" displayName="DataflowRefreshHistory" solution="DataflowSolution (1.0.0.211)">
+          <package appName="Dataflow" version="1.0.0.169">MicrosoftDataflowAnchor (1.0.0.169)</package>
+        </Required>
+        <Dependent type="29" displayName="Dataflow Monitor" id="{25a66470-1d5c-f011-bec1-7c1e5202188c}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="372" schemaName="bs_5Fsendmailbyserviceprincipal" displayName="SendMailByServicePrincipal" solution="Active" id="{abdc61b8-0929-4277-9792-b6948725f29f}" />
+        <Dependent type="29" displayName="Dataflow Monitor" id="{25a66470-1d5c-f011-bec1-7c1e5202188c}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="372" schemaName="bs_5Fsendmailbyserviceprincipal" displayName="SendMailByServicePrincipal" solution="Active" id="{abdc61b8-0929-4277-9792-b6948725f29f}" />
+        <Dependent type="29" displayName="Capacity Alert Flow" id="{cc0d1317-dc4c-f011-877a-002248029144}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="connectionreference" displayName="bs_sharedbs5fsendmailbyserviceprincipal5f4c81ae98d9d3b3ec_4c912" solution="Active" id.connectionreferencelogicalname="bs_sharedbs5fsendmailbyserviceprincipal5f4c81ae98d9d3b3ec_4c912" />
+        <Dependent type="29" displayName="Dataflow Monitor" id="{25a66470-1d5c-f011-bec1-7c1e5202188c}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="connectionreference" displayName="bs_sharedbs5fsendmailbyserviceprincipal5f4c81ae98d9d3b3ec_4c912" solution="Active" id.connectionreferencelogicalname="bs_sharedbs5fsendmailbyserviceprincipal5f4c81ae98d9d3b3ec_4c912" />
+        <Dependent type="29" displayName="Capacity Alert Flow" id="{cc0d1317-dc4c-f011-877a-002248029144}" />
+      </MissingDependency>
+    </MissingDependencies>
+  </SolutionManifest>
+</ImportExportXml>

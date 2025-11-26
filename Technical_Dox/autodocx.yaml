@@ -1,0 +1,39 @@
+engine:
+  plugins: [openapi, logicapps, terraform, k8s, express, sql, gha, azp]
+  excludes: [node_modules, .venv, dist, target, .git]
+  max_file_mb: 2
+docs:
+  profile: business  # business | technical | full
+  visuals:
+    enable_flow_diagrams: true
+  sections:
+    show_confidence: true
+    show_interdependencies: true
+    show_unknowns: true
+  mkdocs_build: true
+
+llm:
+  provider: openai
+  model: gpt-5-mini-2025-08-07
+  max_output_tokens: 30000
+  # temperature: 0.0
+  structured_outputs:
+    enabled: true
+    schema_name: llm_rollup_response
+    strict: true
+  telemetry:
+    enabled: true
+    pricing:
+      input_tokens_per_million_usd: 0.25 # gpt-5-mini-2025-08-07 pricing as of 2025-09-15
+      output_tokens_per_million_usd: 2.00 # gpt-5-mini-2025-08-07 pricing as of 2025-09-15
+#    pricing:
+#      input_tokens_per_million_usd: 1.25 # gpt-5-chat-latest pricing as of 2025-09-15
+#      output_tokens_per_million_usd: 10.00 # gpt-5-chat-latest pricing as of 2025-09-15
+
+out_dir: out
+
+rollup:
+  publish_threshold: 0.75
+  hypothesis_threshold: 0.55
+  allow_unknown_evidence: false  # set to true to auto-prune unknown evidence ids
+

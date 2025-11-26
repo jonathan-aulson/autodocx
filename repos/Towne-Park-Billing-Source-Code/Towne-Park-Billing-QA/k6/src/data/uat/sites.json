@@ -1,0 +1,44 @@
+{
+  "siteData": [
+    {
+      "siteName": "Gaylord Palms Resort",
+      "siteId": "fcc42585-20ee-ef11-be20-7c1e5259f653",
+      "siteNo": "0249"
+    },
+    {
+      "siteName": "JW Marriott - Grande Lakes",
+      "siteId": "d4dac15f-1dee-ef11-be20-7c1e5259f653",
+      "siteNo": "0237"
+    },
+    {
+      "siteName": "JW Marriott Starr Pass Resort & Spa",
+      "siteId": "b75f574f-86f3-ef11-be20-7c1e5247bfde",
+      "siteNo": "0403"
+    },
+    {
+      "siteName": "Providence St. John's Health Center",
+      "siteId": "1b34891b-19f5-ef11-be1f-7c1e5247bfde",
+      "siteNo": "1847"
+    },
+    {
+      "siteName": "Gaylord Rockies",
+      "siteId": "2190530b-02ef-ef11-be20-7c1e5259f653",
+      "siteNo": "1675"
+    },
+    {
+      "siteName": "Chelsea Hospital",
+      "siteId": "02e9e450-91d8-ef11-8eea-0022480a57ac",
+      "siteNo": "0919"
+    },
+    {
+      "siteName": "St. Jude Medical Center",
+      "siteId": "d05ce199-91d8-ef11-8eea-0022480a57ac",
+      "siteNo": "1119"
+    },
+    {
+      "siteName": "Hilton Anatole Hotel",
+      "siteId": "e843c5d7-2b37-f011-8c4e-000d3a5ac294",
+      "siteNo": "0323"
+    }
+  ]
+}

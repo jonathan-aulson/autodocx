@@ -1,0 +1,69 @@
+[project]
+name = "autodocx"
+version = "0.1.0"
+description = "Universal auto-documentation engine"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "pyyaml",
+  "jinja2",
+  "rich",
+  "python-dotenv",
+  "python-hcl2",
+  "prance",
+  "openapi-spec-validator",
+  "pathspec",
+  "mkdocs-material",
+  "lxml",
+  "rapidfuzz",
+  "graphviz",
+  "networkx",
+  "tree_sitter",
+  "jsonschema"
+]
+
+[project.scripts]
+autodocx = "autodocx_cli.__main__:main"
+
+[project.entry-points."autodocx.extractors"]
+openapi = "autodocx.extractors.openapi:OpenAPIExtractor"
+logicapps = "autodocx.extractors.logicapps:LogicAppsWDLExtractor"
+k8s = "autodocx.extractors.k8s_manifests:K8sManifestsExtractor"
+terraform = "autodocx.extractors.terraform:TerraformExtractor"
+github_actions = "autodocx.extractors.github_actions:GitHubActionsExtractor"
+azure_pipelines = "autodocx.extractors.azure_pipelines:AzurePipelinesExtractor"
+express = "autodocx.extractors.express:ExpressJSExtractor"
+sql_migrations = "autodocx.extractors.sql_migrations:SQLMigrationsExtractor"
+markdown_docs = "autodocx.extractors.markdown_docs:MarkdownDocsExtractor"
+bicep = "autodocx.extractors.bicep:BicepExtractor"
+azure_functions = "autodocx.extractors.azure_functions:AzureFunctionsExtractor"
+tibco_bw = "autodocx.extractors.tibco_bw:TibcoBWExtractor"
+tibco_project_artifacts = "autodocx.extractors.tibco_project_artifacts:TibcoProjectArtifactsExtractor"
+tree_sitter_code = "autodocx.extractors.tree_sitter_code:TreeSitterCodeExtractor"
+ui_components = "autodocx.extractors.ui_components:UIComponentsExtractor"
+integration_imports = "autodocx.extractors.integration_imports:IntegrationImportsExtractor"
+process_diagrams = "autodocx.extractors.process_diagrams:ProcessDiagramExtractor"
+business_entities = "autodocx.extractors.business_entities:BusinessEntityExtractor"
+power_automate = "autodocx.extractors.power_automate:PowerAutomateExtractor"
+
+[project.optional-dependencies]
+treesitter = ["tree-sitter-languages>=1.9.0"]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["autodocx*", "autodocx_cli*"]
+exclude = ["out*", "repos*", "models*"]
+
+# Optional: include schema files in the package
+[tool.setuptools.package-data]
+autodocx = ["artifacts/schema/*.json"]
+
+[tool.pytest.ini_options]
+addopts = "--ignore=Technical_Dox"

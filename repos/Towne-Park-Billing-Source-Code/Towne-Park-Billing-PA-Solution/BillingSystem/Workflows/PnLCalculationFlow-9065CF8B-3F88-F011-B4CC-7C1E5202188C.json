@@ -1,0 +1,1951 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_7558e"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_bs-5fsendmailbyserviceprincipal-5f4f4d8f3ae476f46d": {
+        "api": {
+          "name": "shared_bs-5fsendmailbyserviceprincipal-5f4f4d8f3ae476f46d",
+          "logicalName": "bs_5Fsendmailbyserviceprincipal"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "bs_sharedbs5fsendmailbyserviceprincipal5f4c81ae98d9d3b3ec_4c912"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "EnvironmentName (bs_environmentName)": {
+          "defaultValue": "Chris Thompson - DEV",
+          "type": "String",
+          "metadata": {
+            "schemaName": "bs_environmentName"
+          }
+        },
+        "Support Email (bs_SupportEmail)": {
+          "defaultValue": "support@allata.com",
+          "type": "String",
+          "metadata": {
+            "schemaName": "bs_SupportEmail"
+          }
+        }
+      },
+      "triggers": {
+        "When_a_row_is_added,_modified_or_deleted": {
+          "metadata": {
+            "operationMetadataId": "e74b95df-1194-474c-8934-0768a5874d51"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "parameters": {
+              "subscriptionRequest/message": 1,
+              "subscriptionRequest/entityname": "bs_calculationgenerationsstatus",
+              "subscriptionRequest/scope": 2
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "SubscribeWebhookTrigger",
+              "connectionName": "shared_commondataserviceforapps"
+            }
+          }
+        }
+      },
+      "actions": {
+        "HTTP_call_calculation_service_for_site_and_year": {
+          "runAfter": {
+            "Update_a_row_set_calculation_generation_status_to_in_progress": [
+              "Succeeded"
+            ],
+            "Get_a_row_by_ID_Customer_Site": [
+              "Succeeded"
+            ]
+          },
+          "type": "Http",
+          "inputs": {
+            "uri": "https://tp-calculation-service-api-dev.azurewebsites.net/api/pnl?code=<redacted>",
+            "method": "POST",
+            "body": {
+              "siteIds": [
+                "@{outputs('Get_a_row_by_ID_Customer_Site')?['body/bs_sitenumber']}"
+              ],
+              "year": "@int(substring(triggerOutputs()?['body/bs_startingperiod'],0,4))"
+            }
+          },
+          "runtimeConfiguration": {
+            "contentTransfer": {
+              "transferMode": "Chunked"
+            }
+          }
+        },
+        "Parse_JSON_HTTP_response": {
+          "runAfter": {
+            "HTTP_call_calculation_service_for_site_and_year": [
+              "Succeeded"
+            ]
+          },
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@body('HTTP_call_calculation_service_for_site_and_year')",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "content": {
+                  "type": "object",
+                  "properties": {
+                    "year": {
+                      "type": "integer"
+                    },
+                    "actualRows": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "columnName": {
+                            "type": "string"
+                          },
+                          "monthlyValues": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "month": {
+                                  "type": "integer"
+                                },
+                                "value": {
+                                  "type": "number"
+                                },
+                                "internalRevenueBreakdownAggregate": {},
+                                "internalRevenueCurrentMonthSplit": {},
+                                "siteDetails": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "siteId": {
+                                        "type": "string"
+                                      },
+                                      "internalRevenueBreakdown": {
+                                        "type": "object",
+                                        "properties": {
+                                          "fixedFee": {},
+                                          "perOccupiedRoom": {
+                                            "type": "object",
+                                            "properties": {
+                                              "feePerRoom": {
+                                                "type": "integer"
+                                              },
+                                              "forecastedRooms": {
+                                                "type": "integer"
+                                              },
+                                              "budgetRooms": {
+                                                "type": "integer"
+                                              },
+                                              "actualRooms": {},
+                                              "lastActualDate": {},
+                                              "baseRevenue": {},
+                                              "actualAmount": {},
+                                              "escalators": {
+                                                "type": "array"
+                                              },
+                                              "total": {}
+                                            }
+                                          },
+                                          "perLaborHour": {
+                                            "type": "object",
+                                            "properties": {
+                                              "total": {
+                                                "type": "number"
+                                              },
+                                              "actualPerLaborHour": {},
+                                              "forecastedPerLaborHour": {},
+                                              "lastActualDate": {}
+                                            }
+                                          },
+                                          "revenueShare": {},
+                                          "billableAccounts": {},
+                                          "managementAgreement": {},
+                                          "otherRevenue": {},
+                                          "calculatedTotalInternalRevenue": {
+                                            "type": "number"
+                                          }
+                                        }
+                                      },
+                                      "internalRevenueCurrentMonthSplit": {},
+                                      "externalRevenueBreakdown": {
+                                        "type": "object",
+                                        "properties": {
+                                          "valetDaily": {},
+                                          "valetMonthly": {},
+                                          "valetOvernight": {},
+                                          "valetAggregator": {},
+                                          "selfDaily": {},
+                                          "selfMonthly": {},
+                                          "selfOvernight": {},
+                                          "selfAggregator": {},
+                                          "calculatedTotalExternalRevenue": {
+                                            "type": "number"
+                                          },
+                                          "budgetExternalRevenue": {
+                                            "type": "number"
+                                          },
+                                          "actualExternalRevenue": {},
+                                          "forecastedExternalRevenue": {},
+                                          "lastActualRevenueDate": {}
+                                        }
+                                      },
+                                      "payrollBreakdown": {
+                                        "type": "object",
+                                        "properties": {
+                                          "actualPayroll": {},
+                                          "forecastedPayroll": {},
+                                          "actualPayrollLastDate": {},
+                                          "totalPayroll": {
+                                            "type": "number"
+                                          }
+                                        }
+                                      },
+                                      "value": {
+                                        "type": "number"
+                                      },
+                                      "isForecast": {
+                                        "type": "boolean"
+                                      },
+                                      "insuranceBreakdown": {},
+                                      "ptebBreakdown": {}
+                                    },
+                                    "required": [
+                                      "siteId",
+                                      "internalRevenueBreakdown",
+                                      "internalRevenueCurrentMonthSplit",
+                                      "externalRevenueBreakdown",
+                                      "payrollBreakdown",
+                                      "value",
+                                      "isForecast",
+                                      "insuranceBreakdown",
+                                      "ptebBreakdown"
+                                    ]
+                                  }
+                                }
+                              },
+                              "required": [
+                                "month",
+                                "value",
+                                "internalRevenueBreakdownAggregate",
+                                "internalRevenueCurrentMonthSplit",
+                                "siteDetails"
+                              ]
+                            }
+                          },
+                          "total": {
+                            "type": "number"
+                          },
+                          "percentOfInternalRevenue": {}
+                        },
+                        "required": [
+                          "columnName",
+                          "monthlyValues",
+                          "total",
+                          "percentOfInternalRevenue"
+                        ]
+                      }
+                    },
+                    "budgetRows": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "columnName": {
+                            "type": "string"
+                          },
+                          "monthlyValues": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "month": {
+                                  "type": "integer"
+                                },
+                                "value": {
+                                  "type": "number"
+                                },
+                                "internalRevenueBreakdownAggregate": {},
+                                "internalRevenueCurrentMonthSplit": {},
+                                "siteDetails": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "siteId": {
+                                        "type": "string"
+                                      },
+                                      "internalRevenueBreakdown": {
+                                        "type": "object",
+                                        "properties": {
+                                          "fixedFee": {},
+                                          "perOccupiedRoom": {
+                                            "type": "object",
+                                            "properties": {
+                                              "feePerRoom": {
+                                                "type": "integer"
+                                              },
+                                              "forecastedRooms": {
+                                                "type": "integer"
+                                              },
+                                              "budgetRooms": {
+                                                "type": "integer"
+                                              },
+                                              "actualRooms": {},
+                                              "lastActualDate": {},
+                                              "baseRevenue": {},
+                                              "actualAmount": {},
+                                              "escalators": {
+                                                "type": "array"
+                                              },
+                                              "total": {}
+                                            }
+                                          },
+                                          "perLaborHour": {
+                                            "type": "object",
+                                            "properties": {
+                                              "total": {
+                                                "type": "integer"
+                                              },
+                                              "actualPerLaborHour": {},
+                                              "forecastedPerLaborHour": {},
+                                              "lastActualDate": {}
+                                            }
+                                          },
+                                          "revenueShare": {},
+                                          "billableAccounts": {},
+                                          "managementAgreement": {},
+                                          "otherRevenue": {},
+                                          "calculatedTotalInternalRevenue": {
+                                            "type": "number"
+                                          }
+                                        }
+                                      },
+                                      "internalRevenueCurrentMonthSplit": {},
+                                      "externalRevenueBreakdown": {
+                                        "type": "object",
+                                        "properties": {
+                                          "valetDaily": {},
+                                          "valetMonthly": {},
+                                          "valetOvernight": {},
+                                          "valetAggregator": {},
+                                          "selfDaily": {},
+                                          "selfMonthly": {},
+                                          "selfOvernight": {},
+                                          "selfAggregator": {},
+                                          "calculatedTotalExternalRevenue": {
+                                            "type": "number"
+                                          },
+                                          "budgetExternalRevenue": {
+                                            "type": "number"
+                                          },
+                                          "actualExternalRevenue": {},
+                                          "forecastedExternalRevenue": {},
+                                          "lastActualRevenueDate": {}
+                                        }
+                                      },
+                                      "payrollBreakdown": {
+                                        "type": "object",
+                                        "properties": {
+                                          "actualPayroll": {},
+                                          "forecastedPayroll": {},
+                                          "actualPayrollLastDate": {},
+                                          "totalPayroll": {
+                                            "type": "integer"
+                                          }
+                                        }
+                                      },
+                                      "value": {
+                                        "type": "number"
+                                      },
+                                      "isForecast": {
+                                        "type": "boolean"
+                                      },
+                                      "insuranceBreakdown": {},
+                                      "ptebBreakdown": {}
+                                    },
+                                    "required": [
+                                      "siteId",
+                                      "internalRevenueBreakdown",
+                                      "internalRevenueCurrentMonthSplit",
+                                      "externalRevenueBreakdown",
+                                      "payrollBreakdown",
+                                      "value",
+                                      "isForecast",
+                                      "insuranceBreakdown",
+                                      "ptebBreakdown"
+                                    ]
+                                  }
+                                }
+                              },
+                              "required": [
+                                "month",
+                                "value",
+                                "internalRevenueBreakdownAggregate",
+                                "internalRevenueCurrentMonthSplit",
+                                "siteDetails"
+                              ]
+                            }
+                          },
+                          "total": {
+                            "type": "number"
+                          },
+                          "percentOfInternalRevenue": {}
+                        },
+                        "required": [
+                          "columnName",
+                          "monthlyValues",
+                          "total",
+                          "percentOfInternalRevenue"
+                        ]
+                      }
+                    },
+                    "forecastRows": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "columnName": {
+                            "type": "string"
+                          },
+                          "monthlyValues": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "month": {
+                                  "type": "integer"
+                                },
+                                "value": {
+                                  "type": "number"
+                                },
+                                "internalRevenueBreakdownAggregate": {},
+                                "internalRevenueCurrentMonthSplit": {},
+                                "siteDetails": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "siteId": {
+                                        "type": "string"
+                                      },
+                                      "internalRevenueBreakdown": {},
+                                      "internalRevenueCurrentMonthSplit": {},
+                                      "externalRevenueBreakdown": {},
+                                      "payrollBreakdown": {},
+                                      "value": {
+                                        "type": "number"
+                                      },
+                                      "isForecast": {
+                                        "type": "boolean"
+                                      },
+                                      "insuranceBreakdown": {},
+                                      "ptebBreakdown": {}
+                                    },
+                                    "required": [
+                                      "siteId",
+                                      "internalRevenueBreakdown",
+                                      "internalRevenueCurrentMonthSplit",
+                                      "externalRevenueBreakdown",
+                                      "payrollBreakdown",
+                                      "value",
+                                      "isForecast",
+                                      "insuranceBreakdown",
+                                      "ptebBreakdown"
+                                    ]
+                                  }
+                                }
+                              },
+                              "required": [
+                                "month",
+                                "value",
+                                "internalRevenueBreakdownAggregate",
+                                "internalRevenueCurrentMonthSplit",
+                                "siteDetails"
+                              ]
+                            }
+                          },
+                          "total": {
+                            "type": "number"
+                          },
+                          "percentOfInternalRevenue": {}
+                        },
+                        "required": [
+                          "columnName",
+                          "monthlyValues",
+                          "total",
+                          "percentOfInternalRevenue"
+                        ]
+                      }
+                    },
+                    "varianceRows": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "columnName": {
+                            "type": "string"
+                          },
+                          "monthlyVariances": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "month": {
+                                  "type": "integer"
+                                },
+                                "amount": {
+                                  "type": "number"
+                                },
+                                "percentage": {
+                                  "type": "number"
+                                },
+                                "Value": {
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "month",
+                                "amount",
+                                "percentage",
+                                "Value"
+                              ]
+                            }
+                          },
+                          "totalVarianceAmount": {
+                            "type": "number"
+                          },
+                          "totalVariancePercent": {
+                            "type": "number"
+                          },
+                          "Total": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "columnName",
+                          "monthlyVariances",
+                          "totalVarianceAmount",
+                          "totalVariancePercent",
+                          "Total"
+                        ]
+                      }
+                    }
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "properties": {
+                      "type": "object",
+                      "properties": {
+                        "year": {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "actualRows": {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string"
+                            },
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string"
+                                },
+                                "properties": {
+                                  "type": "object",
+                                  "properties": {
+                                    "columnName": {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "monthlyValues": {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string"
+                                        },
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "type": {
+                                              "type": "string"
+                                            },
+                                            "properties": {
+                                              "type": "object",
+                                              "properties": {
+                                                "month": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "type": {
+                                                      "type": "string"
+                                                    }
+                                                  }
+                                                },
+                                                "value": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "type": {
+                                                      "type": "string"
+                                                    }
+                                                  }
+                                                },
+                                                "internalRevenueBreakdownAggregate": {
+                                                  "type": "object",
+                                                  "properties": {}
+                                                },
+                                                "internalRevenueCurrentMonthSplit": {
+                                                  "type": "object",
+                                                  "properties": {}
+                                                },
+                                                "siteDetails": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "type": {
+                                                      "type": "string"
+                                                    },
+                                                    "items": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "type": {
+                                                          "type": "string"
+                                                        },
+                                                        "properties": {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "siteId": {
+                                                              "type": "object",
+                                                              "properties": {
+                                                                "type": {
+                                                                  "type": "string"
+                                                                }
+                                                              }
+                                                            },
+                                                            "internalRevenueBreakdown": {
+                                                              "type": "object",
+                                                              "properties": {
+                                                                "type": {
+                                                                  "type": "string"
+                                                                },
+                                                                "properties": {
+                                                                  "type": "object",
+                                                                  "properties": {
+                                                                    "fixedFee": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "perOccupiedRoom": {
+                                                                      "type": "object",
+                                                                      "properties": {
+                                                                        "type": {
+                                                                          "type": "string"
+                                                                        },
+                                                                        "properties": {
+                                                                          "type": "object",
+                                                                          "properties": {
+                                                                            "feePerRoom": {
+                                                                              "type": "object",
+                                                                              "properties": {
+                                                                                "type": {
+                                                                                  "type": "string"
+                                                                                }
+                                                                              }
+                                                                            },
+                                                                            "forecastedRooms": {
+                                                                              "type": "object",
+                                                                              "properties": {
+                                                                                "type": {
+                                                                                  "type": "string"
+                                                                                }
+                                                                              }
+                                                                            },
+                                                                            "budgetRooms": {
+                                                                              "type": "object",
+                                                                              "properties": {
+                                                                                "type": {
+                                                                                  "type": "string"
+                                                                                }
+                                                                              }
+                                                                            },
+                                                                            "actualRooms": {
+                                                                              "type": "object",
+                                                                              "properties": {}
+                                                                            },
+                                                                            "lastActualDate": {
+                                                                              "type": "object",
+                                                                              "properties": {}
+                                                                            },
+                                                                            "baseRevenue": {
+                                                                              "type": "object",
+                                                                              "properties": {}
+                                                                            },
+                                                                            "actualAmount": {
+                                                                              "type": "object",
+                                                                              "properties": {}
+                                                                            },
+                                                                            "escalators": {
+                                                                              "type": "object",
+                                                                              "properties": {
+                                                                                "type": {
+                                                                                  "type": "string"
+                                                                                }
+                                                                              }
+                                                                            },
+                                                                            "total": {
+                                                                              "type": "object",
+                                                                              "properties": {}
+                                                                            }
+                                                                          }
+                                                                        }
+                                                                      }
+                                                                    },
+                                                                    "perLaborHour": {
+                                                                      "type": "object",
+                                                                      "properties": {
+                                                                        "type": {
+                                                                          "type": "string"
+                                                                        },
+                                                                        "properties": {
+                                                                          "type": "object",
+                                                                          "properties": {
+                                                                            "total": {
+                                                                              "type": "object",
+                                                                              "properties": {
+                                                                                "type": {
+                                                                                  "type": "string"
+                                                                                }
+                                                                              }
+                                                                            },
+                                                                            "actualPerLaborHour": {
+                                                                              "type": "object",
+                                                                              "properties": {}
+                                                                            },
+                                                                            "forecastedPerLaborHour": {
+                                                                              "type": "object",
+                                                                              "properties": {}
+                                                                            },
+                                                                            "lastActualDate": {
+                                                                              "type": "object",
+                                                                              "properties": {}
+                                                                            }
+                                                                          }
+                                                                        }
+                                                                      }
+                                                                    },
+                                                                    "revenueShare": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "billableAccounts": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "managementAgreement": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "otherRevenue": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "calculatedTotalInternalRevenue": {
+                                                                      "type": "object",
+                                                                      "properties": {
+                                                                        "type": {
+                                                                          "type": "string"
+                                                                        }
+                                                                      }
+                                                                    }
+                                                                  }
+                                                                }
+                                                              }
+                                                            },
+                                                            "internalRevenueCurrentMonthSplit": {
+                                                              "type": "object",
+                                                              "properties": {}
+                                                            },
+                                                            "externalRevenueBreakdown": {
+                                                              "type": "object",
+                                                              "properties": {
+                                                                "type": {
+                                                                  "type": "string"
+                                                                },
+                                                                "properties": {
+                                                                  "type": "object",
+                                                                  "properties": {
+                                                                    "valetDaily": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "valetMonthly": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "valetOvernight": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "valetAggregator": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "selfDaily": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "selfMonthly": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "selfOvernight": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "selfAggregator": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "calculatedTotalExternalRevenue": {
+                                                                      "type": "object",
+                                                                      "properties": {
+                                                                        "type": {
+                                                                          "type": "string"
+                                                                        }
+                                                                      }
+                                                                    },
+                                                                    "budgetExternalRevenue": {
+                                                                      "type": "object",
+                                                                      "properties": {
+                                                                        "type": {
+                                                                          "type": "string"
+                                                                        }
+                                                                      }
+                                                                    },
+                                                                    "actualExternalRevenue": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "forecastedExternalRevenue": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "lastActualRevenueDate": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    }
+                                                                  }
+                                                                }
+                                                              }
+                                                            },
+                                                            "payrollBreakdown": {
+                                                              "type": "object",
+                                                              "properties": {
+                                                                "type": {
+                                                                  "type": "string"
+                                                                },
+                                                                "properties": {
+                                                                  "type": "object",
+                                                                  "properties": {
+                                                                    "actualPayroll": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "forecastedPayroll": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "actualPayrollLastDate": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "totalPayroll": {
+                                                                      "type": "object",
+                                                                      "properties": {
+                                                                        "type": {
+                                                                          "type": "string"
+                                                                        }
+                                                                      }
+                                                                    }
+                                                                  }
+                                                                }
+                                                              }
+                                                            },
+                                                            "value": {
+                                                              "type": "object",
+                                                              "properties": {
+                                                                "type": {
+                                                                  "type": "string"
+                                                                }
+                                                              }
+                                                            },
+                                                            "isForecast": {
+                                                              "type": "object",
+                                                              "properties": {
+                                                                "type": {
+                                                                  "type": "string"
+                                                                }
+                                                              }
+                                                            },
+                                                            "insuranceBreakdown": {
+                                                              "type": "object",
+                                                              "properties": {}
+                                                            },
+                                                            "ptebBreakdown": {
+                                                              "type": "object",
+                                                              "properties": {}
+                                                            }
+                                                          }
+                                                        },
+                                                        "required": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "string"
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            "required": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "string"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "total": {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "percentOfInternalRevenue": {
+                                      "type": "object",
+                                      "properties": {}
+                                    }
+                                  }
+                                },
+                                "required": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "budgetRows": {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string"
+                            },
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string"
+                                },
+                                "properties": {
+                                  "type": "object",
+                                  "properties": {
+                                    "columnName": {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "monthlyValues": {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string"
+                                        },
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "type": {
+                                              "type": "string"
+                                            },
+                                            "properties": {
+                                              "type": "object",
+                                              "properties": {
+                                                "month": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "type": {
+                                                      "type": "string"
+                                                    }
+                                                  }
+                                                },
+                                                "value": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "type": {
+                                                      "type": "string"
+                                                    }
+                                                  }
+                                                },
+                                                "internalRevenueBreakdownAggregate": {
+                                                  "type": "object",
+                                                  "properties": {}
+                                                },
+                                                "internalRevenueCurrentMonthSplit": {
+                                                  "type": "object",
+                                                  "properties": {}
+                                                },
+                                                "siteDetails": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "type": {
+                                                      "type": "string"
+                                                    },
+                                                    "items": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "type": {
+                                                          "type": "string"
+                                                        },
+                                                        "properties": {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "siteId": {
+                                                              "type": "object",
+                                                              "properties": {
+                                                                "type": {
+                                                                  "type": "string"
+                                                                }
+                                                              }
+                                                            },
+                                                            "internalRevenueBreakdown": {
+                                                              "type": "object",
+                                                              "properties": {
+                                                                "type": {
+                                                                  "type": "string"
+                                                                },
+                                                                "properties": {
+                                                                  "type": "object",
+                                                                  "properties": {
+                                                                    "fixedFee": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "perOccupiedRoom": {
+                                                                      "type": "object",
+                                                                      "properties": {
+                                                                        "type": {
+                                                                          "type": "string"
+                                                                        },
+                                                                        "properties": {
+                                                                          "type": "object",
+                                                                          "properties": {
+                                                                            "feePerRoom": {
+                                                                              "type": "object",
+                                                                              "properties": {
+                                                                                "type": {
+                                                                                  "type": "string"
+                                                                                }
+                                                                              }
+                                                                            },
+                                                                            "forecastedRooms": {
+                                                                              "type": "object",
+                                                                              "properties": {
+                                                                                "type": {
+                                                                                  "type": "string"
+                                                                                }
+                                                                              }
+                                                                            },
+                                                                            "budgetRooms": {
+                                                                              "type": "object",
+                                                                              "properties": {
+                                                                                "type": {
+                                                                                  "type": "string"
+                                                                                }
+                                                                              }
+                                                                            },
+                                                                            "actualRooms": {
+                                                                              "type": "object",
+                                                                              "properties": {}
+                                                                            },
+                                                                            "lastActualDate": {
+                                                                              "type": "object",
+                                                                              "properties": {}
+                                                                            },
+                                                                            "baseRevenue": {
+                                                                              "type": "object",
+                                                                              "properties": {}
+                                                                            },
+                                                                            "actualAmount": {
+                                                                              "type": "object",
+                                                                              "properties": {}
+                                                                            },
+                                                                            "escalators": {
+                                                                              "type": "object",
+                                                                              "properties": {
+                                                                                "type": {
+                                                                                  "type": "string"
+                                                                                }
+                                                                              }
+                                                                            },
+                                                                            "total": {
+                                                                              "type": "object",
+                                                                              "properties": {}
+                                                                            }
+                                                                          }
+                                                                        }
+                                                                      }
+                                                                    },
+                                                                    "perLaborHour": {
+                                                                      "type": "object",
+                                                                      "properties": {
+                                                                        "type": {
+                                                                          "type": "string"
+                                                                        },
+                                                                        "properties": {
+                                                                          "type": "object",
+                                                                          "properties": {
+                                                                            "total": {
+                                                                              "type": "object",
+                                                                              "properties": {
+                                                                                "type": {
+                                                                                  "type": "string"
+                                                                                }
+                                                                              }
+                                                                            },
+                                                                            "actualPerLaborHour": {
+                                                                              "type": "object",
+                                                                              "properties": {}
+                                                                            },
+                                                                            "forecastedPerLaborHour": {
+                                                                              "type": "object",
+                                                                              "properties": {}
+                                                                            },
+                                                                            "lastActualDate": {
+                                                                              "type": "object",
+                                                                              "properties": {}
+                                                                            }
+                                                                          }
+                                                                        }
+                                                                      }
+                                                                    },
+                                                                    "revenueShare": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "billableAccounts": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "managementAgreement": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "otherRevenue": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "calculatedTotalInternalRevenue": {
+                                                                      "type": "object",
+                                                                      "properties": {
+                                                                        "type": {
+                                                                          "type": "string"
+                                                                        }
+                                                                      }
+                                                                    }
+                                                                  }
+                                                                }
+                                                              }
+                                                            },
+                                                            "internalRevenueCurrentMonthSplit": {
+                                                              "type": "object",
+                                                              "properties": {}
+                                                            },
+                                                            "externalRevenueBreakdown": {
+                                                              "type": "object",
+                                                              "properties": {
+                                                                "type": {
+                                                                  "type": "string"
+                                                                },
+                                                                "properties": {
+                                                                  "type": "object",
+                                                                  "properties": {
+                                                                    "valetDaily": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "valetMonthly": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "valetOvernight": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "valetAggregator": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "selfDaily": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "selfMonthly": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "selfOvernight": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "selfAggregator": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "calculatedTotalExternalRevenue": {
+                                                                      "type": "object",
+                                                                      "properties": {
+                                                                        "type": {
+                                                                          "type": "string"
+                                                                        }
+                                                                      }
+                                                                    },
+                                                                    "budgetExternalRevenue": {
+                                                                      "type": "object",
+                                                                      "properties": {
+                                                                        "type": {
+                                                                          "type": "string"
+                                                                        }
+                                                                      }
+                                                                    },
+                                                                    "actualExternalRevenue": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "forecastedExternalRevenue": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "lastActualRevenueDate": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    }
+                                                                  }
+                                                                }
+                                                              }
+                                                            },
+                                                            "payrollBreakdown": {
+                                                              "type": "object",
+                                                              "properties": {
+                                                                "type": {
+                                                                  "type": "string"
+                                                                },
+                                                                "properties": {
+                                                                  "type": "object",
+                                                                  "properties": {
+                                                                    "actualPayroll": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "forecastedPayroll": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "actualPayrollLastDate": {
+                                                                      "type": "object",
+                                                                      "properties": {}
+                                                                    },
+                                                                    "totalPayroll": {
+                                                                      "type": "object",
+                                                                      "properties": {
+                                                                        "type": {
+                                                                          "type": "string"
+                                                                        }
+                                                                      }
+                                                                    }
+                                                                  }
+                                                                }
+                                                              }
+                                                            },
+                                                            "value": {
+                                                              "type": "object",
+                                                              "properties": {
+                                                                "type": {
+                                                                  "type": "string"
+                                                                }
+                                                              }
+                                                            },
+                                                            "isForecast": {
+                                                              "type": "object",
+                                                              "properties": {
+                                                                "type": {
+                                                                  "type": "string"
+                                                                }
+                                                              }
+                                                            },
+                                                            "insuranceBreakdown": {
+                                                              "type": "object",
+                                                              "properties": {}
+                                                            },
+                                                            "ptebBreakdown": {
+                                                              "type": "object",
+                                                              "properties": {}
+                                                            }
+                                                          }
+                                                        },
+                                                        "required": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "string"
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            "required": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "string"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "total": {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "percentOfInternalRevenue": {
+                                      "type": "object",
+                                      "properties": {}
+                                    }
+                                  }
+                                },
+                                "required": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "forecastRows": {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string"
+                            },
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string"
+                                },
+                                "properties": {
+                                  "type": "object",
+                                  "properties": {
+                                    "columnName": {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "monthlyValues": {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string"
+                                        },
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "type": {
+                                              "type": "string"
+                                            },
+                                            "properties": {
+                                              "type": "object",
+                                              "properties": {
+                                                "month": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "type": {
+                                                      "type": "string"
+                                                    }
+                                                  }
+                                                },
+                                                "value": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "type": {
+                                                      "type": "string"
+                                                    }
+                                                  }
+                                                },
+                                                "internalRevenueBreakdownAggregate": {
+                                                  "type": "object",
+                                                  "properties": {}
+                                                },
+                                                "internalRevenueCurrentMonthSplit": {
+                                                  "type": "object",
+                                                  "properties": {}
+                                                },
+                                                "siteDetails": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "type": {
+                                                      "type": "string"
+                                                    },
+                                                    "items": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "type": {
+                                                          "type": "string"
+                                                        },
+                                                        "properties": {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "siteId": {
+                                                              "type": "object",
+                                                              "properties": {
+                                                                "type": {
+                                                                  "type": "string"
+                                                                }
+                                                              }
+                                                            },
+                                                            "internalRevenueBreakdown": {
+                                                              "type": "object",
+                                                              "properties": {}
+                                                            },
+                                                            "internalRevenueCurrentMonthSplit": {
+                                                              "type": "object",
+                                                              "properties": {}
+                                                            },
+                                                            "externalRevenueBreakdown": {
+                                                              "type": "object",
+                                                              "properties": {}
+                                                            },
+                                                            "payrollBreakdown": {
+                                                              "type": "object",
+                                                              "properties": {}
+                                                            },
+                                                            "value": {
+                                                              "type": "object",
+                                                              "properties": {
+                                                                "type": {
+                                                                  "type": "string"
+                                                                }
+                                                              }
+                                                            },
+                                                            "isForecast": {
+                                                              "type": "object",
+                                                              "properties": {
+                                                                "type": {
+                                                                  "type": "string"
+                                                                }
+                                                              }
+                                                            },
+                                                            "insuranceBreakdown": {
+                                                              "type": "object",
+                                                              "properties": {}
+                                                            },
+                                                            "ptebBreakdown": {
+                                                              "type": "object",
+                                                              "properties": {}
+                                                            }
+                                                          }
+                                                        },
+                                                        "required": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "string"
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            "required": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "string"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "total": {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "percentOfInternalRevenue": {
+                                      "type": "object",
+                                      "properties": {}
+                                    }
+                                  }
+                                },
+                                "required": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "varianceRows": {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string"
+                            },
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string"
+                                },
+                                "properties": {
+                                  "type": "object",
+                                  "properties": {
+                                    "columnName": {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "monthlyVariances": {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string"
+                                        },
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "type": {
+                                              "type": "string"
+                                            },
+                                            "properties": {
+                                              "type": "object",
+                                              "properties": {
+                                                "month": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "type": {
+                                                      "type": "string"
+                                                    }
+                                                  }
+                                                },
+                                                "amount": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "type": {
+                                                      "type": "string"
+                                                    }
+                                                  }
+                                                },
+                                                "percentage": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "type": {
+                                                      "type": "string"
+                                                    }
+                                                  }
+                                                },
+                                                "Value": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "type": {
+                                                      "type": "string"
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            "required": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "string"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "totalVarianceAmount": {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "totalVariancePercent": {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "Total": {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                "required": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "Filter_array_to_forecast_internal_revenue_rows": {
+          "runAfter": {
+            "Parse_JSON_HTTP_response": [
+              "Succeeded"
+            ]
+          },
+          "type": "Query",
+          "inputs": {
+            "from": "@body('Parse_JSON_HTTP_response')?['forecastRows']",
+            "where": "@equals(toLower(item()?['columnName']),toLower('InternalRevenue'))"
+          }
+        },
+        "Update_a_row_set_calculation_generation_status_to_in_progress": {
+          "runAfter": {},
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "bs_calculationgenerationsstatuses",
+              "recordId": "@triggerOutputs()?['body/bs_calculationgenerationsstatusid']",
+              "item/bs_status": 126840000
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "UpdateOnlyRecord",
+              "connectionName": "shared_commondataserviceforapps"
+            }
+          }
+        },
+        "Get_a_row_by_ID_Customer_Site": {
+          "runAfter": {},
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "bs_customersites",
+              "recordId": "@triggerOutputs()?['body/_bs_sitenumber_value']"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "GetItem",
+              "connectionName": "shared_commondataserviceforapps"
+            }
+          }
+        },
+        "Filter_array_to_months_after_starting_period": {
+          "runAfter": {
+            "Filter_array_to_forecast_internal_revenue_rows": [
+              "Succeeded"
+            ]
+          },
+          "type": "Query",
+          "inputs": {
+            "from": "@body('Filter_array_to_forecast_internal_revenue_rows')?[0]?['monthlyValues']",
+            "where": "@greaterOrEquals(item()?['month'],sub(int(substring(outputs('Update_a_row_set_calculation_generation_status_to_in_progress')?['body/bs_startingperiod'],4,2)),1))"
+          }
+        },
+        "For_each_month_to_update": {
+          "foreach": "@outputs('Filter_array_to_months_after_starting_period')['body']",
+          "actions": {
+            "Upsert_a_Forecast_Summary_row": {
+              "runAfter": {
+                "List_Forecast_Summary_rows": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "bs_forecastsummaries",
+                  "recordId": "@coalesce(first(outputs('List_Forecast_Summary_rows')?['body/value'])?['bs_forecastsummaryid'],guid())",
+                  "item/bs_period": "@concat(\r\n  substring(triggerOutputs()?['body/bs_startingperiod'],0,4),\r\n  formatNumber(add(items('For_each_month_to_update')?['month'],1),'00')\r\n)",
+                  "item/bs_internalrevenuetotal": "@items('For_each_month_to_update')?['value']",
+                  "item/bs_SiteNumber@odata.bind": "bs_customersites(@{outputs('Update_a_row_set_calculation_generation_status_to_in_progress')?['body/_bs_sitenumber_value']})",
+                  "item/bs_year": "@substring(triggerOutputs()?['body/bs_startingperiod'],0,4)"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "UpdateRecord",
+                  "connectionName": "shared_commondataserviceforapps"
+                }
+              }
+            },
+            "List_Forecast_Summary_rows": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "bs_forecastsummaries",
+                  "$filter": "bs_period eq '@{concat(\r\n  substring(triggerOutputs()?['body/bs_startingperiod'],0,4),\r\n  formatNumber(add(items('For_each_month_to_update')?['month'],1),'00')\r\n)}' and _bs_sitenumber_value eq @{outputs('Get_a_row_by_ID_Customer_Site')?['body/bs_customersiteid']}"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "connectionName": "shared_commondataserviceforapps"
+                }
+              }
+            },
+            "List_Internal_Revenue_rows": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "bs_internalrevenues",
+                  "$filter": "bs_period eq '@{concat(\n  substring(triggerOutputs()?['body/bs_startingperiod'],0,4),\n  formatNumber(add(items('For_each_month_to_update')?['month'],1),'00')\n)}' and _bs_sitenumber_value eq @{outputs('Get_a_row_by_ID_Customer_Site')?['body/bs_customersiteid']}"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "connectionName": "shared_commondataserviceforapps"
+                }
+              }
+            },
+            "Upsert_an_Internal_Revenue_row": {
+              "runAfter": {
+                "List_Internal_Revenue_rows": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "bs_internalrevenues",
+                  "recordId": "@coalesce(first(outputs('List_Internal_Revenue_rows')?['body/value'])?['bs_internalrevenueid'],guid())",
+                  "item/bs_billableaccountsdetail": "@first(items('For_each_month_to_update')?['siteDetails'])?['internalRevenueBreakdown']?['billableAccounts']",
+                  "item/bs_billableaccountstotal": "@first(items('For_each_month_to_update')?['siteDetails'])?['internalRevenueBreakdown']?['billableAccounts']?['total']",
+                  "item/bs_fixedfeedetail": "@first(items('For_each_month_to_update')?['siteDetails'])?['internalRevenueBreakdown']?['fixedFee']",
+                  "item/bs_fixedfeetotal": "@first(items('For_each_month_to_update')?['siteDetails'])?['internalRevenueBreakdown']?['fixedFee']?['total']",
+                  "item/bs_managementagreementdetail": "@first(items('For_each_month_to_update')?['siteDetails'])?['internalRevenueBreakdown']?['managementAgreement']",
+                  "item/bs_managementagreementtotal": "@first(items('For_each_month_to_update')?['siteDetails'])?['internalRevenueBreakdown']?['managementAgreement']?['total']",
+                  "item/bs_otherrevenue": "@first(items('For_each_month_to_update')?['siteDetails'])?['internalRevenueBreakdown']?['otherRevenue']?['total']",
+                  "item/bs_perlaborhourdetail": "@first(items('For_each_month_to_update')?['siteDetails'])?['internalRevenueBreakdown']?['perLaborHour']",
+                  "item/bs_perlaborhourtotal": "@first(items('For_each_month_to_update')?['siteDetails'])?['internalRevenueBreakdown']?['perLaborHour']?['total']",
+                  "item/bs_peroccupiedroomdetail": "@first(items('For_each_month_to_update')?['siteDetails'])?['internalRevenueBreakdown']?['perOccupiedRoom']",
+                  "item/bs_peroccupiedroomtotal": "@first(items('For_each_month_to_update')?['siteDetails'])?['internalRevenueBreakdown']?['perOccupiedRoom']?['total']",
+                  "item/bs_period": "@concat(\n  substring(triggerOutputs()?['body/bs_startingperiod'],0,4),\n  formatNumber(add(items('For_each_month_to_update')?['month'],1),'00')\n)",
+                  "item/bs_revenuesharedetail": "@first(items('For_each_month_to_update')?['siteDetails'])?['internalRevenueBreakdown']?['revenueShare']",
+                  "item/bs_revenuesharetotal": "@first(items('For_each_month_to_update')?['siteDetails'])?['internalRevenueBreakdown']?['revenueShare']?['total']",
+                  "item/bs_SiteNumber@odata.bind": "bs_customersites(@{outputs('Update_a_row_set_calculation_generation_status_to_in_progress')?['body/_bs_sitenumber_value']})",
+                  "item/bs_total": "@first(items('For_each_month_to_update')?['siteDetails'])?['internalRevenueBreakdown']?['calculatedTotalInternalRevenue']"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "UpdateRecord",
+                  "connectionName": "shared_commondataserviceforapps"
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Filter_array_to_months_after_starting_period": [
+              "Succeeded"
+            ]
+          },
+          "type": "Foreach"
+        },
+        "Update_a_row_set_calculation_generation_status_to_complete": {
+          "runAfter": {
+            "For_each_month_to_update": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "bs_calculationgenerationsstatuses",
+              "recordId": "@triggerOutputs()?['body/bs_calculationgenerationsstatusid']",
+              "item/bs_status": 126840001
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "UpdateOnlyRecord",
+              "connectionName": "shared_commondataserviceforapps"
+            }
+          }
+        },
+        "Scope_Calculation_Flow_Failure": {
+          "actions": {
+            "Update_a_row_set_calculation_generation_status_to_failed": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "bs_calculationgenerationsstatuses",
+                  "recordId": "@triggerOutputs()?['body/bs_calculationgenerationsstatusid']",
+                  "item/bs_status": 126840002
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "UpdateOnlyRecord",
+                  "connectionName": "shared_commondataserviceforapps"
+                }
+              }
+            },
+            "Run_a_Child_Flow": {
+              "type": "Workflow",
+              "inputs": {
+                "host": {
+                  "workflowReferenceName": "70e1a7ea-0ddd-ef11-a730-6045bd096814"
+                },
+                "body": {
+                  "text": "SupportGroupEmails"
+                }
+              }
+            },
+            "Filter_array_Remove_invalid_emails": {
+              "runAfter": {
+                "Run_a_Child_Flow": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@split(body('Run_a_Child_Flow')?['value'], ';')",
+                "where": "@and(\n    contains(item(), '@'),\n    contains(item(), '.'),\n    not(equals(trim(item()), ''))\n)"
+              }
+            },
+            "Select_emails_into_Json_array": {
+              "runAfter": {
+                "Filter_array_Remove_invalid_emails": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Filter_array_Remove_invalid_emails')",
+                "select": {
+                  "emailAddress": {
+                    "address": "@{trim(item())}"
+                  }
+                }
+              }
+            },
+            "SendMail": {
+              "runAfter": {
+                "Select_emails_into_Json_array": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "Content-Type": "application/json",
+                  "body/message/subject": "[@{parameters('EnvironmentName (bs_environmentName)')}] - P&L Calculation Flow has failed",
+                  "body/message/body/contentType": "html",
+                  "body/message/body/content": "<html>\n  <body style=\"font-family:Segoe UI,Arial,sans-serif; background-color:#f7f7f7; padding:30px;\">\n    <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:650px; margin:auto; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.05);\">\n      <tr>\n        <td style=\"background-color:#d32f2f; color:#fff; padding:24px 32px; border-radius:8px 8px 0 0;\">\n          <h2 style=\"margin:0; font-size:1.5em;\">🚨 ALERT: Finance System Data Refresh Failure - P&L Forecast Impact</h2>\n        </td>\n      </tr>\n      <tr>\n        <td style=\"padding:32px;\">\n          <h3 style=\"color:#d32f2f; margin-top:0;\">FINANCE SYSTEM ALERT:  P&L Forecast Calculation Refresh Failure</h3>\n          \n          <div style=\"margin-bottom:18px;\">\n            <strong>What happened:</strong>\n            <p style=\"margin:8px 0 0 0;\">\n              The system has detected a failure in the <strong style=\"color:#d32f2f;\">PnL Calculation Flow</strong> power automate process. \n            </p>\n          </div>\n          \n          <div style=\"margin-bottom:18px;\">\n            <strong>Business Impact:</strong>\n            <ul style=\"margin:8px 0 0 20px; color:#b71c1c;\">\n               <li>Account Managers may see outdated or missing P&L values</li>\n            </ul>\n          </div>\n          \n          <div style=\"margin-bottom:18px;\">\n            <strong>Technical Details:</strong>\n            <ul style=\"margin:8px 0 0 20px; color:#333;\">\n              <li><strong>Power Automate Flow:</strong>PnL Calculation Flow</li>\n              <li><strong>Error occurred during triggered refresh at:</strong> @{formatDateTime(convertTimeZone(utcNow(), 'UTC', 'Central Standard Time'), 'yyyy-MM-dd hh:mm tt')} CST</li>\n              <li>\n                <strong>Error details:</strong>\n                <div style=\"background:#fbe9e7; color:#b71c1c; border-left:4px solid #d32f2f; padding:12px; border-radius:4px; font-family:monospace; margin-top:4px;\">\n                  @{coalesce(triggerOutputs()?['body/msdyn_errorinfojson'],'unexpected error')}\n                </div>\n              </li>\n            </ul>\n          </div>\n          \n          <div style=\"margin-bottom:18px;\">\n            <strong>Next Steps:</strong>\n            <ol style=\"margin:8px 0 0 20px; color:#333;\">\n               <li>The IT team has been notified and will investigate the issue</li>\n            </ol>\n          </div>\n          \n          <div style=\"margin-bottom:0;\">\n            <strong>For technical assistance:</strong>\n            <p style=\"margin:8px 0 0 0;\">\n              Contact <a href=\"mailto:@{parameters('Support Email (bs_SupportEmail)')}\" style=\"color:#1976d2; text-decoration:none;\">@{parameters('Support Email (bs_SupportEmail)')}</a> and reference this alert.\n            </p>\n          </div>\n        </td>\n      </tr>\n      <tr>\n        <td style=\"background-color:#f7f7f7; color:#888; padding:16px 32px; border-radius:0 0 8px 8px; font-size:0.9em;\">\n          <em>This is an automated message from your Dataflow Monitoring System.</em>\n        </td>\n      </tr>\n    </table>\n  </body>\n</html>\n",
+                  "body/message/toRecipients": "@body('Select_emails_into_Json_array')",
+                  "body/saveToSentItems": "false"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_bs-5fsendmailbyserviceprincipal-5f4f4d8f3ae476f46d",
+                  "operationId": "SendMail",
+                  "connectionName": "shared_bs-5fsendmailbyserviceprincipal-5f4f4d8f3ae476f46d"
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "For_each_month_to_update": [
+              "TimedOut",
+              "Skipped",
+              "Failed"
+            ]
+          },
+          "type": "Scope"
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

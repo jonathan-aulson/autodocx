@@ -1,0 +1,1 @@
+python scripts\legacy\autodocx_mono.py scan .\repos --out out_legacy

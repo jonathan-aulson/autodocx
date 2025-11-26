@@ -1,0 +1,381 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps-1": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_7558e"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_bs-5fsendmailbyserviceprincipal-5f4c81ae98d9d3b3ec": {
+        "api": {
+          "name": "shared_bs-5fsendmailbyserviceprincipal-5f4f4d8f3ae476f46d",
+          "logicalName": "bs_5Fsendmailbyserviceprincipal"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "bs_sharedbs5fsendmailbyserviceprincipal5f4c81ae98d9d3b3ec_4c912"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "EnvironmentName (bs_environmentName)": {
+          "defaultValue": "DEV",
+          "type": "String",
+          "metadata": {
+            "schemaName": "bs_environmentName"
+          }
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "recurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "startTime": "2025-02-14T12:45:00Z"
+          },
+          "metadata": {
+            "operationMetadataId": "1b5e5874-7cb2-426c-9783-c25c2347ab80"
+          },
+          "type": "Recurrence"
+        }
+      },
+      "actions": {
+        "List_rows": {
+          "runAfter": {
+            "Initialize_CSVContent_variable": [
+              "Succeeded"
+            ],
+            "Initialize_endOfMonth_variable": [
+              "Succeeded"
+            ],
+            "Initialize_uniqueBillingStatements_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "9d62da36-14c5-4a8c-bda9-40740e04e64f"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "bs_billingstatements",
+              "$select": "_bs_customersitefk_value,bs_statementstatus,bs_forecastdata,bs_serviceperiodstart,bs_serviceperiodend,bs_statementversionnumber",
+              "$filter": "createdon ge @{variables('startOfMonth')} and createdon le @{variables('endOfMonth')}",
+              "$orderby": "_bs_customersitefk_value asc, bs_statementversionnumber desc"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "connectionName": "shared_commondataserviceforapps-1"
+            }
+          }
+        },
+        "Initialize_startOfMonth_variable": {
+          "runAfter": {},
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "startOfMonth",
+                "type": "string",
+                "value": "@formatDateTime(utcNow(), 'yyyy-MM-01')"
+              }
+            ]
+          }
+        },
+        "Initialize_CSVContent_variable": {
+          "runAfter": {
+            "Initialize_billingCycle_variable": [
+              "Succeeded"
+            ]
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "CSVContent",
+                "type": "string",
+                "value": "Site,Billing Cycle,Total Actual Revenue,Statement Status"
+              }
+            ]
+          }
+        },
+        "Compose": {
+          "runAfter": {
+            "List_rows": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@outputs('List_rows')?['body/value']"
+        },
+        "Apply_to_each": {
+          "foreach": "@outputs('Compose')",
+          "actions": {
+            "Condition_ForecastData_is_not_null": {
+              "actions": {
+                "Condition_BillingStatement_is_unique": {
+                  "actions": {
+                    "Append_to_uniqueBillingStatements_array_variable": {
+                      "type": "AppendToArrayVariable",
+                      "inputs": {
+                        "name": "uniqueBillingStatements",
+                        "value": "@items('Apply_to_each')"
+                      }
+                    },
+                    "Parse_ForecastData_JSON": {
+                      "runAfter": {
+                        "Append_to_uniqueBillingStatements_array_variable": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "ParseJson",
+                      "inputs": {
+                        "content": "@items('Apply_to_each')?['bs_forecastdata']",
+                        "schema": {
+                          "type": "object",
+                          "properties": {
+                            "totalActualRevenue": {
+                              "type": "number"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "Compose_New_Record": {
+                      "runAfter": {
+                        "Compose_Formatted_TotalActualRevenue_Amount": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "Compose",
+                      "inputs": "@concat(\r\n    items('Apply_to_each')?['_bs_customersitefk_value@OData.Community.Display.V1.FormattedValue'], \r\n    ',', \r\n    variables('billingCycle'), \r\n    ',', \r\n    outputs('Compose_Formatted_TotalActualRevenue_Amount'), \r\n    ',', \r\n    items('Apply_to_each')?['bs_statementstatus@OData.Community.Display.V1.FormattedValue']\r\n)"
+                    },
+                    "Append_New_Line_to_CSVContent_variable": {
+                      "runAfter": {
+                        "Compose_New_Record": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "AppendToStringVariable",
+                      "inputs": {
+                        "name": "CSVContent",
+                        "value": "@concat(decodeUriComponent('%0D%0A'), outputs('Compose_New_Record'))"
+                      }
+                    },
+                    "Compose_Formatted_TotalActualRevenue_Amount": {
+                      "runAfter": {
+                        "Parse_ForecastData_JSON": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "Compose",
+                      "inputs": "@formatNumber(\r\n   body('Parse_ForecastData_JSON')?['totalActualRevenue'], \r\n   '0.00'\r\n)\r\n"
+                    }
+                  },
+                  "runAfter": {
+                    "Filter_array": [
+                      "Succeeded"
+                    ]
+                  },
+                  "else": {
+                    "actions": {}
+                  },
+                  "expression": {
+                    "and": [
+                      {
+                        "equals": [
+                          "@length(body('Filter_array'))",
+                          0
+                        ]
+                      }
+                    ]
+                  },
+                  "type": "If"
+                },
+                "Filter_array": {
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@variables('uniqueBillingStatements')",
+                    "where": "@equals(item()?['_bs_customersitefk_value'],items('Apply_to_each')?['_bs_customersitefk_value'])"
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "expression": {
+                "and": [
+                  {
+                    "not": {
+                      "equals": [
+                        "@items('Apply_to_each')?['bs_forecastdata']",
+                        "@null"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "type": "If"
+            }
+          },
+          "runAfter": {
+            "Compose": [
+              "Succeeded"
+            ]
+          },
+          "type": "Foreach"
+        },
+        "SendMail": {
+          "runAfter": {
+            "Scope_compose_recipients": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "body/message/subject": "[@{parameters('EnvironmentName (bs_environmentName)')}] Daily Billing Report: Total Actual Revenue for @{formatDateTime(variables('startOfMonth'), 'MM yyyy')} ",
+              "body/message/body/content": "Attached is the daily report containing Total Actual Revenue for all statements in the current billing period.",
+              "body/message/toRecipients": "@body('Select_emails_into_json_array')",
+              "body/message/attachments": [
+                "@outputs('Compose_Attachment')"
+              ]
+            },
+            "host": {
+              "apiId": "",
+              "operationId": "SendMail",
+              "connectionName": "shared_bs-5fsendmailbyserviceprincipal-5f4c81ae98d9d3b3ec"
+            }
+          }
+        },
+        "Compose_Attachment": {
+          "runAfter": {
+            "Apply_to_each": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "@@odata.type": "#microsoft.graph.fileAttachment",
+            "name": "TotalActualRevenue.csv",
+            "contentType": "application/pdf",
+            "contentBytes": "@base64(variables('CSVContent'))"
+          }
+        },
+        "Initialize_endOfMonth_variable": {
+          "runAfter": {
+            "Initialize_startOfMonth_variable": [
+              "Succeeded"
+            ]
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "endOfMonth",
+                "type": "string",
+                "value": "@formatDateTime(addDays(addToTime(variables('startOfMonth'), 1, 'Month'), -1), 'yyyy-MM-dd')"
+              }
+            ]
+          }
+        },
+        "Initialize_billingCycle_variable": {
+          "runAfter": {},
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "billingCycle",
+                "type": "string",
+                "value": "@formatDateTime(utcNow(), 'yyyy-MM')"
+              }
+            ]
+          }
+        },
+        "Initialize_uniqueBillingStatements_variable": {
+          "runAfter": {},
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "uniqueBillingStatements",
+                "type": "array",
+                "value": []
+              }
+            ]
+          }
+        },
+        "Scope_compose_recipients": {
+          "actions": {
+            "Run_a_Child_Flow_Get_DailyInvoicedRevenueEmailRecipientsOverride_value": {
+              "metadata": {
+                "operationMetadataId": "79d896d0-082d-4647-8616-b54a5e579b91"
+              },
+              "type": "Workflow",
+              "inputs": {
+                "host": {
+                  "workflowReferenceName": "70e1a7ea-0ddd-ef11-a730-6045bd096814"
+                },
+                "body": {
+                  "text": "DailyInvoicedRevenueEmailRecipientsOverride"
+                }
+              }
+            },
+            "Compose_list_of_emails": {
+              "runAfter": {
+                "Run_a_Child_Flow_Get_DailyInvoicedRevenueEmailRecipientsOverride_value": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Compose",
+              "inputs": "@split(\r\n        outputs('Run_a_Child_Flow_Get_DailyInvoicedRevenueEmailRecipientsOverride_value')?['body/value'],\r\n        ';'\r\n    )"
+            },
+            "Select_emails_into_json_array": {
+              "runAfter": {
+                "Compose_list_of_emails": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "37a70de2-95f3-4ff8-ad3d-9e33c7be72a8"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@outputs('Compose_list_of_emails')",
+                "select": {
+                  "emailAddress": {
+                    "address": "@{trim(item())}"
+                  }
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Compose_Attachment": [
+              "Succeeded"
+            ]
+          },
+          "type": "Scope"
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

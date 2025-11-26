@@ -1,0 +1,814 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps-1": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_7558e"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "PDF Container App Endpoint (bs_PDFContainerAppEndpoint)": {
+          "defaultValue": "https://billing-pdf-creation-dev-eastus2.ambitiouswave-30519586.eastus2.azurecontainerapps.io/generate-invoice",
+          "type": "String",
+          "metadata": {
+            "schemaName": "bs_PDFContainerAppEndpoint"
+          }
+        },
+        "PDF Service API Token (bs_pdfServiceApiToken)": {
+          "type": "String",
+          "metadata": {
+            "schemaName": "bs_pdfServiceApiToken"
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "description": "Please enter your BillingStatementId",
+                  "title": "BillingStatementId",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "text_1": {
+                  "description": "Please enter your Invoice Number",
+                  "title": "InvoiceNumber",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                }
+              },
+              "required": [
+                "text"
+              ]
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "445d9848-5eb0-4aaa-8ade-64f1a585fbd0"
+          }
+        }
+      },
+      "actions": {
+        "Get_a_BillingStatement_row_by_ID": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "bs_billingstatements",
+              "recordId": "@triggerBody()?['text']",
+              "$select": "createdon,bs_serviceperiodstart,bs_serviceperiodend,bs_statementstatus,bs_forecastdata,bs_purchaseorder",
+              "$expand": "bs_CustomerSiteFK($select=bs_customersiteid,bs_sitenumber,bs_sitename,bs_accountmanager,bs_accountmanagerid,bs_address,bs_billingcontactemail,bs_closedate,bs_district,bs_glstring,bs_invoicerecipient,bs_startdate),\nbs_Invoice_BillingStatement($select=bs_invoiceid,bs_invoicenumber,bs_amount,bs_description,bs_invoicedate,bs_paymentterms,bs_title,bs_invoicedata,_bs_invoicegroupfk_value)"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "GetItem",
+              "connectionName": "shared_commondataserviceforapps-1"
+            }
+          },
+          "runAfter": {
+            "Initialize_GeneralConfig_array_variable": [
+              "Succeeded"
+            ],
+            "Initialize_Invoices_Array_variable": [
+              "Succeeded"
+            ],
+            "Initialize_LineItems_Array_variable": [
+              "Succeeded"
+            ],
+            "Initialize_StatementTotal_variable": [
+              "Succeeded"
+            ],
+            "Initialize_CustomizableCustomerSiteData_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "7d74a054-8325-40c1-ada7-8c254b5d15bf"
+          }
+        },
+        "List_General_Config_rows": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "bs_generalconfigs",
+              "$select": "bs_key,bs_value"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "connectionName": "shared_commondataserviceforapps-1"
+            }
+          },
+          "runAfter": {
+            "Initialize_GeneralConfig_array_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "e3c8e9be-fd43-42bf-acb2-a07250dda6c8"
+          }
+        },
+        "Parse_BillingStatement_JSON": {
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@body('Get_a_BillingStatement_row_by_ID')",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "createdon": {
+                  "type": "string"
+                },
+                "bs_serviceperiodstart@OData.Community.Display.V1.FormattedValue": {
+                  "type": "string"
+                },
+                "bs_serviceperiodstart": {
+                  "type": "string"
+                },
+                "bs_serviceperiodend@OData.Community.Display.V1.FormattedValue": {
+                  "type": "string"
+                },
+                "bs_serviceperiodend": {
+                  "type": "string"
+                },
+                "bs_statementstatus@OData.Community.Display.V1.FormattedValue": {
+                  "type": "string"
+                },
+                "bs_statementstatus": {
+                  "type": [
+                    "integer",
+                    "number"
+                  ]
+                },
+                "bs_forecastdata": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "bs_billingstatementid": {
+                  "type": "string"
+                },
+                "bs_purchaseorder": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "bs_CustomerSiteFK": {
+                  "type": "object",
+                  "properties": {
+                    "bs_customersiteid": {
+                      "type": "string"
+                    },
+                    "bs_sitenumber": {
+                      "type": "string"
+                    },
+                    "bs_sitename": {
+                      "type": "string"
+                    },
+                    "bs_accountmanager": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "bs_accountmanagerid": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "bs_address": {
+                      "type": "string"
+                    },
+                    "bs_billingcontactemail": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "bs_district": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "bs_glstring": {
+                      "type": "string"
+                    },
+                    "bs_invoicerecipient": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "bs_startdate": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "bs_Invoice_BillingStatement": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "bs_invoiceid": {
+                        "type": "string"
+                      },
+                      "bs_invoicenumber": {
+                        "type": "string"
+                      },
+                      "bs_amount": {
+                        "type": [
+                          "integer",
+                          "number"
+                        ]
+                      },
+                      "bs_description": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "bs_invoicedate": {
+                        "type": "string"
+                      },
+                      "bs_paymentterms": {
+                        "type": "string"
+                      },
+                      "bs_title": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "_bs_invoicegroupfk_value": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "bs_invoicedata": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Get_a_BillingStatement_row_by_ID": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "aadf4a18-d3a9-4d29-8a48-3f07fb4fb5ed"
+          }
+        },
+        "Parse_General_Config_JSON": {
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@outputs('List_General_Config_rows')?['body/value']",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "bs_key@OData.Community.Display.V1.FormattedValue": {
+                    "type": "string"
+                  },
+                  "bs_key": {
+                    "type": "integer"
+                  },
+                  "bs_value": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "List_General_Config_rows": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "3ac209c4-b4f6-4379-96ab-c8e4fa58264f"
+          }
+        },
+        "Initialize_GeneralConfig_array_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "GeneralConfig",
+                "type": "array",
+                "value": []
+              }
+            ]
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "b7a212be-9cad-4312-827a-f8c7abd8a590"
+          }
+        },
+        "For_each_General_Config_pair": {
+          "type": "Foreach",
+          "foreach": "@outputs('Parse_General_Config_JSON')['body']",
+          "actions": {
+            "Compose_GeneralConfig_key_value_pair": {
+              "type": "Compose",
+              "inputs": {
+                "key": "@{replace(replace(item()?['bs_key@OData.Community.Display.V1.FormattedValue'], ' ', ''), '''', '')}",
+                "value": "@{item()?['bs_value']}"
+              },
+              "metadata": {
+                "operationMetadataId": "38432169-2644-46c7-89a0-6ac23c5d7350"
+              }
+            },
+            "Append_to_GeneralConfig_array_variable": {
+              "type": "AppendToArrayVariable",
+              "inputs": {
+                "name": "GeneralConfig",
+                "value": "@outputs('Compose_GeneralConfig_key_value_pair')"
+              },
+              "runAfter": {
+                "Compose_GeneralConfig_key_value_pair": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "84311135-a7df-44fb-8b45-cab8088088f9"
+              }
+            }
+          },
+          "runAfter": {
+            "Parse_General_Config_JSON": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "a2adff55-97b9-446d-8e46-62971798c059"
+          }
+        },
+        "Compose_Billing_Statement_PDF_DTO": {
+          "type": "Compose",
+          "inputs": {
+            "id": "@body('Parse_BillingStatement_JSON')?['bs_billingstatementid']",
+            "createdMonth": "@body('Parse_BillingStatement_JSON')?['createdon']",
+            "servicePeriodStart": "@body('Parse_BillingStatement_JSON')?['bs_serviceperiodstart']",
+            "servicePeriodEnd": "@body('Parse_BillingStatement_JSON')?['bs_serviceperiodend']",
+            "totalAmount": "@variables('StatementTotal')",
+            "status": "@body('Parse_BillingStatement_JSON')?['bs_statementstatus@OData.Community.Display.V1.FormattedValue']",
+            "invoices": "@variables('Invoices')",
+            "customerSiteData": {
+              "customerSiteId": "@body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_customersiteid']",
+              "address": "@body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_address']",
+              "siteName": "@body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_sitename']",
+              "accountManager": "@body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_accountmanager']",
+              "siteNumber": "@body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_sitenumber']",
+              "invoiceRecipient": "@body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_invoicerecipient']",
+              "billingContactEmail": "@body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_billingcontactemail']",
+              "accountManagerId": "@body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_accountmanagerid']",
+              "startDate": "@body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_startdate']",
+              "district": "@body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_district']",
+              "glString": "@body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_glstring']"
+            },
+            "generalConfig": "@variables('GeneralConfig')",
+            "purchaseOrder": "@body('Parse_BillingStatement_JSON')?['bs_purchaseorder']"
+          },
+          "runAfter": {
+            "Compose": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "68c7ec67-2fb0-4403-912e-69ff08b8f61b"
+          }
+        },
+        "For_each_Invoice": {
+          "type": "Foreach",
+          "foreach": "@outputs('Parse_BillingStatement_JSON')?['body']?['bs_Invoice_BillingStatement']",
+          "actions": {
+            "Parse_Line_Item_JSON": {
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@item()?['bs_invoicedata']",
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "title": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "description": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "code": {
+                        "type": [
+                          "string",
+                          "null",
+                          "integer"
+                        ]
+                      },
+                      "amount": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Reset_LineItems_variable": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "f86f0c6e-b500-4703-8fbe-fb084c7af581"
+              }
+            },
+            "Reset_LineItems_variable": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "LineItems",
+                "value": []
+              },
+              "metadata": {
+                "operationMetadataId": "8dfd5619-ed6b-4f55-b982-39196af90cc0"
+              }
+            },
+            "Condition_invoice_contains_input_parameter": {
+              "type": "If",
+              "expression": {
+                "or": [
+                  {
+                    "contains": [
+                      "@coalesce(triggerBody()?['text_1'], '')",
+                      "@item()?['bs_invoicenumber']"
+                    ]
+                  },
+                  {
+                    "equals": [
+                      "@empty(coalesce(triggerBody()?['text_1'], ''))",
+                      "@true"
+                    ]
+                  }
+                ]
+              },
+              "actions": {
+                "Scope_Add_Invoice_Data": {
+                  "type": "Scope",
+                  "actions": {
+                    "For_each_Line_Item": {
+                      "type": "Foreach",
+                      "foreach": "@outputs('Parse_Line_Item_JSON')['body']",
+                      "actions": {
+                        "Compose_Line_Item": {
+                          "type": "Compose",
+                          "inputs": {
+                            "title": "@items('For_each_Line_Item')?['title']",
+                            "description": "@item()?['description']",
+                            "code": "@item()?['code']",
+                            "amount": "@item()?['amount']"
+                          },
+                          "metadata": {
+                            "operationMetadataId": "822ceca0-bdc0-471f-a2c6-3ddf97bf3603"
+                          }
+                        },
+                        "Append_to_LineItems_array_variable": {
+                          "type": "AppendToArrayVariable",
+                          "inputs": {
+                            "name": "LineItems",
+                            "value": "@outputs('Compose_Line_Item')"
+                          },
+                          "runAfter": {
+                            "Compose_Line_Item": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "8c74b723-4849-4c26-a82e-11dde69a6090"
+                          }
+                        }
+                      },
+                      "metadata": {
+                        "operationMetadataId": "9f54b838-4d4b-4ff7-9e03-32cd0e9ef31e"
+                      }
+                    },
+                    "Compose_Invoice": {
+                      "type": "Compose",
+                      "inputs": {
+                        "amount": "@items('For_each_Invoice')?['bs_amount']",
+                        "invoiceDate": "@item()?['bs_invoicedate']",
+                        "invoiceNumber": "@item()?['bs_invoicenumber']",
+                        "paymentTerms": "@item()?['bs_paymentterms']",
+                        "title": "@item()?['bs_title']",
+                        "description": "@item()?['bs_description']",
+                        "lineItems": "@variables('LineItems')",
+                        "siteNumber": "@body('Parse_CustomizableCustomerSiteData_JSON')?['siteNumber']",
+                        "billingContactEmail": "@body('Parse_CustomizableCustomerSiteData_JSON')?['billingContactEmail']",
+                        "siteName": "@body('Parse_CustomizableCustomerSiteData_JSON')?['siteName']"
+                      },
+                      "runAfter": {
+                        "Parse_CustomizableCustomerSiteData_JSON": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "b323d911-ff6c-4c7d-83ae-35bd4cfe8286"
+                      }
+                    },
+                    "Append_to_Invoices_array_variable": {
+                      "type": "AppendToArrayVariable",
+                      "inputs": {
+                        "name": "Invoices",
+                        "value": "@outputs('Compose_Invoice')"
+                      },
+                      "runAfter": {
+                        "Compose_Invoice": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "464153ff-189f-4765-ba15-473f369c72c3"
+                      }
+                    },
+                    "Increment_StatementTotal_variable": {
+                      "type": "IncrementVariable",
+                      "inputs": {
+                        "name": "StatementTotal",
+                        "value": "@item()?['bs_amount']"
+                      },
+                      "runAfter": {
+                        "Append_to_Invoices_array_variable": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "3d69f3f1-da26-48bd-9bcf-7a1efade8f88"
+                      }
+                    },
+                    "Compose_Invoice_Group_ID": {
+                      "type": "Compose",
+                      "inputs": "@item()?['_bs_invoicegroupfk_value']"
+                    },
+                    "Condition_Invoice_Group_ID_is_not_null": {
+                      "type": "If",
+                      "expression": {
+                        "and": [
+                          {
+                            "not": {
+                              "equals": [
+                                "@outputs('Compose_Invoice_Group_ID')",
+                                "@null"
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      "actions": {
+                        "Get_an_InvoiceGroup_row_by_ID": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "parameters": {
+                              "entityName": "bs_invoicegroups",
+                              "recordId": "@item()?['_bs_invoicegroupfk_value']",
+                              "$select": "bs_title,bs_description,bs_groupnumber,bs_vendorid,bs_sitenumber,bs_customername,bs_billingcontactemails"
+                            },
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                              "operationId": "GetItem",
+                              "connectionName": "shared_commondataserviceforapps-1"
+                            }
+                          }
+                        },
+                        "Set_CustomizableCustomerSiteData_variable_by_invoice_group": {
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "CustomizableCustomerSiteData",
+                            "value": "{\n  \"siteNumber\": \"@{coalesce(outputs('Get_an_InvoiceGroup_row_by_ID')?['body/bs_sitenumber'], body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_sitenumber'])}\",\n  \"billingContactEmail\": \"@{coalesce(outputs('Get_an_InvoiceGroup_row_by_ID')?['body/bs_billingcontactemails'], body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_billingcontactemail'])}\",\n  \"siteName\": \"@{coalesce(outputs('Get_an_InvoiceGroup_row_by_ID')?['body/bs_customername'], body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_sitename'])}\"\n}"
+                          },
+                          "runAfter": {
+                            "Get_an_InvoiceGroup_row_by_ID": [
+                              "Succeeded"
+                            ]
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {
+                          "Set_CustomizableCustomerSiteData_variable_by_customer_site": {
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "CustomizableCustomerSiteData",
+                              "value": "{\n  \"siteNumber\": \"@{body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_sitenumber']}\",\n  \"billingContactEmail\": \"@{body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_billingcontactemail']}\",\n  \"siteName\": \"@{body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_sitename']}\"\n}"
+                            }
+                          }
+                        }
+                      },
+                      "runAfter": {
+                        "Compose_Invoice_Group_ID": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Parse_CustomizableCustomerSiteData_JSON": {
+                      "type": "ParseJson",
+                      "inputs": {
+                        "content": "@variables('CustomizableCustomerSiteData')",
+                        "schema": {
+                          "type": "object",
+                          "properties": {
+                            "siteNumber": {
+                              "type": "string"
+                            },
+                            "billingContactEmail": {
+                              "type": "string"
+                            },
+                            "siteName": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "runAfter": {
+                        "For_each_Line_Item": [
+                          "Succeeded"
+                        ],
+                        "Condition_Invoice_Group_ID_is_not_null": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "Parse_Line_Item_JSON": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "runAfter": {
+            "Parse_BillingStatement_JSON": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "4ae479c6-2192-42d7-bb3a-da266aacf382"
+          }
+        },
+        "Initialize_Invoices_Array_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Invoices",
+                "type": "array",
+                "value": []
+              }
+            ]
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "f06177b4-b2a7-47d1-8836-bea0e32af02b"
+          }
+        },
+        "Initialize_LineItems_Array_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "LineItems",
+                "type": "array",
+                "value": []
+              }
+            ]
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "28ed13cd-b6ce-42cd-af42-66d70885a932"
+          }
+        },
+        "Initialize_StatementTotal_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "StatementTotal",
+                "type": "float",
+                "value": 0
+              }
+            ]
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "b403b3f9-6320-4cc6-8bcc-8e4fecac832f"
+          }
+        },
+        "HTTP_Generate_Invoice_Request": {
+          "type": "Http",
+          "inputs": {
+            "uri": "@parameters('PDF Container App Endpoint (bs_PDFContainerAppEndpoint)')",
+            "method": "POST",
+            "headers": {
+              "x-api-key": "@{parameters('PDF Service API Token (bs_pdfServiceApiToken)')}"
+            },
+            "body": "@outputs('Compose_Billing_Statement_PDF_DTO')"
+          },
+          "runAfter": {
+            "Compose_Billing_Statement_PDF_DTO": [
+              "Succeeded"
+            ]
+          },
+          "runtimeConfiguration": {
+            "contentTransfer": {
+              "transferMode": "Chunked"
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "63c55bd1-7acd-431a-bccb-708c1e2022ac"
+          }
+        },
+        "Respond_with_PDF": {
+          "type": "Response",
+          "kind": "Http",
+          "inputs": {
+            "statusCode": 200,
+            "body": "@body('HTTP_Generate_Invoice_Request')"
+          },
+          "runAfter": {
+            "HTTP_Generate_Invoice_Request": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "50cf534e-4ba1-4c56-9ea5-400fd86397c0"
+          }
+        },
+        "Initialize_CustomizableCustomerSiteData_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "CustomizableCustomerSiteData",
+                "type": "string"
+              }
+            ]
+          },
+          "runAfter": {}
+        },
+        "Compose": {
+          "type": "Compose",
+          "inputs": "@variables('CustomizableCustomerSiteData')",
+          "runAfter": {
+            "For_each_General_Config_pair": [
+              "Succeeded"
+            ],
+            "For_each_Invoice": [
+              "Succeeded"
+            ]
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

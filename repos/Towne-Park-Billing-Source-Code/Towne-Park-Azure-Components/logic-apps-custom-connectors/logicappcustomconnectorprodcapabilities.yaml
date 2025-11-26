@@ -1,0 +1,72 @@
+{
+    "properties": {
+        "supportedConnectionKinds": "V1, V2",
+        "connectionParameters": {
+            "authType": {
+                "type": "string",
+                "allowedValues": [
+                    {
+                        "value": "none"
+                    }
+                ],
+                "uiDefinition": {
+                    "displayName": "Authentication Type",
+                    "description": "Authentication type to connect to your API",
+                    "tooltip": "Authentication type to connect to your API",
+                    "constraints": {
+                        "tabIndex": 1,
+                        "required": "true",
+                        "allowedValues": [
+                            {
+                                "text": "none",
+                                "value": "anonymous"
+                            }
+                        ],
+                        "capability": [
+                            "gateway"
+                        ]
+                    }
+                }
+            },
+            "gateway": {
+                "type": "gatewaySetting",
+                "gatewaySettings": {
+                    "dataSourceType": "CustomConnector",
+                    "connectionDetails": []
+                },
+                "uiDefinition": {
+                    "constraints": {
+                        "tabIndex": 4,
+                        "required": "true",
+                        "capability": [
+                            "gateway"
+                        ]
+                    }
+                }
+            }
+        },
+        "runtimeUrls": [
+            "https://logic-apis-eastus2.azure-apim.net/apim/290197cd24264ae88006a8a512b4c5c8",
+            "http://logic-apis-eastus2.azure-apim.net/apim/290197cd24264ae88006a8a512b4c5c8"
+        ],
+        "capabilities": [
+            "gateway"
+        ],
+        "description": "SOAP pass-through This is a sample description to be used until a more appropriate connector description has been identified.",
+        "displayName": "logicappcustomconnectorprodcapabilities",
+        "iconUri": "https://content.powerapps.com/resource/makerx/static/media/default-connection-icon.74fb37fa.svg",
+        "apiDefinitions": {
+            "originalSwaggerUrl": "https://laeus2l001eus2ext.blob.core.windows.net/api-swagger-files/290197cd24264ae88006a8a512b4c5c8.json_original?skoid=b8c212cf-e0f2-402a-889e-c525580cbe56&sktid=33e01921-4d64-4f8c-a055-5bdaffd5e33d&skt=2025-06-11T04%3A00%3A11Z&ske=2025-06-12T04%3A00%3A11Z&sks=b&skv=2025-01-05&sv=2025-01-05&spr=https&se=2025-06-11T21%3A16%3A16Z&sr=b&sp=r&sig=%2BLK54ks8YkwW%2BGm7IT4%2FoJNW90FHMuRl7q%2FaxWS6Bi0%3D",
+            "modifiedSwaggerUrl": "https://laeus2l001eus2ext.blob.core.windows.net/api-swagger-files/290197cd24264ae88006a8a512b4c5c8.json?skoid=b8c212cf-e0f2-402a-889e-c525580cbe56&sktid=33e01921-4d64-4f8c-a055-5bdaffd5e33d&skt=2025-06-11T04%3A00%3A11Z&ske=2025-06-12T04%3A00%3A11Z&sks=b&skv=2025-01-05&sv=2025-01-05&spr=https&se=2025-06-11T21%3A16%3A16Z&sr=b&sp=r&sig=UNs5kors3wD2nhgG%2BLfJ1wOF5na56P1JuojhCTZ%2ByPE%3D"
+        },
+        "apiType": "Soap",
+        "wsdlDefinition": {
+            "importMethod": "SoapPassThrough"
+        }
+    },
+    "id": "/subscriptions/72bb1233-bb68-442b-85f3-ef6bf21a6216/resourceGroups/stapp-billing-prod-e2-01/providers/Microsoft.Web/customApis/logicappcustomconnectorprodcapabilities",
+    "name": "logicappcustomconnectorprodcapabilities",
+    "type": "Microsoft.Web/customApis",
+    "location": "eastus2",
+    "apiVersion": "2016-06-01"
+}

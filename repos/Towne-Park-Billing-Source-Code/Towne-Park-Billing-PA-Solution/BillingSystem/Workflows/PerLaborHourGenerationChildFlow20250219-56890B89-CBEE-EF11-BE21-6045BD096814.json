@@ -1,0 +1,912 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sql": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "bs_sharedsql_1e4c4"
+        },
+        "api": {
+          "name": "shared_sql"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "a8e60de6-dbd5-4e14-ac44-78736025f1d6"
+          },
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "description": "Stringified Array of Jobs",
+                  "title": "Jobs",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "number": {
+                  "description": "Target invoice group",
+                  "title": "InvoiceGroup",
+                  "type": "number",
+                  "x-ms-content-hint": "NUMBER",
+                  "x-ms-dynamically-added": true
+                },
+                "text_1": {
+                  "description": "Comma separated string of Contract Types integer values",
+                  "title": "ContractType",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "date": {
+                  "description": "Start date for service period",
+                  "format": "date",
+                  "title": "ServiceStartDate",
+                  "type": "string",
+                  "x-ms-content-hint": "DATE",
+                  "x-ms-dynamically-added": true
+                },
+                "date_1": {
+                  "description": "End date for service period",
+                  "format": "date",
+                  "title": "ServiceEndDate",
+                  "type": "string",
+                  "x-ms-content-hint": "DATE",
+                  "x-ms-dynamically-added": true
+                },
+                "text_2": {
+                  "description": "Customer Site number (i.e. \"0452\")",
+                  "title": "SiteNumber",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                }
+              },
+              "required": [
+                "text",
+                "number",
+                "text_1",
+                "date",
+                "date_1",
+                "text_2"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Parse_Jobs_JSON_array": {
+          "runAfter": {
+            "Is_Building_Block_Enabled_Condition": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "27478f3d-260c-4c24-86b0-ba01cae04564"
+          },
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@triggerBody()?['text']",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "bs_name": {
+                    "type": "string"
+                  },
+                  "bs_displayname": {
+                    "type": "string"
+                  },
+                  "bs_rate": {
+                    "type": "number"
+                  },
+                  "bs_overtimerate": {
+                    "type": "number"
+                  },
+                  "bs_code": {
+                    "type": "string"
+                  },
+                  "bs_jobcode": {
+                    "type": "string"
+                  },
+                  "bs_invoicegroup": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "bs_name",
+                  "bs_displayname",
+                  "bs_rate",
+                  "bs_code",
+                  "bs_jobcode",
+                  "bs_invoicegroup"
+                ]
+              }
+            }
+          }
+        },
+        "Filter_Jobs_array": {
+          "runAfter": {
+            "Parse_Jobs_JSON_array": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "8d74aa11-9f6d-4998-9665-ce5b62a5f3a0"
+          },
+          "type": "Query",
+          "inputs": {
+            "from": "@body('Parse_Jobs_JSON_array')",
+            "where": "@equals(coalesce(item()['bs_invoicegroup'], 1),triggerBody()?['number'])"
+          }
+        },
+        "Apply_to_each_Filtered_Job": {
+          "foreach": "@body('Filter_Jobs_array')",
+          "actions": {
+            "Compose_Line_Item": {
+              "runAfter": {
+                "Compose_RegularHoursCost": [
+                  "Succeeded"
+                ],
+                "Compose_OvertimeHoursCost": [
+                  "Succeeded"
+                ],
+                "Compose_Overtime_Invoice_Text": [
+                  "Succeeded"
+                ],
+                "Compose_Regular_time_Invoice_Text": [
+                  "Succeeded"
+                ],
+                "Compose_Common_Invoice_Text": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "90bb2cad-fc44-4577-b30e-b1db5c0e5e04"
+              },
+              "type": "Compose",
+              "inputs": {
+                "title": "@item()?['bs_displayname']",
+                "description": "@if(equals(items('Apply_to_each_Filtered_Job')['bs_rate'], items('Apply_to_each_Filtered_Job')?['bs_overtimerate']), outputs('Compose_Common_Invoice_Text'), outputs('Compose_Regular_time_Invoice_Text'))",
+                "code": "@item()?['bs_code']",
+                "amount": "@if(equals(items('Apply_to_each_Filtered_Job')['bs_rate'], items('Apply_to_each_Filtered_Job')?['bs_overtimerate']), add(outputs('Compose_RegularHoursCost'), outputs('Compose_OvertimeHoursCost')),outputs('Compose_RegularHoursCost'))"
+              }
+            },
+            "Append_to_Line_Items": {
+              "runAfter": {
+                "Compose_Line_Item": [
+                  "Succeeded"
+                ],
+                "Condition": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "f5264be3-5d09-4c7e-af6d-571bbff55b7c"
+              },
+              "type": "AppendToArrayVariable",
+              "inputs": {
+                "name": "LineItems",
+                "value": "@outputs('Compose_Line_Item')"
+              }
+            },
+            "Increment_Invoice_Sub_Total": {
+              "runAfter": {
+                "Condition_OverTime_LineItem_is_not_empty": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "eb926161-1db1-4cd3-9e07-c2624dfd670c"
+              },
+              "type": "IncrementVariable",
+              "inputs": {
+                "name": "InvoiceSubTotal",
+                "value": "@if(equals(items('Apply_to_each_Filtered_Job')['bs_rate'], items('Apply_to_each_Filtered_Job')?['bs_overtimerate']), outputs('Compose_Line_Item')?['amount'], if(greater(variables('OvertimeHours'), 0), add(outputs('Compose_Line_Item')?['amount'],outputs('Compose_OverTime_Line_Item')?['amount']),outputs('Compose_Line_Item')?['amount']))"
+              }
+            },
+            "Filter_TIMESHEET_array": {
+              "metadata": {
+                "operationMetadataId": "43503c85-efe9-4ef0-96e8-5402bce6e0ef"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@outputs('Get_TIMESHEET_rows')?['body/value']",
+                "where": "@equals(item()?['WORK_ROLE'],items('Apply_to_each_Filtered_Job')['bs_jobcode'])"
+              }
+            },
+            "Apply_to_each_Filtered_Timesheet": {
+              "foreach": "@outputs('Filter_TIMESHEET_array')['body']",
+              "actions": {
+                "Increment_RegularHours_variable": {
+                  "metadata": {
+                    "operationMetadataId": "10a2d9ce-b592-41cb-b4c5-02f28771b716"
+                  },
+                  "type": "IncrementVariable",
+                  "inputs": {
+                    "name": "RegularHours",
+                    "value": "@float(formatNumber(div(add(item()?['REGULAR_MINUTES'], item()?['REGULAR_MINUTES_NEXT_DAY']), 60.00),'#.00'))"
+                  }
+                },
+                "Increment_OvertimeHours_variable": {
+                  "metadata": {
+                    "operationMetadataId": "4be72fe2-641a-4acc-acc6-d9602aacd5bc"
+                  },
+                  "type": "IncrementVariable",
+                  "inputs": {
+                    "name": "OvertimeHours",
+                    "value": "@float(\r\n    formatNumber(\r\n        div(\r\n            add(\r\n                add(\r\n                    add(\r\n                        add(\r\n                            add(\r\n                                add(\r\n                                    item()?['HOLIDAY_MINUTES_NEXT_DAY'],\r\n                                    item()?['HOLIDAY_MINUTES']\r\n                                ),\r\n                                item()?['OVERTIME_MINUTES']\r\n                            ),\r\n                            item()?['OVERTIME_MINUTES_NEXT_DAY']\r\n                        ),\r\n                        add(\r\n                            item()?['HOLIDAY_OVERTIME_MINUTES'],\r\n                            item()?['HOLIDAY_OVERTIME_MINUTES_NEXT_DAY']\r\n                        )\r\n                    ),\r\n                    add(\r\n                        item()?['DOUBLE_OVERTIME_MINUTES'],\r\n                        item()?['DOUBLE_OVERTIME_MINUTES_NEXT_DAY']\r\n                    )\r\n                ),\r\n                add(\r\n                    item()?['HOLIDAY_DOUBLE_OVERTIME_MINUTES'],\r\n                    item()?['HOLIDAY_DOUBLE_OVERTIME_MINUTES_NEXT_DAY']\r\n                )\r\n            ),\r\n            60.00\r\n        ),\r\n        '#.00'\r\n    )\r\n)"
+                  }
+                }
+              },
+              "runAfter": {
+                "Set_RegularHours_variable": [
+                  "Succeeded"
+                ],
+                "Set_OvertimeHours_variable": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "364c17c4-59b1-498e-bb1b-61c2f73c79f2"
+              },
+              "type": "Foreach"
+            },
+            "Compose_RegularHoursCost": {
+              "runAfter": {
+                "Scope": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "506d73b2-9202-4db0-8235-0fc4e06180d0"
+              },
+              "type": "Compose",
+              "inputs": "@float(formatNumber(mul(items('Apply_to_each_Filtered_Job')['bs_rate'], outputs('Compose_RegularHours')), '#.00'))"
+            },
+            "Compose_OvertimeHoursCost": {
+              "runAfter": {
+                "Scope": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "5810bcda-c3ab-45b8-866a-f33fbb7f1ee4"
+              },
+              "type": "Compose",
+              "inputs": "@float(formatNumber(mul(coalesce(items('Apply_to_each_Filtered_Job')?['bs_overtimerate'], 0), outputs('Compose_OvertimeHours')), '#.00'))"
+            },
+            "Compose_Overtime_Invoice_Text": {
+              "runAfter": {
+                "Scope": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "7981dcb0-02f4-42fd-bd5b-52972476a7ce"
+              },
+              "type": "Compose",
+              "inputs": "\nTotal Overtime / Holiday Hours Worked: @{if(greater(outputs('Compose_OvertimeHours'), 0), float(formatNumber(outputs('Compose_OvertimeHours'), 'N4', 'en-US')), 0)}.\nTowne Park Service Fee at $@{items('Apply_to_each_Filtered_Job')?['bs_overtimerate']} Per Person Hour."
+            },
+            "Compose_Regular_time_Invoice_Text": {
+              "runAfter": {
+                "Scope": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "01866d1c-4ae4-49b0-be80-83850a842980"
+              },
+              "type": "Compose",
+              "inputs": "Total Hours Worked: @{if(greater(outputs('Compose_RegularHours'), 0), float(formatNumber(outputs('Compose_RegularHours'), 'N4', 'en-US' )), 0)}.\nTowne Park Service Fee at $@{items('Apply_to_each_Filtered_Job')['bs_rate']} Per Person Hour."
+            },
+            "Set_RegularHours_variable": {
+              "runAfter": {
+                "Filter_TIMESHEET_array": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "f325027f-bce2-4d23-b330-a573d51d9fad"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "RegularHours",
+                "value": 0
+              }
+            },
+            "Set_OvertimeHours_variable": {
+              "runAfter": {
+                "Filter_TIMESHEET_array": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "83d07105-bc10-4246-84a8-53272fcb40a9"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "OvertimeHours",
+                "value": 0
+              }
+            },
+            "Scope": {
+              "actions": {
+                "Compose_RegularHours": {
+                  "metadata": {
+                    "operationMetadataId": "0cfd4405-1b31-481b-825b-39b93091ab41"
+                  },
+                  "type": "Compose",
+                  "inputs": "@variables('RegularHours')"
+                },
+                "Compose_OvertimeHours": {
+                  "metadata": {
+                    "operationMetadataId": "56688cf9-aae8-4788-b778-2ded865ae643"
+                  },
+                  "type": "Compose",
+                  "inputs": "@variables('OvertimeHours')"
+                }
+              },
+              "runAfter": {
+                "Apply_to_each_Filtered_Timesheet": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "a7f456c9-dbc2-4663-b099-f7fa9e67af23"
+              },
+              "type": "Scope"
+            },
+            "Compose_Common_Invoice_Text": {
+              "runAfter": {
+                "Scope": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "3aa4b8b8-da8f-4575-9882-4dc4414561fd"
+              },
+              "type": "Compose",
+              "inputs": "Total Hours Worked: @{float(formatNumber(\r\n  add(\r\n    float(if(greater(outputs('Compose_RegularHours'), 0), formatNumber(outputs('Compose_RegularHours'), 'N4', 'en-US'), 0)),\r\n    float(if(greater(outputs('Compose_OvertimeHours'), 0), formatNumber(outputs('Compose_OvertimeHours'), 'N4', 'en-US'), 0))\r\n  ),\r\n  'N4',\r\n  'en-US'\r\n)\r\n)}.\nTowne Park Service Fee at $@{items('Apply_to_each_Filtered_Job')['bs_rate']} Per Person Hour."
+            },
+            "Condition": {
+              "actions": {
+                "Compose_OverTime_Line_Item": {
+                  "type": "Compose",
+                  "inputs": {
+                    "title": "@item()?['bs_displayname']",
+                    "description": "@if(greater(variables('OvertimeHours'), 0), outputs('Compose_Overtime_Invoice_Text'),'')",
+                    "code": "@item()?['bs_code']",
+                    "amount": "@outputs('Compose_OvertimeHoursCost')"
+                  }
+                }
+              },
+              "runAfter": {
+                "Compose_Common_Invoice_Text": [
+                  "Succeeded"
+                ],
+                "Compose_RegularHoursCost": [
+                  "Succeeded"
+                ],
+                "Compose_OvertimeHoursCost": [
+                  "Succeeded"
+                ],
+                "Compose_Overtime_Invoice_Text": [
+                  "Succeeded"
+                ],
+                "Compose_Regular_time_Invoice_Text": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {}
+              },
+              "expression": {
+                "and": [
+                  {
+                    "greater": [
+                      "@outputs('Compose_OvertimeHours')",
+                      0
+                    ]
+                  },
+                  {
+                    "not": {
+                      "equals": [
+                        "@items('Apply_to_each_Filtered_Job')['bs_rate']",
+                        "@items('Apply_to_each_Filtered_Job')?['bs_overtimerate']"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "type": "If"
+            },
+            "Condition_OverTime_LineItem_is_not_empty": {
+              "actions": {
+                "Append_to_OverTime_LineItems": {
+                  "type": "AppendToArrayVariable",
+                  "inputs": {
+                    "name": "LineItems",
+                    "value": "@outputs('Compose_OverTime_Line_Item')"
+                  }
+                }
+              },
+              "runAfter": {
+                "Append_to_Line_Items": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {}
+              },
+              "expression": {
+                "and": [
+                  {
+                    "not": {
+                      "equals": [
+                        "@outputs('Compose_OverTime_Line_Item')",
+                        ""
+                      ]
+                    }
+                  },
+                  {
+                    "not": {
+                      "equals": [
+                        "@outputs('Compose_OverTime_Line_Item')",
+                        "@null"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "type": "If"
+            }
+          },
+          "runAfter": {
+            "Compose": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "a5e615ba-f682-4b07-a780-adf6de749fd6"
+          },
+          "type": "Foreach"
+        },
+        "Respond_to_a_Power_App_or_flow": {
+          "runAfter": {
+            "Apply_to_each_Filtered_Job": [
+              "Succeeded",
+              "TimedOut",
+              "Skipped",
+              "Failed"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "3b3350e9-b936-4164-9a0b-2dda37b5c9e9"
+          },
+          "type": "Response",
+          "kind": "PowerApp",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "lineitems": {
+                  "title": "LineItems",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                },
+                "invoicesubtotal": {
+                  "title": "InvoiceSubTotal",
+                  "x-ms-dynamically-added": true,
+                  "type": "number"
+                }
+              },
+              "additionalProperties": {}
+            },
+            "statusCode": 200,
+            "body": {
+              "lineitems": "@variables('LineItems')",
+              "invoicesubtotal": "@variables('InvoiceSubTotal')"
+            }
+          }
+        },
+        "Is_Building_Block_Enabled_Condition": {
+          "actions": {
+            "Respond_Empty_to_Parent_2": {
+              "metadata": {
+                "operationMetadataId": "ac02d0d2-e9b7-4b57-98e6-046d73a55a56"
+              },
+              "type": "Response",
+              "kind": "PowerApp",
+              "inputs": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "lineitems": {
+                      "title": "LineItems",
+                      "x-ms-dynamically-added": true,
+                      "type": "string"
+                    },
+                    "invoicesubtotal": {
+                      "title": "InvoiceSubTotal",
+                      "x-ms-dynamically-added": true,
+                      "type": "number"
+                    }
+                  },
+                  "additionalProperties": {}
+                },
+                "statusCode": 200,
+                "body": {
+                  "lineitems": "@variables('LineItems')",
+                  "invoicesubtotal": "@variables('InvoiceSubTotal')"
+                }
+              }
+            },
+            "Terminate_2": {
+              "runAfter": {
+                "Respond_Empty_to_Parent_2": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "e613b666-3d92-4fd3-a4b3-3421b5f43aec"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Succeeded"
+              }
+            }
+          },
+          "runAfter": {
+            "Compose_ContractType_array": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {}
+          },
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@contains(triggerBody()?['text_1'], '126840001')",
+                  "@false"
+                ]
+              }
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "28d0c1aa-c2fc-4a87-97ad-ce04d108df4e"
+          },
+          "type": "If"
+        },
+        "Compose_ContractType_array": {
+          "runAfter": {
+            "Are_Input_Parameters_Valid_Condition": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "ca12a9a7-a0c1-4a74-92d1-35d2e257e9df"
+          },
+          "type": "Compose",
+          "inputs": "@split(triggerBody()?['text_1'], ',')"
+        },
+        "Are_Input_Parameters_Valid_Condition": {
+          "actions": {
+            "Respond_Empty_To_Parent": {
+              "metadata": {
+                "operationMetadataId": "4672de81-94a6-43d1-8c37-15a29521ff7e"
+              },
+              "type": "Response",
+              "kind": "PowerApp",
+              "inputs": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "lineitems": {
+                      "title": "LineItems",
+                      "x-ms-dynamically-added": true,
+                      "type": "string"
+                    },
+                    "invoicesubtotal": {
+                      "title": "InvoiceSubTotal",
+                      "x-ms-dynamically-added": true,
+                      "type": "number"
+                    }
+                  },
+                  "additionalProperties": {}
+                },
+                "statusCode": 200,
+                "body": {
+                  "lineitems": "@variables('LineItems')",
+                  "invoicesubtotal": "@variables('InvoiceSubTotal')"
+                }
+              }
+            },
+            "Terminate": {
+              "runAfter": {
+                "Respond_Empty_To_Parent": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "44ac9a3f-5451-4ed1-95cb-783a93253999"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Succeeded"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_Line_Item_array_variable": [
+              "Succeeded"
+            ],
+            "Initialize_Invoice_Sub_Total_variable": [
+              "Succeeded"
+            ],
+            "Initialize_RegularHours_variable": [
+              "Succeeded"
+            ],
+            "Initialize_OvertimeHours_variable": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {}
+          },
+          "expression": {
+            "or": [
+              {
+                "equals": [
+                  "@triggerBody()?['text']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@empty(triggerBody()?['text'])",
+                  "@true"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['number']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['text_1']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@empty(triggerBody()?['text_1'])",
+                  "@true"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['date']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['date_1']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['text_2']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@empty(triggerBody()?['text_2'])",
+                  "@true"
+                ]
+              }
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b57ad267-67e9-4462-be81-7d497421daca"
+          },
+          "type": "If"
+        },
+        "Initialize_Line_Item_array_variable": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "e5c5e58e-26ba-4d04-89ae-3510e495339e"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "LineItems",
+                "type": "array",
+                "value": []
+              }
+            ]
+          }
+        },
+        "Initialize_Invoice_Sub_Total_variable": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "3fc3bc05-f417-4005-aab2-7597857c4af0"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "InvoiceSubTotal",
+                "type": "float",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "Get_TIMESHEET_rows": {
+          "runAfter": {
+            "Compose_filter_query_on_job_codes": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "61d450bb-4ae3-4558-a2b0-93e78b0029f6"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "server": "default",
+              "database": "default",
+              "table": "[dbo].[vwTIMESHEET_WITH_CLOCK_ALLATA]",
+              "$filter": "LOCATION_EXTERNAL_ID eq '@{triggerBody()?['text_2']}' AND YEAR eq @{formatDateTime(triggerBody()?['date'], 'yyyy')} AND DAY_OF_THE_YEAR ge @{dayOfYear(triggerBody()?['date'])} AND DAY_OF_THE_YEAR le @{dayOfYear(triggerBody()?['date_1'])} AND @{outputs('Compose_filter_query_on_job_codes')}",
+              "$orderby": "TIMESHEET_ID asc",
+              "$select": "WORK_ROLE, DAY_OF_THE_YEAR, REGULAR_MINUTES, REGULAR_MINUTES_NEXT_DAY, OVERTIME_MINUTES, OVERTIME_MINUTES_NEXT_DAY, HOLIDAY_MINUTES, HOLIDAY_MINUTES_NEXT_DAY,DOUBLE_OVERTIME_MINUTES,DOUBLE_OVERTIME_MINUTES_NEXT_DAY,HOLIDAY_OVERTIME_MINUTES,HOLIDAY_OVERTIME_MINUTES_NEXT_DAY,HOLIDAY_DOUBLE_OVERTIME_MINUTES,HOLIDAY_DOUBLE_OVERTIME_MINUTES_NEXT_DAY,TIMESHEET_ID"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+              "operationId": "GetItems_V2",
+              "connectionName": "shared_sql"
+            },
+            "retryPolicy": {
+              "type": "fixed",
+              "count": 3,
+              "interval": "PT30S"
+            }
+          },
+          "runtimeConfiguration": {
+            "paginationPolicy": {
+              "minimumItemCount": 100000
+            }
+          }
+        },
+        "Initialize_RegularHours_variable": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "92f5153e-2fa1-4209-8763-ddae73f92439"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "RegularHours",
+                "type": "float",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "Initialize_OvertimeHours_variable": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "3f2234c9-0c0c-4456-9e85-be8a76d7f3c4"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "OvertimeHours",
+                "type": "float",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "Compose": {
+          "runAfter": {
+            "Select": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "e6ac34f6-26b0-4b47-a0d6-63ee0d6ba454"
+          },
+          "type": "Compose",
+          "inputs": "@union(body('Select'), body('Select'))"
+        },
+        "Select": {
+          "runAfter": {
+            "Get_TIMESHEET_rows": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "d65b93e4-6a17-40d2-bf2d-cd3a40951a8d"
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@outputs('Get_TIMESHEET_rows')?['body/value']",
+            "select": {
+              "WORK_ROLE": "@item()?['WORK_ROLE']",
+              "DAY_OF_THE_YEAR": "@item()?['DAY_OF_THE_YEAR']",
+              "REGULAR_MINUTES": "@item()?['REGULAR_MINUTES']",
+              "REGULAR_MINUTES_NEXT_DAY": "@item()?['REGULAR_MINUTES_NEXT_DAY']",
+              "OVERTIME_MINUTES": "@item()?['OVERTIME_MINUTES']",
+              "OVERTIME_MINUTES_NEXT_DAY": "@item()?['OVERTIME_MINUTES_NEXT_DAY']",
+              "HOLIDAY_MINUTES": "@item()?['HOLIDAY_MINUTES']",
+              "HOLIDAY_MINUTES_NEXT_DAY": "@item()?['HOLIDAY_MINUTES_NEXT_DAY']",
+              "DOUBLE_OVERTIME_MINUTES": "@item()?['DOUBLE_OVERTIME_MINUTES']",
+              "DOUBLE_OVERTIME_MINUTES_NEXT_DAY": "@item()?['DOUBLE_OVERTIME_MINUTES_NEXT_DAY']",
+              "HOLIDAY_OVERTIME_MINUTES": "@item()?['HOLIDAY_OVERTIME_MINUTES']",
+              "HOLIDAY_OVERTIME_MINUTES_NEXT_DAY": "@item()?['HOLIDAY_OVERTIME_MINUTES_NEXT_DAY']",
+              "HOLIDAY_DOUBLE_OVERTIME_MINUTES": "@item()?['HOLIDAY_DOUBLE_OVERTIME_MINUTES']",
+              "HOLIDAY_DOUBLE_OVERTIME_MINUTES_NEXT_DAY": "@item()?['HOLIDAY_DOUBLE_OVERTIME_MINUTES_NEXT_DAY']"
+            }
+          }
+        },
+        "Select_Job_Codes": {
+          "runAfter": {
+            "Filter_Jobs_array": [
+              "Succeeded"
+            ]
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@body('Filter_Jobs_array')",
+            "select": "@item()?['bs_jobcode']"
+          }
+        },
+        "Compose_filter_query_on_job_codes": {
+          "runAfter": {
+            "Select_Job_Codes": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@concat('(WORK_ROLE eq ''', join(body('Select_Job_Codes'), ''' OR WORK_ROLE eq '''), ''')')"
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

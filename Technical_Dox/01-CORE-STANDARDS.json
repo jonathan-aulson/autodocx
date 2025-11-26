@@ -1,0 +1,86 @@
+{
+  "id": "doc:01-CORE-STANDARDS",
+  "kind": "doc",
+  "name": "01-CORE-STANDARDS",
+  "file": "C:\\Users\\JonathanAulson\\Documents\\Projects\\auto_doc_engine\\repos\\Towne-Park-Billing-Source-Code\\Towne-Park-Billing-PA-Solution\\.cline_rules\\01-core-standards.md",
+  "component_or_service": "",
+  "props": {
+    "name": "01-CORE-STANDARDS",
+    "file": "C:\\Users\\JonathanAulson\\Documents\\Projects\\auto_doc_engine\\repos\\Towne-Park-Billing-Source-Code\\Towne-Park-Billing-PA-Solution\\.cline_rules\\01-core-standards.md"
+  },
+  "roles": [],
+  "roles_evidence": {},
+  "evidence": [
+    "C:\\Users\\JonathanAulson\\Documents\\Projects\\auto_doc_engine\\repos\\Towne-Park-Billing-Source-Code\\Towne-Park-Billing-PA-Solution\\.cline_rules\\01-core-standards.md:1-10"
+  ],
+  "subscores": {
+    "parsed": 0.7,
+    "doc_alignment": 0.5
+  },
+  "graph_features": {
+    "nearest_marker_id": null,
+    "nearest_marker_distance": Infinity,
+    "avg_distance_to_markers": Infinity,
+    "distance_percentiles": {
+      "p50": Infinity,
+      "p90": Infinity
+    },
+    "anchor_coverage": {
+      "anchors_within_r": 0,
+      "min_anchor_distance": Infinity,
+      "avg_anchor_distance": Infinity,
+      "radius": 4
+    },
+    "type_degrees": {
+      "deg_out": 0,
+      "deg_in": 0
+    },
+    "risk_flags": {
+      "is_articulation": false,
+      "is_bridge_adjacent": false,
+      "notes": ""
+    },
+    "marker_strategy": "mixed",
+    "markers": [
+      {
+        "id": "Doc:main.bicep",
+        "type": "Doc"
+      },
+      {
+        "id": "Doc:functionapp.bicep",
+        "type": "Doc"
+      },
+      {
+        "id": "Doc:network.bicep",
+        "type": "Doc"
+      },
+      {
+        "id": "Workflow:CapacityAlertFlow-CC0D1317-DC4C-F011-877A-002248029144.json",
+        "type": "Workflow"
+      },
+      {
+        "id": "Workflow:DataflowMonitor-25A66470-1D5C-F011-BEC1-7C1E5202188C.json",
+        "type": "Workflow"
+      },
+      {
+        "id": "Workflow:BellServiceFeeChildFlow-42A88C06-CE84-EF11-AC20-0022480A57AC.json",
+        "type": "Workflow"
+      }
+    ],
+    "edge_weights": {
+      "calls": 1.0,
+      "exposes": 1.0,
+      "depends_on": 0.5,
+      "publishes_to": 1.5,
+      "consumes_from": 1.5,
+      "evidence_of": 0.25,
+      "__default__": 1.0
+    },
+    "parameters": {
+      "radius": 4,
+      "marker_count": 6,
+      "compute_ms": 3
+    }
+  },
+  "generated_at": 1758594291.4705963
+}

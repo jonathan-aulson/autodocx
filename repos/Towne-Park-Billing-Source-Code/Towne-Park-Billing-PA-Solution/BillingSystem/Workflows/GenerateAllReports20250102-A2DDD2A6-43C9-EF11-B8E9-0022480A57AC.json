@@ -1,0 +1,1293 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_powerbi_1": {
+        "api": {
+          "name": "shared_powerbi"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "bs_sharedpowerbi_6a1c3"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_azureblob": {
+        "api": {
+          "name": "shared_azureblob"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "bs_sharedazureblob_5fd39"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "undefined",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "description": "Please enter your site number",
+                  "title": "Site",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "date": {
+                  "description": "Please enter or select a start date (YYYY-MM-DD)",
+                  "format": "date",
+                  "title": "Service Period Start Date",
+                  "type": "string",
+                  "x-ms-content-hint": "DATE",
+                  "x-ms-dynamically-added": true
+                },
+                "text_1": {
+                  "description": "Please enter requested supporting reports",
+                  "title": "Supporting Reports",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "text_2": {
+                  "description": "Please enter your Contract Type",
+                  "title": "Contract Type",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                }
+              },
+              "required": [
+                "text",
+                "date",
+                "text_1",
+                "text_2"
+              ]
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "8db50202-e697-469d-8c91-974bd51af4c2"
+          }
+        }
+      },
+      "actions": {
+        "Respond_to_a_Power_App_or_flow": {
+          "type": "Response",
+          "kind": "PowerApp",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "reportsgenerated": {
+                  "title": "ReportsGenerated",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                }
+              },
+              "additionalProperties": {}
+            },
+            "statusCode": 200,
+            "body": {
+              "reportsgenerated": "@{triggerBody()?['text_1']}"
+            }
+          },
+          "runAfter": {
+            "Scope": [
+              "Succeeded",
+              "TimedOut",
+              "Skipped",
+              "Failed"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "e648971b-1afb-4909-bd35-410fdd25450d"
+          }
+        },
+        "Scope": {
+          "type": "Scope",
+          "actions": {
+            "Condition_Hours_Backup_Report_Enabled": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "contains": [
+                      "@triggerBody()?['text_1']",
+                      "@string(126840001)"
+                    ]
+                  },
+                  {
+                    "or": [
+                      {
+                        "contains": [
+                          "@triggerBody()?['text_2']",
+                          "@string(126840001)"
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              "actions": {
+                "Export_To_File_for_Paginated_Reports_Hours_Backup": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "groupid": "93e95da4-2a9e-475c-b614-2f37825710ba",
+                      "reportid": "199fce16-dd28-4a90-9fda-1eea2af446d4",
+                      "ExportPayloadPaginatedReport/format": "PDF",
+                      "ExportPayloadPaginatedReport/paginatedReportConfiguration/parameterValues": [
+                        {
+                          "name": "SITE",
+                          "value": "@triggerBody()?['text']"
+                        },
+                        {
+                          "name": "PERIOD",
+                          "value": "@{formatDateTime(triggerBody()?['date'], 'yyyyMM')}"
+                        }
+                      ]
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_powerbi",
+                      "operationId": "InitiateExportToFileForPaginatedReports",
+                      "connectionName": "shared_powerbi_1"
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "b8491ff8-cfb4-4203-8ea4-7149c5e1a794"
+                  }
+                },
+                "Compose_Hours_Backup_Report": {
+                  "type": "Compose",
+                  "inputs": "@body('Export_To_File_for_Paginated_Reports_Hours_Backup')",
+                  "runAfter": {
+                    "Export_To_File_for_Paginated_Reports_Hours_Backup": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "891e6a85-7496-4dd6-9864-4e188cdca4e0"
+                  }
+                },
+                "Create_blob_Hours_Backup": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "dataset": "AccountNameFromSettings",
+                      "folderPath": "/reports/@{formatDateTime(triggerBody()?['date'], 'yyyyMM')}/@{triggerBody()?['text']}",
+                      "name": "Hours Backup Report.pdf",
+                      "body": "@outputs('Compose_Hours_Backup_Report')",
+                      "Content-Type": "PDF"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                      "operationId": "CreateFile_V2",
+                      "connectionName": "shared_azureblob"
+                    }
+                  },
+                  "runAfter": {
+                    "Compose_Hours_Backup_Report": [
+                      "Succeeded"
+                    ]
+                  },
+                  "runtimeConfiguration": {
+                    "contentTransfer": {
+                      "transferMode": "Chunked"
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "f14df870-db47-4fa7-98ad-13e3b430a9ae"
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Get_Blob_Metadata_(V2)_Hours_Backup_Report": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "parameters": {
+                        "dataset": "AccountNameFromSettings",
+                        "id": "@concat('/reports/', formatDateTime(triggerBody()?['date'], 'yyyyMM'), '/', triggerBody()?['text'], '/Hours Backup Report.pdf')"
+                      },
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                        "operationId": "GetFileMetadata_V2",
+                        "connectionName": "shared_azureblob"
+                      }
+                    },
+                    "metadata": {
+                      "operationMetadataId": "f8eda383-f1bf-4d6f-abaf-79a404f80389"
+                    }
+                  },
+                  "Delete_blob_(V2)-_Hours_Backup_Report": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "parameters": {
+                        "dataset": "AccountNameFromSettings",
+                        "id": "@concat('/reports/', formatDateTime(triggerBody()?['date'], 'yyyyMM'), '/', triggerBody()?['text'], '/Hours Backup Report.pdf')"
+                      },
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                        "operationId": "DeleteFile_V2",
+                        "connectionName": "shared_azureblob"
+                      }
+                    },
+                    "runAfter": {
+                      "Get_Blob_Metadata_(V2)_Hours_Backup_Report": [
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "JTJmcmVwb3J0cyUyZjIwMjQxMSUyZjA2MDAlMmZUYXhSZXBvcnQucGRm": "/reports/202411/0600/TaxReport.pdf",
+                      "operationMetadataId": "edf2e9dc-e594-4997-9926-8af014685d33"
+                    }
+                  },
+                  "Compose_Hours_Backup_Report_False_Message": {
+                    "type": "Compose",
+                    "inputs": "No action required in False branch.",
+                    "runAfter": {
+                      "Get_Blob_Metadata_(V2)_Hours_Backup_Report": [
+                        "Failed",
+                        "TimedOut",
+                        "Skipped",
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "3868e2ed-7910-42bf-ab57-e14e293bc26a"
+                    }
+                  }
+                }
+              },
+              "metadata": {
+                "operationMetadataId": "2d2643b5-65ca-4b8f-ac76-fec1485aa8c3"
+              }
+            },
+            "Condition_Labor_Distribution_Report_Enabled": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "contains": [
+                      "@triggerBody()?['text_1']",
+                      "@string(126840003)"
+                    ]
+                  },
+                  {
+                    "or": [
+                      {
+                        "contains": [
+                          "@triggerBody()?['text_2']",
+                          "@string(126840009)"
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              "actions": {
+                "Export_To_File_for_Paginated_Reports_Labor_Distribution": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "groupid": "93e95da4-2a9e-475c-b614-2f37825710ba",
+                      "reportid": "8b952774-c70c-4d24-a324-db02211dfc25",
+                      "ExportPayloadPaginatedReport/format": "PDF",
+                      "ExportPayloadPaginatedReport/paginatedReportConfiguration/parameterValues": [
+                        {
+                          "name": "SITE",
+                          "value": "@triggerBody()?['text']"
+                        },
+                        {
+                          "name": "PERIOD",
+                          "value": "@{formatDateTime(triggerBody()?['date'], 'yyyyMM')}"
+                        }
+                      ]
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_powerbi",
+                      "operationId": "InitiateExportToFileForPaginatedReports",
+                      "connectionName": "shared_powerbi_1"
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "a903c1c4-1c56-4411-bdcc-97d6082ca5ca"
+                  }
+                },
+                "Compose_Labor_Distribution_Report": {
+                  "type": "Compose",
+                  "inputs": "@body('Export_To_File_for_Paginated_Reports_Labor_Distribution')",
+                  "runAfter": {
+                    "Export_To_File_for_Paginated_Reports_Labor_Distribution": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "a11ceac1-0e73-4d2e-a1de-763bbdf23fe0"
+                  }
+                },
+                "Create_blob_Labor_Distribution": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "dataset": "AccountNameFromSettings",
+                      "folderPath": "/reports/@{formatDateTime(triggerBody()?['date'], 'yyyyMM')}/@{triggerBody()?['text']}",
+                      "name": "Labor Distribution Report.pdf",
+                      "body": "@outputs('Compose_Labor_Distribution_Report')",
+                      "Content-Type": "PDF"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                      "operationId": "CreateFile_V2",
+                      "connectionName": "shared_azureblob"
+                    }
+                  },
+                  "runAfter": {
+                    "Compose_Labor_Distribution_Report": [
+                      "Succeeded"
+                    ]
+                  },
+                  "runtimeConfiguration": {
+                    "contentTransfer": {
+                      "transferMode": "Chunked"
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "b7c1ccff-a390-49a0-b47d-e95ab4f37776"
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Get_Blob_Metadata_(V2)_Labor_Distribution_Report": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "parameters": {
+                        "dataset": "AccountNameFromSettings",
+                        "id": "@concat('/reports/', formatDateTime(triggerBody()?['date'], 'yyyyMM'), '/', triggerBody()?['text'], '/Labor Distribution Report.pdf')"
+                      },
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                        "operationId": "GetFileMetadata_V2",
+                        "connectionName": "shared_azureblob"
+                      }
+                    },
+                    "metadata": {
+                      "operationMetadataId": "f8eda383-f1bf-4d6f-abaf-79a404f80389"
+                    }
+                  },
+                  "Delete_blob_(V2)-_Labor_Distribution_Report": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "parameters": {
+                        "dataset": "AccountNameFromSettings",
+                        "id": "@concat('/reports/', formatDateTime(triggerBody()?['date'], 'yyyyMM'), '/', triggerBody()?['text'], '/Labor Distribution Report.pdf')"
+                      },
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                        "operationId": "DeleteFile_V2",
+                        "connectionName": "shared_azureblob"
+                      }
+                    },
+                    "runAfter": {
+                      "Get_Blob_Metadata_(V2)_Labor_Distribution_Report": [
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "JTJmcmVwb3J0cyUyZjIwMjQxMSUyZjA2MDAlMmZUYXhSZXBvcnQucGRm": "/reports/202411/0600/TaxReport.pdf",
+                      "operationMetadataId": "edf2e9dc-e594-4997-9926-8af014685d33"
+                    }
+                  },
+                  "Compose_Labor_Distribution_Report_False_Message": {
+                    "type": "Compose",
+                    "inputs": "No action required in False branch.",
+                    "runAfter": {
+                      "Get_Blob_Metadata_(V2)_Labor_Distribution_Report": [
+                        "Failed",
+                        "TimedOut",
+                        "Skipped",
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "da4b0948-c7d5-40b0-a423-6d6e92475104"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Condition_Hours_Backup_Report_Enabled": [
+                  "Succeeded",
+                  "TimedOut",
+                  "Skipped",
+                  "Failed"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "f9241ad5-e339-47d5-b81d-7defb699899e"
+              }
+            },
+            "Condition_Tax_Report_Enabled": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "contains": [
+                      "@triggerBody()?['text_1']",
+                      "@string(126840002)"
+                    ]
+                  },
+                  {
+                    "or": [
+                      {
+                        "contains": [
+                          "@triggerBody()?['text_2']",
+                          "@string(126840000)"
+                        ]
+                      },
+                      {
+                        "contains": [
+                          "@triggerBody()?['text_2']",
+                          "@string(126840001)"
+                        ]
+                      },
+                      {
+                        "contains": [
+                          "@triggerBody()?['text_2']",
+                          "@string(126840002)"
+                        ]
+                      },
+                      {
+                        "contains": [
+                          "@triggerBody()?['text_2']",
+                          "@string(126840004)"
+                        ]
+                      },
+                      {
+                        "contains": [
+                          "@triggerBody()?['text_2']",
+                          "@string(126840009)"
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              "actions": {
+                "Export_To_File_for_Power_BI_Reports_Tax": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "groupid": "93e95da4-2a9e-475c-b614-2f37825710ba",
+                      "reportid": "ea3defb3-9cee-4b1c-bc87-1dc274f81dd1",
+                      "ExportPayloadPowerBIReport/format": "PDF",
+                      "ExportPayloadPowerBIReport/PowerBIReportExportConfiguration/reportLevelFilters": [
+                        {
+                          "filter": "MASTER_NON_FINANCIAL/SITE eq '@{triggerBody()?['text']}' and DATE_DIM/DW_DATE_MONTH le @{formatDateTime(triggerBody()?['date'], 'MM')} and DATE_DIM/DW_DATE_YEAR eq @{formatDateTime(triggerBody()?['date'], 'yyyy')}"
+                        }
+                      ]
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_powerbi",
+                      "operationId": "InitiateExportToFileForPbiReports",
+                      "connectionName": "shared_powerbi_1"
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "398c061b-e99c-415d-927a-cb58efc3d228"
+                  }
+                },
+                "Compose_Tax_Report": {
+                  "type": "Compose",
+                  "inputs": "@body('Export_To_File_for_Power_BI_Reports_Tax')",
+                  "runAfter": {
+                    "Export_To_File_for_Power_BI_Reports_Tax": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "f71cc317-ad15-4217-b42a-6c9c707baca9"
+                  }
+                },
+                "Create_blob_Tax": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "dataset": "AccountNameFromSettings",
+                      "folderPath": "/reports/@{formatDateTime(triggerBody()?['date'], 'yyyyMM')}/@{triggerBody()?['text']}",
+                      "name": "Tax Report.pdf",
+                      "body": "@outputs('Compose_Tax_Report')",
+                      "Content-Type": "PDF"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                      "operationId": "CreateFile_V2",
+                      "connectionName": "shared_azureblob"
+                    }
+                  },
+                  "runAfter": {
+                    "Compose_Tax_Report": [
+                      "Succeeded"
+                    ]
+                  },
+                  "runtimeConfiguration": {
+                    "contentTransfer": {
+                      "transferMode": "Chunked"
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "7d447fb4-a36e-404c-9a5f-c726346bc077"
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Get_Blob_Metadata_(V2)_Tax_Report": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "parameters": {
+                        "dataset": "AccountNameFromSettings",
+                        "id": "@concat('/reports/', formatDateTime(triggerBody()?['date'], 'yyyyMM'), '/', triggerBody()?['text'], '/Tax Report.pdf')"
+                      },
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                        "operationId": "GetFileMetadata_V2",
+                        "connectionName": "shared_azureblob"
+                      }
+                    },
+                    "metadata": {
+                      "operationMetadataId": "f8eda383-f1bf-4d6f-abaf-79a404f80389"
+                    }
+                  },
+                  "Delete_blob_(V2)-_Tax_Report": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "parameters": {
+                        "dataset": "AccountNameFromSettings",
+                        "id": "@concat('/reports/', formatDateTime(triggerBody()?['date'], 'yyyyMM'), '/', triggerBody()?['text'], '/Tax Report.pdf')"
+                      },
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                        "operationId": "DeleteFile_V2",
+                        "connectionName": "shared_azureblob"
+                      }
+                    },
+                    "runAfter": {
+                      "Get_Blob_Metadata_(V2)_Tax_Report": [
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "JTJmcmVwb3J0cyUyZjIwMjQxMSUyZjA2MDAlMmZUYXhSZXBvcnQucGRm": "/reports/202411/0600/TaxReport.pdf",
+                      "operationMetadataId": "edf2e9dc-e594-4997-9926-8af014685d33"
+                    }
+                  },
+                  "Compose_Tax_Report_False_Message": {
+                    "type": "Compose",
+                    "inputs": "No action required in False branch.",
+                    "runAfter": {
+                      "Get_Blob_Metadata_(V2)_Tax_Report": [
+                        "Failed",
+                        "TimedOut",
+                        "Skipped",
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "1521c03e-fcfd-46ba-9fa5-8f7260646c21"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Condition_Labor_Distribution_Report_Enabled": [
+                  "Succeeded",
+                  "TimedOut",
+                  "Skipped",
+                  "Failed"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "d783e51b-2aa0-46c7-ae85-a455a28aef2c"
+              }
+            },
+            "Condition_Mix_of_Sales_Report_Enabled": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "contains": [
+                      "@triggerBody()?['text_1']",
+                      "@string(126840000)"
+                    ]
+                  },
+                  {
+                    "or": [
+                      {
+                        "contains": [
+                          "@triggerBody()?['text_2']",
+                          "@string(126840000)"
+                        ]
+                      },
+                      {
+                        "contains": [
+                          "@triggerBody()?['text_2']",
+                          "@string(126840001)"
+                        ]
+                      },
+                      {
+                        "contains": [
+                          "@triggerBody()?['text_2']",
+                          "@string(126840002)"
+                        ]
+                      },
+                      {
+                        "contains": [
+                          "@triggerBody()?['text_2']",
+                          "@string(126840004)"
+                        ]
+                      },
+                      {
+                        "contains": [
+                          "@triggerBody()?['text_2']",
+                          "@string(126840009)"
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              "actions": {
+                "Export_To_File_for_Power_BI_Reports_Mix_of_Sales": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "groupid": "93e95da4-2a9e-475c-b614-2f37825710ba",
+                      "reportid": "86cbacf7-103a-4f89-a592-5b3a71b730e3",
+                      "ExportPayloadPowerBIReport/format": "PDF",
+                      "ExportPayloadPowerBIReport/PowerBIReportExportConfiguration/reportLevelFilters": [
+                        {
+                          "filter": "MASTER_NON_FINANCIAL/SITE eq '@{triggerBody()?['text']}' and DATE_DIM/DW_DATE_MONTH le @{formatDateTime(triggerBody()?['date'], 'MM')} and DATE_DIM/DW_DATE_YEAR eq @{formatDateTime(triggerBody()?['date'], 'yyyy')}"
+                        }
+                      ]
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_powerbi",
+                      "operationId": "InitiateExportToFileForPbiReports",
+                      "connectionName": "shared_powerbi_1"
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "ecb6aedb-1299-4163-b4e3-3c9420ab4f7e"
+                  }
+                },
+                "Compose_Mix_of_Sales_Report": {
+                  "type": "Compose",
+                  "inputs": "@body('Export_To_File_for_Power_BI_Reports_Mix_of_Sales')",
+                  "runAfter": {
+                    "Export_To_File_for_Power_BI_Reports_Mix_of_Sales": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "bc85d2c8-b66b-44c2-a0c7-00dc67a77bf5"
+                  }
+                },
+                "Create_blob_Mix_of_Sales": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "dataset": "AccountNameFromSettings",
+                      "folderPath": "/reports/@{formatDateTime(triggerBody()?['date'], 'yyyyMM')}/@{triggerBody()?['text']}",
+                      "name": "Mix Of Sales Report.pdf",
+                      "body": "@outputs('Compose_Mix_of_Sales_Report')",
+                      "Content-Type": "PDF"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                      "operationId": "CreateFile_V2",
+                      "connectionName": "shared_azureblob"
+                    }
+                  },
+                  "runAfter": {
+                    "Compose_Mix_of_Sales_Report": [
+                      "Succeeded"
+                    ]
+                  },
+                  "runtimeConfiguration": {
+                    "contentTransfer": {
+                      "transferMode": "Chunked"
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "5ea75b68-dde0-40b8-a09e-5c5c0314466e"
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Get_Blob_Metadata_(V2)_Mix_Of_Sales": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "parameters": {
+                        "dataset": "AccountNameFromSettings",
+                        "id": "@concat('/reports/', formatDateTime(triggerBody()?['date'], 'yyyyMM'), '/', triggerBody()?['text'], '/Mix Of Sales Report.pdf')"
+                      },
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                        "operationId": "GetFileMetadata_V2",
+                        "connectionName": "shared_azureblob"
+                      }
+                    },
+                    "metadata": {
+                      "operationMetadataId": "f8eda383-f1bf-4d6f-abaf-79a404f80389"
+                    }
+                  },
+                  "Delete_blob_(V2)-_Mix_Of_Sales_Report": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "parameters": {
+                        "dataset": "AccountNameFromSettings",
+                        "id": "@concat('/reports/', formatDateTime(triggerBody()?['date'], 'yyyyMM'), '/', triggerBody()?['text'], '/Mix Of Sales Report.pdf')"
+                      },
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                        "operationId": "DeleteFile_V2",
+                        "connectionName": "shared_azureblob"
+                      }
+                    },
+                    "runAfter": {
+                      "Get_Blob_Metadata_(V2)_Mix_Of_Sales": [
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "JTJmcmVwb3J0cyUyZjIwMjQxMSUyZjA2MDAlMmZUYXhSZXBvcnQucGRm": "/reports/202411/0600/TaxReport.pdf",
+                      "operationMetadataId": "edf2e9dc-e594-4997-9926-8af014685d33"
+                    }
+                  },
+                  "Compose_Mix_Of_Sales_Report_False_Message": {
+                    "type": "Compose",
+                    "inputs": "No action required in False branch.",
+                    "runAfter": {
+                      "Get_Blob_Metadata_(V2)_Mix_Of_Sales": [
+                        "Failed",
+                        "TimedOut",
+                        "Skipped",
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "08c3777a-b203-4c52-9be5-71e8fe95a803"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Condition_Tax_Report_Enabled": [
+                  "Succeeded",
+                  "TimedOut",
+                  "Skipped",
+                  "Failed"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "73ec8ecd-66f8-4060-bd79-f2253bbe329a"
+              }
+            },
+            "Condition_Other_Expenses_Report_Enabled": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "contains": [
+                      "@triggerBody()?['text_1']",
+                      "@string(126840004)"
+                    ]
+                  },
+                  {
+                    "or": [
+                      {
+                        "contains": [
+                          "@triggerBody()?['text_2']",
+                          "@string(126840009)"
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              "actions": {
+                "Compose_Other_Expenses_Report": {
+                  "type": "Compose",
+                  "inputs": "@body('Export_To_File_for_Paginated_Reports_Other_Expenses')",
+                  "runAfter": {
+                    "Export_To_File_for_Paginated_Reports_Other_Expenses": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "05194347-fa7a-434b-b285-0fd83092af74"
+                  }
+                },
+                "Create_blob_Other_Expenses": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "dataset": "AccountNameFromSettings",
+                      "folderPath": "/reports/@{formatDateTime(triggerBody()?['date'], 'yyyyMM')}/@{triggerBody()?['text']}",
+                      "name": "Other Expenses Report.pdf",
+                      "body": "@outputs('Compose_Other_Expenses_Report')",
+                      "Content-Type": "PDF"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                      "operationId": "CreateFile_V2",
+                      "connectionName": "shared_azureblob"
+                    }
+                  },
+                  "runAfter": {
+                    "Compose_Other_Expenses_Report": [
+                      "Succeeded"
+                    ]
+                  },
+                  "runtimeConfiguration": {
+                    "contentTransfer": {
+                      "transferMode": "Chunked"
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "c59c8e28-02b3-4624-a1cf-afb4f729a6d9"
+                  }
+                },
+                "Export_To_File_for_Paginated_Reports_Other_Expenses": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "groupid": "93e95da4-2a9e-475c-b614-2f37825710ba",
+                      "reportid": "075a89bf-44d4-4536-9608-77d2fa0c4084",
+                      "ExportPayloadPaginatedReport/format": "PDF",
+                      "ExportPayloadPaginatedReport/paginatedReportConfiguration/parameterValues": [
+                        {
+                          "name": "SITE",
+                          "value": "@triggerBody()?['text']"
+                        },
+                        {
+                          "name": "PERIOD",
+                          "value": "@{formatDateTime(triggerBody()?['date'], 'yyyyMM')}"
+                        }
+                      ]
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_powerbi",
+                      "operationId": "InitiateExportToFileForPaginatedReports",
+                      "connectionName": "shared_powerbi_1"
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "0efdde57-150f-4003-80e5-95ca3f2670ff"
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Delete_blob_(V2)-_Other_Expenses_report": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "parameters": {
+                        "dataset": "AccountNameFromSettings",
+                        "id": "@concat('/reports/', formatDateTime(triggerBody()?['date'], 'yyyyMM'), '/', triggerBody()?['text'], '/Other Expenses Report.pdf')"
+                      },
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                        "operationId": "DeleteFile_V2",
+                        "connectionName": "shared_azureblob"
+                      }
+                    },
+                    "runAfter": {
+                      "Get_Blob_Metadata_(V2)": [
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "JTJmcmVwb3J0cyUyZjIwMjQxMSUyZjA2MDAlMmZUYXhSZXBvcnQucGRm": "/reports/202411/0600/TaxReport.pdf",
+                      "operationMetadataId": "edf2e9dc-e594-4997-9926-8af014685d33"
+                    }
+                  },
+                  "Get_Blob_Metadata_(V2)": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "parameters": {
+                        "dataset": "AccountNameFromSettings",
+                        "id": "@concat('/reports/', formatDateTime(triggerBody()?['date'], 'yyyyMM'), '/', triggerBody()?['text'], '/Other Expenses Report.pdf')"
+                      },
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                        "operationId": "GetFileMetadata_V2",
+                        "connectionName": "shared_azureblob"
+                      }
+                    },
+                    "metadata": {
+                      "operationMetadataId": "f8eda383-f1bf-4d6f-abaf-79a404f80389"
+                    }
+                  },
+                  "Compose_Other_Expenses_Report_False_Message": {
+                    "type": "Compose",
+                    "inputs": "No action required in False branch.",
+                    "runAfter": {
+                      "Get_Blob_Metadata_(V2)": [
+                        "Failed",
+                        "Succeeded",
+                        "TimedOut",
+                        "Skipped"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "350e00b3-7344-4dae-a1fc-1cc099166c5f"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Condition_Mix_of_Sales_Report_Enabled": [
+                  "Succeeded",
+                  "TimedOut",
+                  "Skipped",
+                  "Failed"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "5363c2e5-2adb-4a5d-ac0c-d798d613c15f"
+              }
+            },
+            "Condition_Parking_Department_Report_Enabled": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "contains": [
+                      "@triggerBody()?['text_1']",
+                      "@string(126840005)"
+                    ]
+                  }
+                ]
+              },
+              "actions": {
+                "Condition_Management_Agreement_is_Enabled": {
+                  "type": "If",
+                  "expression": {
+                    "and": [
+                      {
+                        "contains": [
+                          "@triggerBody()?['text_2']",
+                          "@string(126840009)"
+                        ]
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "Export_To_File_for_Power_BI_Reports_Management_Agreement": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "parameters": {
+                          "groupid": "93e95da4-2a9e-475c-b614-2f37825710ba",
+                          "reportid": "60cac0f9-3543-46d1-8f0a-096dc3e797c6",
+                          "ExportPayloadPowerBIReport/format": "PDF",
+                          "ExportPayloadPowerBIReport/PowerBIReportExportConfiguration/reportLevelFilters": [
+                            {
+                              "filter": "MASTER_NON_FINANCIAL/SITE eq '@{triggerBody()?['text']}' and DATE_DIM/DW_DATE_MONTH le @{formatDateTime(triggerBody()?['date'], 'MM')} and DATE_DIM/DW_DATE_YEAR eq @{formatDateTime(triggerBody()?['date'], 'yyyy')}"
+                            }
+                          ]
+                        },
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_powerbi",
+                          "operationId": "InitiateExportToFileForPbiReports",
+                          "connectionName": "shared_powerbi_1"
+                        }
+                      }
+                    },
+                    "Compose_Management_Agreement_Report": {
+                      "type": "Compose",
+                      "inputs": "@body('Export_To_File_for_Power_BI_Reports_Management_Agreement')",
+                      "runAfter": {
+                        "Export_To_File_for_Power_BI_Reports_Management_Agreement": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Create_blob_Management_Agreement_Report": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "parameters": {
+                          "dataset": "AccountNameFromSettings",
+                          "folderPath": "/reports/@{formatDateTime(triggerBody()?['date'], 'yyyyMM')}/@{triggerBody()?['text']}",
+                          "name": "Parking Department Report.pdf",
+                          "body": "@outputs('Compose_Management_Agreement_Report')",
+                          "Content-Type": "PDF"
+                        },
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                          "operationId": "CreateFile_V2",
+                          "connectionName": "shared_azureblob"
+                        }
+                      },
+                      "runAfter": {
+                        "Compose_Management_Agreement_Report": [
+                          "Succeeded"
+                        ]
+                      },
+                      "runtimeConfiguration": {
+                        "contentTransfer": {
+                          "transferMode": "Chunked"
+                        }
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "Export_To_File_for_Power_BI_Reports_Rev_Share": {
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "parameters": {
+                            "groupid": "93e95da4-2a9e-475c-b614-2f37825710ba",
+                            "reportid": "9f4ecdfe-8325-4377-8567-01b43b5b94b9",
+                            "ExportPayloadPowerBIReport/format": "PDF",
+                            "ExportPayloadPowerBIReport/PowerBIReportExportConfiguration/reportLevelFilters": [
+                              {
+                                "filter": "MASTER_NON_FINANCIAL/SITE eq '@{triggerBody()?['text']}' and DATE_DIM/DW_DATE_MONTH le @{formatDateTime(triggerBody()?['date'], 'MM')} and DATE_DIM/DW_DATE_YEAR eq @{formatDateTime(triggerBody()?['date'], 'yyyy')}"
+                              }
+                            ]
+                          },
+                          "host": {
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_powerbi",
+                            "operationId": "InitiateExportToFileForPbiReports",
+                            "connectionName": "shared_powerbi_1"
+                          }
+                        }
+                      },
+                      "Compose_Rev_Share_Report": {
+                        "type": "Compose",
+                        "inputs": "@body('Export_To_File_for_Power_BI_Reports_Rev_Share')",
+                        "runAfter": {
+                          "Export_To_File_for_Power_BI_Reports_Rev_Share": [
+                            "Succeeded"
+                          ]
+                        }
+                      },
+                      "Create_blob_Rev_Share_Parking_Report": {
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "parameters": {
+                            "dataset": "AccountNameFromSettings",
+                            "folderPath": "/reports/@{formatDateTime(triggerBody()?['date'], 'yyyyMM')}/@{triggerBody()?['text']}",
+                            "name": "Parking Department Report.pdf",
+                            "body": "@outputs('Compose_Rev_Share_Report')",
+                            "Content-Type": "PDF"
+                          },
+                          "host": {
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                            "operationId": "CreateFile_V2",
+                            "connectionName": "shared_azureblob"
+                          }
+                        },
+                        "runAfter": {
+                          "Compose_Rev_Share_Report": [
+                            "Succeeded"
+                          ]
+                        },
+                        "runtimeConfiguration": {
+                          "contentTransfer": {
+                            "transferMode": "Chunked"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Compose_Parking_Department_Report_False_Message": {
+                    "type": "Compose",
+                    "inputs": "No action required in False branch.",
+                    "runAfter": {
+                      "Delete_blob_(V2)-_Parking_Department_report": [
+                        "Succeeded",
+                        "TimedOut",
+                        "Skipped",
+                        "Failed"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "350e00b3-7344-4dae-a1fc-1cc099166c5f"
+                    }
+                  },
+                  "Delete_blob_(V2)-_Parking_Department_report": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "parameters": {
+                        "dataset": "AccountNameFromSettings",
+                        "id": "@concat('/reports/', formatDateTime(triggerBody()?['date'], 'yyyyMM'), '/', triggerBody()?['text'], '/Parking Department Report.pdf')"
+                      },
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                        "operationId": "DeleteFile_V2",
+                        "connectionName": "shared_azureblob"
+                      }
+                    },
+                    "metadata": {
+                      "JTJmcmVwb3J0cyUyZjIwMjQxMSUyZjA2MDAlMmZUYXhSZXBvcnQucGRm": "/reports/202411/0600/TaxReport.pdf",
+                      "operationMetadataId": "edf2e9dc-e594-4997-9926-8af014685d33"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Condition_Other_Expenses_Report_Enabled": [
+                  "Succeeded",
+                  "TimedOut",
+                  "Skipped",
+                  "Failed"
+                ]
+              }
+            },
+            "Condition_Validation_Department_Report_Enabled": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "contains": [
+                      "@triggerBody()?['text_1']",
+                      "@string(126840006)"
+                    ]
+                  }
+                ]
+              },
+              "actions": {
+                "Export_To_File_for_Power_BI_Reports_Validation": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "groupid": "93e95da4-2a9e-475c-b614-2f37825710ba",
+                      "reportid": "777deabf-e6e4-4015-b86f-8edad109f950",
+                      "ExportPayloadPowerBIReport/format": "PDF",
+                      "ExportPayloadPowerBIReport/PowerBIReportExportConfiguration/reportLevelFilters": [
+                        {
+                          "filter": "MASTER_NON_FINANCIAL/SITE eq '@{triggerBody()?['text']}' and DATE_DIM/DW_DATE_MONTH le @{formatDateTime(triggerBody()?['date'], 'MM')} and DATE_DIM/DW_DATE_YEAR eq @{formatDateTime(triggerBody()?['date'], 'yyyy')}"
+                        }
+                      ]
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_powerbi",
+                      "operationId": "InitiateExportToFileForPbiReports",
+                      "connectionName": "shared_powerbi_1"
+                    }
+                  }
+                },
+                "Compose_Validation_Report": {
+                  "type": "Compose",
+                  "inputs": "@body('Export_To_File_for_Power_BI_Reports_Validation')",
+                  "runAfter": {
+                    "Export_To_File_for_Power_BI_Reports_Validation": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Create_blob_Validation_Report": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "dataset": "AccountNameFromSettings",
+                      "folderPath": "/reports/@{formatDateTime(triggerBody()?['date'], 'yyyyMM')}/@{triggerBody()?['text']}",
+                      "name": "Validation Report.pdf",
+                      "body": "@outputs('Compose_Validation_Report')",
+                      "Content-Type": "PDF"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                      "operationId": "CreateFile_V2",
+                      "connectionName": "shared_azureblob"
+                    }
+                  },
+                  "runAfter": {
+                    "Compose_Validation_Report": [
+                      "Succeeded"
+                    ]
+                  },
+                  "runtimeConfiguration": {
+                    "contentTransfer": {
+                      "transferMode": "Chunked"
+                    }
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Delete_blob_(V2)-_Validation_report": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "parameters": {
+                        "dataset": "AccountNameFromSettings",
+                        "id": "@concat('/reports/', formatDateTime(triggerBody()?['date'], 'yyyyMM'), '/', triggerBody()?['text'], '/Validation Report.pdf')"
+                      },
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                        "operationId": "DeleteFile_V2",
+                        "connectionName": "shared_azureblob"
+                      }
+                    },
+                    "metadata": {
+                      "JTJmcmVwb3J0cyUyZjIwMjQxMSUyZjA2MDAlMmZUYXhSZXBvcnQucGRm": "/reports/202411/0600/TaxReport.pdf",
+                      "operationMetadataId": "edf2e9dc-e594-4997-9926-8af014685d33"
+                    }
+                  },
+                  "Compose_Validation_Report_False_Message": {
+                    "type": "Compose",
+                    "inputs": "No action required in False branch.",
+                    "runAfter": {
+                      "Delete_blob_(V2)-_Validation_report": [
+                        "Succeeded",
+                        "Skipped",
+                        "TimedOut",
+                        "Failed"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "350e00b3-7344-4dae-a1fc-1cc099166c5f"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Condition_Parking_Department_Report_Enabled": [
+                  "Succeeded",
+                  "TimedOut",
+                  "Skipped",
+                  "Failed"
+                ]
+              }
+            }
+          },
+          "runAfter": {}
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

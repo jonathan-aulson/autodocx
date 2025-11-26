@@ -1,0 +1,1531 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sql": {
+        "api": {
+          "name": "shared_sql"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "bs_TowneParkEDW"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_commondataserviceforapps": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_7558e"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "description": "Please enter your input",
+                  "title": "ContractType",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "date": {
+                  "description": "Please enter or select a date (YYYY-MM-DD)",
+                  "format": "date",
+                  "title": "ServicePeriodStart",
+                  "type": "string",
+                  "x-ms-content-hint": "DATE",
+                  "x-ms-dynamically-added": true
+                },
+                "date_1": {
+                  "description": "Please enter or select a date (YYYY-MM-DD)",
+                  "format": "date",
+                  "title": "ServiceEndDate",
+                  "type": "string",
+                  "x-ms-content-hint": "DATE",
+                  "x-ms-dynamically-added": true
+                },
+                "text_1": {
+                  "description": "Please enter your input",
+                  "title": "SiteNumber",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "number": {
+                  "description": "Please enter a number",
+                  "title": "InvoiceGroup",
+                  "type": "number",
+                  "x-ms-content-hint": "NUMBER",
+                  "x-ms-dynamically-added": true
+                },
+                "text_2": {
+                  "description": "Please enter your input",
+                  "title": "ManagementAgreementObject",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "text_3": {
+                  "description": "Please enter your input",
+                  "title": "NonGLBillableExpenseObject",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "text_4": {
+                  "description": "Please enter your input",
+                  "title": "BillableAccountsObject",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                }
+              },
+              "required": [
+                "text",
+                "date",
+                "date_1",
+                "text_1",
+                "number",
+                "text_2",
+                "text_3",
+                "text_4"
+              ]
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "b48d9949-8fa2-4ac3-ba41-46066048f43d"
+          }
+        }
+      },
+      "actions": {
+        "Initialize_NonGLBillableExpanseTotalAmount_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "NonGLBillableExpenseTotalAmount",
+                "type": "float",
+                "value": 0
+              }
+            ]
+          },
+          "runAfter": {}
+        },
+        "Initialize_LineItems_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "LineItems",
+                "type": "array",
+                "value": []
+              }
+            ]
+          },
+          "runAfter": {}
+        },
+        "Initialize_Invoice_Sub_Total_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "InvoiceSubTotal",
+                "type": "float",
+                "value": 0
+              }
+            ]
+          },
+          "runAfter": {}
+        },
+        "Initialize_PayrollAccountAmount_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "PayrollAccountAmount",
+                "type": "float",
+                "value": 0
+              }
+            ]
+          },
+          "runAfter": {}
+        },
+        "Initialize_PTEBAmount_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "PTEBAmount",
+                "type": "float",
+                "value": 0
+              }
+            ]
+          },
+          "runAfter": {}
+        },
+        "Initialize_BillableAccountsTotalAmount_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "BillableAccountsTotalAmount",
+                "type": "float",
+                "value": 0
+              }
+            ]
+          },
+          "runAfter": {}
+        },
+        "Condition_-_are_parameters_empty_or_invoice_not_selected": {
+          "type": "If",
+          "expression": {
+            "or": [
+              {
+                "equals": [
+                  "@triggerBody()?['date']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['text_1']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['date_1']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['number']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['text_2']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['text_3']",
+                  "@null"
+                ]
+              }
+            ]
+          },
+          "actions": {
+            "Respond_to_a_Power_App_or_flow": {
+              "type": "Response",
+              "kind": "PowerApp",
+              "inputs": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "invoicesubtotal": {
+                      "title": "InvoiceSubTotal",
+                      "type": "number",
+                      "x-ms-content-hint": "NUMBER",
+                      "x-ms-dynamically-added": true
+                    },
+                    "lineitems": {
+                      "title": "LineItems",
+                      "type": "string",
+                      "x-ms-content-hint": "TEXT",
+                      "x-ms-dynamically-added": true
+                    }
+                  },
+                  "additionalProperties": {}
+                },
+                "statusCode": 200,
+                "body": {
+                  "invoicesubtotal": "@variables('InvoiceSubTotal')",
+                  "lineitems": "@{variables('LineItems')}"
+                }
+              }
+            },
+            "Terminate": {
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Succeeded"
+              },
+              "runAfter": {
+                "Respond_to_a_Power_App_or_flow": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "Initialize_PayrollAccountAmount_variable": [
+              "Succeeded"
+            ],
+            "Initialize_NonGLBillableExpanseTotalAmount_variable": [
+              "Succeeded"
+            ],
+            "Initialize_LineItems_variable": [
+              "Succeeded"
+            ],
+            "Initialize_Invoice_Sub_Total_variable": [
+              "Succeeded"
+            ],
+            "Initialize_PTEBAmount_variable": [
+              "Succeeded"
+            ],
+            "Initialize_BillableAccountsTotalAmount_variable": [
+              "Succeeded"
+            ],
+            "Initialize_Code_variable": [
+              "Succeeded"
+            ],
+            "Initialize_GL_Type_variable": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Parse_JSON_-_Management_Agreement_Object": {
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@triggerBody()?['text_2']",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "bs_invoicegroup@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_invoicegroup": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_managementagreementtype@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_managementagreementtype": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_fixedfeeamount@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_fixedfeeamount": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_perlaborhourjobcode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_perlaborhourrate@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_perlaborhourrate": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_perlaborhourovertimerate@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_perlaborhourovertimerate": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_revenuepercentageamount@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_revenuepercentageamount": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_claimstype": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_claimslinetitle": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_claimsenabled@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_claimsenabled": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "bs_claimscapamount": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_insuranceadditionalpercentage@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_insuranceadditionalpercentage": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_insuranceenabled@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_insuranceenabled": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "bs_insurancefixedfeeamount@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_insurancefixedfeeamount": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_insurancelinetitle": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_insurancetype@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_insurancetype": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_validationthresholdamount": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_validationthresholdenabled@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_validationthresholdenabled": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "bs_validationthresholdtype": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_profitshareaccumulationtype": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_profitshareenabled@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_profitshareenabled": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "bs_profitsharetierdata": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_managementagreementid": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Condition_Check_If_Contract_Does_not_Contain_Management_Agreement": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Condition_Check_If_Contract_Does_not_Contain_Management_Agreement": {
+          "type": "If",
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@contains(triggerBody()?['text'],'126840009')",
+                  "@false"
+                ]
+              }
+            ]
+          },
+          "actions": {
+            "Respond_Empty_To_Parent-1": {
+              "type": "Response",
+              "kind": "PowerApp",
+              "inputs": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "invoicesubtotal": {
+                      "title": "InvoiceSubTotal",
+                      "type": "number",
+                      "x-ms-content-hint": "NUMBER",
+                      "x-ms-dynamically-added": true
+                    },
+                    "lineitems": {
+                      "title": "LineItems",
+                      "type": "string",
+                      "x-ms-content-hint": "TEXT",
+                      "x-ms-dynamically-added": true
+                    }
+                  },
+                  "additionalProperties": {}
+                },
+                "statusCode": 200,
+                "body": {
+                  "invoicesubtotal": "@variables('InvoiceSubTotal')",
+                  "lineitems": "@{variables('LineItems')}"
+                }
+              }
+            },
+            "Terminate_1": {
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Succeeded"
+              },
+              "runAfter": {
+                "Respond_Empty_To_Parent-1": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "Condition_-_are_parameters_empty_or_invoice_not_selected": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Condition_Management_Agreement_is_not_on_invoice": {
+          "type": "If",
+          "expression": {
+            "and": [
+              {
+                "not": {
+                  "equals": [
+                    "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_invoicegroup",
+                    "@triggerBody()?['number']"
+                  ]
+                }
+              }
+            ]
+          },
+          "actions": {
+            "Terminate_2": {
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Succeeded"
+              },
+              "runAfter": {
+                "Respond_to_a_Power_App_or_flow_2": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Respond_to_a_Power_App_or_flow_2": {
+              "type": "Response",
+              "kind": "PowerApp",
+              "inputs": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "invoicesubtotal": {
+                      "title": "InvoiceSubTotal",
+                      "type": "number",
+                      "x-ms-content-hint": "NUMBER",
+                      "x-ms-dynamically-added": true
+                    },
+                    "lineitems": {
+                      "title": "LineItems",
+                      "type": "string",
+                      "x-ms-content-hint": "TEXT",
+                      "x-ms-dynamically-added": true
+                    }
+                  },
+                  "additionalProperties": {}
+                },
+                "statusCode": 200,
+                "body": {
+                  "invoicesubtotal": "@variables('InvoiceSubTotal')",
+                  "lineitems": "@{variables('LineItems')}"
+                }
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "Parse_JSON_-_Management_Agreement_Object": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Condition_-_is_non_GL_expense_enabled": {
+          "type": "If",
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_nonglbillableexpensesenabled",
+                  "@true"
+                ]
+              }
+            ]
+          },
+          "actions": {
+            "Parse_Non_GL_Expense_object_to_Json": {
+              "type": "Compose",
+              "inputs": "@json(triggerBody()?['text_3'])"
+            },
+            "Apply_to_each": {
+              "type": "Foreach",
+              "foreach": "@outputs('Parse_Non_GL_Expense_object_to_Json')",
+              "actions": {
+                "Switch": {
+                  "type": "Switch",
+                  "expression": "@items('Apply_to_each')?['bs_nonglexpensetype']",
+                  "default": {
+                    "actions": {}
+                  },
+                  "cases": {
+                    "Case_FixedAmount": {
+                      "actions": {
+                        "Final_Period_Condition_": {
+                          "type": "If",
+                          "expression": {
+                            "or": [
+                              {
+                                "equals": [
+                                  "@empty(items('Apply_to_each')?['bs_finalperiodbilled'])",
+                                  "@true"
+                                ]
+                              },
+                              {
+                                "lessOrEquals": [
+                                  "@int(formatDateTime(triggerBody()?['date'],'yyyyMM'))",
+                                  "@int(formatDateTime(items('Apply_to_each')?['bs_finalperiodbilled'],'yyyyMM'))"
+                                ]
+                              }
+                            ]
+                          },
+                          "actions": {
+                            "Compose_FixedAmount_Line_Item": {
+                              "type": "Compose",
+                              "inputs": {
+                                "title": "@items('Apply_to_each')?['bs_expensetitle']",
+                                "description": "",
+                                "code": "@{variables('Code')}",
+                                "type": "@{variables('Type')}",
+                                "amount": "@items('Apply_to_each')?['bs_expenseamount']"
+                              }
+                            },
+                            "Append_to_Line_Items": {
+                              "type": "AppendToArrayVariable",
+                              "inputs": {
+                                "name": "LineItems",
+                                "value": "@outputs('Compose_FixedAmount_Line_Item')"
+                              },
+                              "runAfter": {
+                                "Compose_FixedAmount_Line_Item": [
+                                  "Succeeded"
+                                ]
+                              }
+                            },
+                            "Increment_variable": {
+                              "type": "IncrementVariable",
+                              "inputs": {
+                                "name": "InvoiceSubTotal",
+                                "value": "@items('Apply_to_each')?['bs_expenseamount']"
+                              },
+                              "runAfter": {
+                                "Append_to_Line_Items": [
+                                  "Succeeded"
+                                ]
+                              }
+                            }
+                          },
+                          "else": {
+                            "actions": {}
+                          }
+                        }
+                      },
+                      "case": 126840000
+                    },
+                    "Case_Payroll": {
+                      "actions": {
+                        "Get_Payroll_Accounts_Total_Amount": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "parameters": {
+                              "server": "default",
+                              "database": "default",
+                              "table": "[dbo].[ACCOUNT_SUMMARY]",
+                              "$apply": "filter(\n      PERIOD eq @{formatDateTime(triggerBody()?['date'], 'yyyyMM')}\n      AND COST_CENTER eq '@{triggerBody()?['text_1']}' \n      AND  @{outputs('Compose_main_account_data_query_string')}\n)\n/aggregate(\n    BALANCE with sum as BillablePayroll\n)",
+                              "$select": "BillablePayroll"
+                            },
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+                              "operationId": "GetItems_V2",
+                              "connectionName": "shared_sql"
+                            },
+                            "retryPolicy": {
+                              "type": "fixed",
+                              "count": 3,
+                              "interval": "PT30S"
+                            }
+                          },
+                          "runAfter": {
+                            "Compose_main_account_data_query_string": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Parse_JSON_-_Billable_Accounts_Object": {
+                          "type": "ParseJson",
+                          "inputs": {
+                            "content": "@triggerBody()?['text_4']",
+                            "schema": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "@@odata.type": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "bs_payrollaccountsdata": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "bs_payrollaccountsinvoicegroup": {
+                                    "type": [
+                                      "integer",
+                                      "number",
+                                      "null"
+                                    ]
+                                  },
+                                  "bs_payrollaccountslinetitle": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "bs_payrolltaxesbillingtype@OData.Community.Display.V1.FormattedValue": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "bs_payrolltaxesbillingtype": {
+                                    "type": [
+                                      "integer",
+                                      "number",
+                                      "null"
+                                    ]
+                                  },
+                                  "bs_payrolltaxesenabled@OData.Community.Display.V1.FormattedValue": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "bs_payrolltaxesenabled": {
+                                    "type": [
+                                      "boolean",
+                                      "null"
+                                    ]
+                                  },
+                                  "bs_payrolltaxeslinetitle": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "bs_payrolltaxespercentage@OData.Community.Display.V1.FormattedValue": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "bs_payrolltaxespercentage": {
+                                    "type": [
+                                      "integer",
+                                      "number",
+                                      "null"
+                                    ]
+                                  },
+                                  "bs_payrollsupportenabled": {
+                                    "type": [
+                                      "boolean",
+                                      "null"
+                                    ]
+                                  },
+                                  "bs_payrollsupportlinetitle": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "bs_payrollsupportbillingtype@OData.Community.Display.V1.FormattedValue": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "bs_payrollsupportbillingtype": {
+                                    "type": [
+                                      "integer",
+                                      "number",
+                                      "null"
+                                    ]
+                                  },
+                                  "bs_payrollsupportpayrolltype@OData.Community.Display.V1.FormattedValue": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "bs_payrollsupportpayrolltype": {
+                                    "type": [
+                                      "integer",
+                                      "number",
+                                      "null"
+                                    ]
+                                  },
+                                  "bs_payrollsupportamount": {
+                                    "type": [
+                                      "integer",
+                                      "number",
+                                      "null"
+                                    ]
+                                  },
+                                  "bs_expenseaccountsdata": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "bs_expenseaccountsinvoicegroup": {
+                                    "type": [
+                                      "integer",
+                                      "number",
+                                      "null"
+                                    ]
+                                  },
+                                  "bs_expenseaccountslinetitle": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "Parse_JSON_payroll_accounts_data": {
+                          "type": "ParseJson",
+                          "inputs": {
+                            "content": "@first(body('Parse_JSON_-_Billable_Accounts_Object')).bs_payrollaccountsdata",
+                            "schema": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "code": {
+                                    "type": "string"
+                                  },
+                                  "title": {
+                                    "type": "string"
+                                  },
+                                  "isEnabled": {
+                                    "type": "boolean"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "runAfter": {
+                            "Parse_JSON_-_Billable_Accounts_Object": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Filter_array_to_excluded_codes": {
+                          "type": "Query",
+                          "inputs": {
+                            "from": "@body('Parse_JSON_payroll_accounts_data')",
+                            "where": "@equals(item()['isEnabled'],true)"
+                          },
+                          "runAfter": {
+                            "Parse_JSON_payroll_accounts_data": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Select_codes": {
+                          "type": "Select",
+                          "inputs": {
+                            "from": "@body('Filter_array_to_excluded_codes')",
+                            "select": "@item()?['code']"
+                          },
+                          "runAfter": {
+                            "Filter_array_to_excluded_codes": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Compose_main_account_data_query_string": {
+                          "type": "Compose",
+                          "inputs": "@concat('(MAIN_ACCOUNT eq ''', join(body('Select_codes'), ''' OR MAIN_ACCOUNT eq '''), ''')')",
+                          "runAfter": {
+                            "Select_codes": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Set_PayrollAccountAmount_variable": {
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "PayrollAccountAmount",
+                            "value": "@if(\r\n    greater(\r\n        coalesce(first(body('Parse_JSON_-_Billable_Accounts_Object')).bs_additionalPayrollAmount, 0),\r\n        0\r\n    ),\r\n    add(\r\n        coalesce(first(body('Parse_JSON_-_Billable_Accounts_Object')).bs_additionalPayrollAmount, 0),\r\n        coalesce(first(outputs('Get_Payroll_Accounts_Total_Amount')?['body/value'])?['BillablePayroll'], 0)\r\n    ),\r\n    coalesce(first(outputs('Get_Payroll_Accounts_Total_Amount')?['body/value'])?['BillablePayroll'], 0)\r\n)"
+                          },
+                          "runAfter": {
+                            "Get_Payroll_Accounts_Total_Amount": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Increment_BillableAccountsTotalAmount": {
+                          "type": "IncrementVariable",
+                          "inputs": {
+                            "name": "BillableAccountsTotalAmount",
+                            "value": "@variables('PayrollAccountAmount')"
+                          },
+                          "runAfter": {
+                            "Set_PayrollAccountAmount_variable": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Switch_-_Payroll_type": {
+                          "type": "Switch",
+                          "expression": "@items('Apply_to_each')?['bs_expensepayrolltype']",
+                          "default": {
+                            "actions": {}
+                          },
+                          "cases": {
+                            "Case_Billable": {
+                              "actions": {
+                                "Final_Period_Condition_for_Case_Billable": {
+                                  "type": "If",
+                                  "expression": {
+                                    "or": [
+                                      {
+                                        "equals": [
+                                          "@empty(items('Apply_to_each')?['bs_finalperiodbilled'])",
+                                          "@true"
+                                        ]
+                                      },
+                                      {
+                                        "lessOrEquals": [
+                                          "@int(formatDateTime(triggerBody()?['date'],'yyyyMM'))",
+                                          "@int(formatDateTime(items('Apply_to_each')?['bs_finalperiodbilled'],'yyyyMM'))"
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  "actions": {
+                                    "Compose_Billable_Payroll_Line_Items": {
+                                      "type": "Compose",
+                                      "inputs": {
+                                        "title": "@items('Apply_to_each')?['bs_expensetitle']",
+                                        "description": "",
+                                        "code": "@{variables('Code')}",
+                                        "type": "@{variables('Type')}",
+                                        "amount": "@mul(\r\n    variables('PayrollAccountAmount'),\r\n    div(\r\n        items('Apply_to_each')?['bs_expenseamount'],\r\n        100\r\n    )\r\n)"
+                                      }
+                                    },
+                                    "Append_to_Line_Items_-_Billable": {
+                                      "type": "AppendToArrayVariable",
+                                      "inputs": {
+                                        "name": "LineItems",
+                                        "value": "@outputs('Compose_Billable_Payroll_Line_Items')"
+                                      },
+                                      "runAfter": {
+                                        "Compose_Billable_Payroll_Line_Items": [
+                                          "Succeeded"
+                                        ]
+                                      }
+                                    },
+                                    "Increment__Invoice_Sub_Total_for_Billable": {
+                                      "type": "IncrementVariable",
+                                      "inputs": {
+                                        "name": "InvoiceSubTotal",
+                                        "value": "@mul(\r\n    variables('PayrollAccountAmount'),\r\n    div(\r\n        items('Apply_to_each')?['bs_expenseamount'],\r\n        100\r\n    )\r\n)"
+                                      },
+                                      "runAfter": {
+                                        "Append_to_Line_Items_-_Billable": [
+                                          "Succeeded"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "else": {
+                                    "actions": {}
+                                  }
+                                }
+                              },
+                              "case": 126840000
+                            },
+                            "Case_-_Total_Payroll": {
+                              "actions": {
+                                "Final_Period_Condition_for_Case_Total_Payroll": {
+                                  "type": "If",
+                                  "expression": {
+                                    "or": [
+                                      {
+                                        "equals": [
+                                          "@empty(items('Apply_to_each')?['bs_finalperiodbilled'])",
+                                          "@true"
+                                        ]
+                                      },
+                                      {
+                                        "lessOrEquals": [
+                                          "@int(formatDateTime(triggerBody()?['date'],'yyyyMM'))",
+                                          "@int(formatDateTime(items('Apply_to_each')?['bs_finalperiodbilled'],'yyyyMM'))"
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  "actions": {
+                                    "Compose_Total_Payroll_Line_Items": {
+                                      "type": "Compose",
+                                      "inputs": {
+                                        "title": "@items('Apply_to_each')?['bs_expensetitle']\r\n\r\n",
+                                        "description": "",
+                                        "code": "@{variables('Code')}",
+                                        "type": "@{variables('Type')}",
+                                        "amount": "@mul(add(variables('PayrollAccountAmount'),variables('PTEBAmount')),div(items('Apply_to_each')?['bs_expenseamount'],100))"
+                                      }
+                                    },
+                                    "Append_to_Line_Items_-_Total_Payroll": {
+                                      "type": "AppendToArrayVariable",
+                                      "inputs": {
+                                        "name": "LineItems",
+                                        "value": "@outputs('Compose_Total_Payroll_Line_Items')"
+                                      },
+                                      "runAfter": {
+                                        "Compose_Total_Payroll_Line_Items": [
+                                          "Succeeded"
+                                        ]
+                                      }
+                                    },
+                                    "Increment_Invoice_Sub_Total_for_Total_Payroll": {
+                                      "type": "IncrementVariable",
+                                      "inputs": {
+                                        "name": "InvoiceSubTotal",
+                                        "value": "@mul(add(variables('PayrollAccountAmount'),variables('PTEBAmount')),div(items('Apply_to_each')?['bs_expenseamount'],100))"
+                                      },
+                                      "runAfter": {
+                                        "Append_to_Line_Items_-_Total_Payroll": [
+                                          "Succeeded"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "else": {
+                                    "actions": {}
+                                  },
+                                  "runAfter": {
+                                    "Increment_BillableAccountsTotalAmount_2": [
+                                      "Succeeded"
+                                    ]
+                                  }
+                                },
+                                "Get_PTEB_Amount": {
+                                  "type": "OpenApiConnection",
+                                  "inputs": {
+                                    "parameters": {
+                                      "server": "default",
+                                      "database": "default",
+                                      "table": "[dbo].[ACCOUNT_SUMMARY]",
+                                      "$apply": "filter(\n    PERIOD eq @{formatDateTime(triggerBody()?['date'], 'yyyyMM')} \n    AND COST_CENTER eq '@{triggerBody()?['text_1']}'\n    AND (MAIN_ACCOUNT eq '6200' OR MAIN_ACCOUNT eq '6399' OR MAIN_ACCOUNT eq '6500')\n)\n/aggregate(\n    BALANCE with sum as PTEB\n)",
+                                      "$select": "PTEB"
+                                    },
+                                    "host": {
+                                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+                                      "operationId": "GetItems_V2",
+                                      "connectionName": "shared_sql"
+                                    },
+                                    "retryPolicy": {
+                                      "type": "fixed",
+                                      "count": 3,
+                                      "interval": "PT30S"
+                                    }
+                                  }
+                                },
+                                "Set_PTEBAmount_variable": {
+                                  "type": "SetVariable",
+                                  "inputs": {
+                                    "name": "PTEBAmount",
+                                    "value": "@coalesce(first(outputs('Get_PTEB_Amount')?['body/value'])?['PTEB'],0)"
+                                  },
+                                  "runAfter": {
+                                    "Get_PTEB_Amount": [
+                                      "Succeeded"
+                                    ]
+                                  }
+                                },
+                                "Increment_BillableAccountsTotalAmount_2": {
+                                  "type": "IncrementVariable",
+                                  "inputs": {
+                                    "name": "BillableAccountsTotalAmount",
+                                    "value": "@variables('PTEBAmount')"
+                                  },
+                                  "runAfter": {
+                                    "Set_PTEBAmount_variable": [
+                                      "Succeeded"
+                                    ]
+                                  }
+                                }
+                              },
+                              "case": 126840001
+                            }
+                          },
+                          "runAfter": {
+                            "Increment_BillableAccountsTotalAmount": [
+                              "Succeeded"
+                            ]
+                          }
+                        }
+                      },
+                      "case": 126840001
+                    },
+                    "Case_Revenue": {
+                      "actions": {
+                        "Final_Period_Condition_for_Case_Revenue": {
+                          "type": "If",
+                          "expression": {
+                            "or": [
+                              {
+                                "equals": [
+                                  "@empty(items('Apply_to_each')?['bs_finalperiodbilled'])",
+                                  "@true"
+                                ]
+                              },
+                              {
+                                "lessOrEquals": [
+                                  "@int(formatDateTime(triggerBody()?['date'],'yyyyMM'))",
+                                  "@int(formatDateTime(items('Apply_to_each')?['bs_finalperiodbilled'],'yyyyMM'))"
+                                ]
+                              }
+                            ]
+                          },
+                          "actions": {
+                            "Compose_Revenue_LineItem": {
+                              "type": "Compose",
+                              "inputs": {
+                                "title": "@items('Apply_to_each')?['bs_expensetitle']",
+                                "description": "",
+                                "code": "@{variables('Code')}",
+                                "type": "@{variables('Type')}",
+                                "amount": "@mul(coalesce(first(outputs('Get_TotalNetExternalRevenue_rows')?['body/value'])?['TotalNetExternalRevenue'],0),div(items('Apply_to_each')?['bs_expenseamount'],100))"
+                              }
+                            },
+                            "Append_to_Line_Items_-_Revenue": {
+                              "type": "AppendToArrayVariable",
+                              "inputs": {
+                                "name": "LineItems",
+                                "value": "@outputs('Compose_Revenue_LineItem')"
+                              },
+                              "runAfter": {
+                                "Compose_Revenue_LineItem": [
+                                  "Succeeded"
+                                ]
+                              }
+                            },
+                            "Increment__Invoice_Sub_Total_for_Revenue": {
+                              "type": "IncrementVariable",
+                              "inputs": {
+                                "name": "InvoiceSubTotal",
+                                "value": "@mul(coalesce(first(outputs('Get_TotalNetExternalRevenue_rows')?['body/value'])?['TotalNetExternalRevenue'],0),div(items('Apply_to_each')?['bs_expenseamount'],100))"
+                              },
+                              "runAfter": {
+                                "Append_to_Line_Items_-_Revenue": [
+                                  "Succeeded"
+                                ]
+                              }
+                            }
+                          },
+                          "else": {
+                            "actions": {}
+                          },
+                          "runAfter": {
+                            "Get_TotalNetExternalRevenue_rows": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Get_TotalNetExternalRevenue_rows": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "parameters": {
+                              "server": "default",
+                              "database": "default",
+                              "table": "[dbo].[vwREVENUE_DAILY_DETAIL_INVOICE]",
+                              "$apply": "filter(SITE eq '@{triggerBody()?['text_1']}' and year(DATE) eq @{formatDateTime(triggerBody()?['date'], 'yyyy')}and month(DATE) eq @{formatDateTime(triggerBody()?['date'], 'MM')}and DEPOSIT_FLAG ne 'V' and REVENUE_CATEGORY ne 'Per Man Hour')/aggregate(NETEXTERNALREVENUE with sum as TotalNetExternalRevenue)",
+                              "$select": "TotalNetExternalRevenue"
+                            },
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+                              "operationId": "GetItems_V2",
+                              "connectionName": "shared_sql"
+                            },
+                            "retryPolicy": {
+                              "type": "fixed",
+                              "count": 3,
+                              "interval": "PT30S"
+                            }
+                          }
+                        }
+                      },
+                      "case": 126840002
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Set_code_variable": [
+                  "Succeeded"
+                ],
+                "Set_type_variable": [
+                  "Succeeded"
+                ],
+                "For_each_Management_Agreement_Line_Item_row": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "List_rows": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "bs_glcodeconfigs",
+                  "$select": "bs_code,bs_name",
+                  "$filter": "bs_type eq 126840015",
+                  "$top": 1
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "connectionName": "shared_commondataserviceforapps"
+                }
+              },
+              "runAfter": {
+                "Parse_Non_GL_Expense_object_to_Json": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Set_code_variable": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "Code",
+                "value": "@first(body('List_rows')?['value'])?['bs_code']"
+              },
+              "runAfter": {
+                "List_rows": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Set_type_variable": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "Type",
+                "value": "@first(body('List_rows')?['value'])?['bs_name']"
+              },
+              "runAfter": {
+                "List_rows": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "List_Management_Agreement_Line_Item_rows": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "bs_managementagreementlineitems",
+                  "$select": "bs_managementagreementlineitemid",
+                  "$filter": "bs_site eq '@{triggerBody()?['text_1']}' and bs_month eq '@{formatDateTime(triggerBody()?['date'],'MM')}' and bs_year eq '@{formatDateTime(triggerBody()?['date'],'yyyy')}'"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "connectionName": "shared_commondataserviceforapps"
+                }
+              }
+            },
+            "For_each_Management_Agreement_Line_Item_row": {
+              "type": "Foreach",
+              "foreach": "@outputs('List_Management_Agreement_Line_Item_rows')?['body/value']",
+              "actions": {
+                "Delete_a_Management_Agreement_Line_Item_row": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "entityName": "bs_managementagreementlineitems",
+                      "recordId": "@items('For_each_Management_Agreement_Line_Item_row')?['bs_managementagreementlineitemid']"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "operationId": "DeleteRecord",
+                      "connectionName": "shared_commondataserviceforapps"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "List_Management_Agreement_Line_Item_rows": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "Condition_Management_Agreement_is_not_on_invoice": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Respond_to_a_Power_App_or_flow_1": {
+          "type": "Response",
+          "kind": "PowerApp",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "invoicesubtotal": {
+                  "title": "InvoiceSubTotal",
+                  "type": "number",
+                  "x-ms-content-hint": "NUMBER",
+                  "x-ms-dynamically-added": true
+                },
+                "lineitems": {
+                  "title": "LineItems",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                }
+              },
+              "additionalProperties": {}
+            },
+            "statusCode": 200,
+            "body": {
+              "invoicesubtotal": "@variables('InvoiceSubTotal')",
+              "lineitems": "@{variables('LineItems')}"
+            }
+          },
+          "runAfter": {
+            "For_each_NonGLBillableExpense": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Initialize_Code_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Code",
+                "type": "string"
+              }
+            ]
+          },
+          "runAfter": {}
+        },
+        "Initialize_GL_Type_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Type",
+                "type": "string"
+              }
+            ]
+          },
+          "runAfter": {}
+        },
+        "For_each_NonGLBillableExpense": {
+          "type": "Foreach",
+          "foreach": "@variables('LineItems')",
+          "actions": {
+            "_Add_a_new_NonGLBillableExpenseAmount_Line_Item_row": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "bs_managementagreementlineitems",
+                  "item/bs_mainaccount": "@items('For_each_NonGLBillableExpense')?['code']",
+                  "item/bs_month": "@formatDateTime(triggerBody()?['date'],'MM')",
+                  "item/bs_site": "@triggerBody()?['text_1']",
+                  "item/bs_title": "@items('For_each_NonGLBillableExpense')?['title']",
+                  "item/bs_total": "@items('For_each_NonGLBillableExpense')?['amount']",
+                  "item/bs_type": "@items('For_each_NonGLBillableExpense')?['type']",
+                  "item/bs_year": "@formatDateTime(triggerBody()?['date'],'yyyy')"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "CreateRecord",
+                  "connectionName": "shared_commondataserviceforapps"
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Condition_-_is_non_GL_expense_enabled": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

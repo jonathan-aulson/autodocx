@@ -1,0 +1,39 @@
+<svg
+    xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true"
+    role="img"
+    width="24"
+    height="24"
+    viewBox="0 0 71.46 71.46"
+>
+    <g>
+        <rect
+            fill="#233360"
+            width="71.46"
+            height="71.46"
+            rx="12.12"
+            ry="12.12"
+        />
+        <path
+            stroke="#ffffff"
+            fill="none"
+            strokeLinecap="round"
+            strokeMiterlimit="10"
+            strokeWidth="4"
+            d="M20.68,25.98c2.69,4.73,5.88,6.85,7.86,7.86,9.43,4.78,23.55,.36,34.42-11.65"
+        />
+        <path
+            fill="none"
+            stroke="#ffffff"
+            strokeLinecap="round"
+            strokeMiterlimit="10"
+            strokeWidth="4"
+            d="M50.79,45.49c-2.69-4.73-5.88-6.85-7.86-7.86-9.43-4.78-23.55-.36-34.42,11.65"
+        />
+        <circle
+            fill="#5fc1ef"
+            cx="38.57"
+            cy="26.52"
+            r="4.34"
+        />
+    </g>
+</svg>

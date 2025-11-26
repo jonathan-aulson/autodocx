@@ -1,0 +1,406 @@
+{
+  "properties": {
+    "connectionReferences": {},
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "007bccc7-d6a6-44cd-b0f5-b7e00fa65214"
+          },
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "description": "Stringified Array of Mid Month Advance",
+                  "title": "MidMonthAdvance",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "number": {
+                  "description": "Targe Invoice Group",
+                  "title": "InvoiceGroup",
+                  "type": "number",
+                  "x-ms-content-hint": "NUMBER",
+                  "x-ms-dynamically-added": true
+                },
+                "text_1": {
+                  "description": "Comma separated string of Contract Types integer values",
+                  "title": "ContractType",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                }
+              },
+              "required": [
+                "text",
+                "number",
+                "text_1"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Initialize_MidMonthAdvanceAmount_Variable": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "5dcc93e9-5017-4ae6-961f-980409a2facf"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "MidMonthAdvanceAmount",
+                "type": "float",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "Compose_Empty_Line_Items": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "e0eb1f56-78f4-4e42-919c-5c8bebb4aa5b"
+          },
+          "type": "Compose",
+          "inputs": []
+        },
+        "Condition": {
+          "actions": {
+            "Respond_to_empty_parent": {
+              "type": "Response",
+              "kind": "PowerApp",
+              "inputs": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "lineitems": {
+                      "title": "LineItems",
+                      "type": "string",
+                      "x-ms-content-hint": "TEXT",
+                      "x-ms-dynamically-added": true
+                    },
+                    "invoicesubtotal": {
+                      "title": "InvoiceSubTotal",
+                      "type": "number",
+                      "x-ms-content-hint": "NUMBER",
+                      "x-ms-dynamically-added": true
+                    }
+                  },
+                  "additionalProperties": {}
+                },
+                "statusCode": 200,
+                "body": {
+                  "lineitems": "@{outputs('Compose_Empty_Line_Items')}",
+                  "invoicesubtotal": "@variables('MidMonthAdvanceAmount')"
+                }
+              }
+            },
+            "Terminate": {
+              "runAfter": {
+                "Respond_to_empty_parent": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Succeeded"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_MidMonthAdvanceAmount_Variable": [
+              "Succeeded"
+            ],
+            "Compose_Empty_Line_Items": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {}
+          },
+          "expression": {
+            "or": [
+              {
+                "equals": [
+                  "@triggerBody()?['text']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@empty(triggerBody()?['text'])",
+                  "@true"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['number']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['text_1']",
+                  "@null"
+                ]
+              }
+            ]
+          },
+          "type": "If"
+        },
+        "Compose_ContractType_Array": {
+          "runAfter": {
+            "Condition": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@split(triggerBody()?['text_1'], ',')"
+        },
+        "Condition_1": {
+          "actions": {
+            "Respond_empty_to_parent_2": {
+              "type": "Response",
+              "kind": "PowerApp",
+              "inputs": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "invoicesubtotal": {
+                      "title": "InvoiceSubTotal",
+                      "type": "number",
+                      "x-ms-content-hint": "NUMBER",
+                      "x-ms-dynamically-added": true
+                    },
+                    "lineitems": {
+                      "title": "LineItems",
+                      "type": "string",
+                      "x-ms-content-hint": "TEXT",
+                      "x-ms-dynamically-added": true
+                    }
+                  },
+                  "additionalProperties": {}
+                },
+                "statusCode": 200,
+                "body": {
+                  "invoicesubtotal": "@variables('MidMonthAdvanceAmount')",
+                  "lineitems": "@{outputs('Compose_Empty_Line_Items')}"
+                }
+              }
+            },
+            "Terminate_2": {
+              "runAfter": {
+                "Respond_empty_to_parent_2": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Succeeded"
+              }
+            }
+          },
+          "runAfter": {
+            "Compose_ContractType_Array": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {}
+          },
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@contains(triggerBody()?['text_1'], '126840006')",
+                  "@false"
+                ]
+              }
+            ]
+          },
+          "type": "If"
+        },
+        "Parse_Mid_Month_JSON": {
+          "runAfter": {
+            "Condition_1": [
+              "Succeeded"
+            ]
+          },
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@triggerBody()?['text']",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "bs_invoicegroup": {
+                    "type": "integer"
+                  },
+                  "bs_amount": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "Compose_Get_First_Record": {
+          "runAfter": {
+            "Parse_Mid_Month_JSON": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@first(body('Parse_Mid_Month_JSON'))"
+        },
+        "Compose_Line_Item": {
+          "runAfter": {
+            "Set_MidMonthAdvanceAmount": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": [
+            {
+              "title": "Mid-Month Advance",
+              "description": "@outputs('Compose_Get_First_Record')?['bs_linetitle@OData.Community.Display.V1.FormattedValue']",
+              "code": "4790",
+              "amount": "@variables('MidMonthAdvanceAmount')"
+            }
+          ]
+        },
+        "Respond_to_a_Power_App_or_flow": {
+          "runAfter": {
+            "Compose_Line_Item": [
+              "Succeeded"
+            ]
+          },
+          "type": "Response",
+          "kind": "PowerApp",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "invoicesubtotal": {
+                  "title": "InvoiceSubTotal",
+                  "type": "number",
+                  "x-ms-content-hint": "NUMBER",
+                  "x-ms-dynamically-added": true
+                },
+                "lineitems": {
+                  "title": "LineItems",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                }
+              },
+              "additionalProperties": {}
+            },
+            "statusCode": 200,
+            "body": {
+              "invoicesubtotal": "@variables('MidMonthAdvanceAmount')",
+              "lineitems": "@{outputs('Compose_Line_Item')}"
+            }
+          }
+        },
+        "Set_MidMonthAdvanceAmount": {
+          "runAfter": {
+            "Condition_2": [
+              "Succeeded"
+            ]
+          },
+          "type": "SetVariable",
+          "inputs": {
+            "name": "MidMonthAdvanceAmount",
+            "value": "@mul(outputs('Compose_Get_First_Record')?['bs_amount'],-1)"
+          }
+        },
+        "Condition_2": {
+          "actions": {
+            "Respond_empty_to_parent_2-copy": {
+              "type": "Response",
+              "kind": "PowerApp",
+              "inputs": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "invoicesubtotal": {
+                      "title": "InvoiceSubTotal",
+                      "type": "number",
+                      "x-ms-content-hint": "NUMBER",
+                      "x-ms-dynamically-added": true
+                    },
+                    "lineitems": {
+                      "title": "LineItems",
+                      "type": "string",
+                      "x-ms-content-hint": "TEXT",
+                      "x-ms-dynamically-added": true
+                    }
+                  },
+                  "additionalProperties": {}
+                },
+                "statusCode": 200,
+                "body": {
+                  "invoicesubtotal": "@variables('MidMonthAdvanceAmount')",
+                  "lineitems": "@{outputs('Compose_Empty_Line_Items')}"
+                }
+              }
+            },
+            "Terminate_1": {
+              "runAfter": {
+                "Respond_empty_to_parent_2-copy": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Succeeded"
+              }
+            }
+          },
+          "runAfter": {
+            "Compose_Get_First_Record": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {}
+          },
+          "expression": {
+            "and": [
+              {
+                "not": {
+                  "equals": [
+                    "@outputs('Compose_Get_First_Record')?['bs_invoicegroup']",
+                    "@triggerBody()?['number']"
+                  ]
+                }
+              }
+            ]
+          },
+          "type": "If"
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

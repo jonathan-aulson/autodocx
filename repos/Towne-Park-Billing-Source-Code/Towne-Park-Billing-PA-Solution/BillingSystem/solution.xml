@@ -1,0 +1,221 @@
+<ImportExportXml version="9.2.25081.240" SolutionPackageVersion="9.2" languagecode="1033" generatedBy="CrmLive" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" OrganizationVersion="9.2.25081.240" OrganizationSchemaType="Standard" CRMServerServiceabilityVersion="9.2.25082.00169">
+  <SolutionManifest>
+    <UniqueName>BillingSystem</UniqueName>
+    <LocalizedNames>
+      <LocalizedName description="Billing System" languagecode="1033" />
+    </LocalizedNames>
+    <Descriptions />
+    <Version>1.0.33.8</Version>
+    <Managed>0</Managed>
+    <Publisher>
+      <UniqueName>Billing_System_Solution</UniqueName>
+      <LocalizedNames>
+        <LocalizedName description="Billing System" languagecode="1033" />
+      </LocalizedNames>
+      <Descriptions />
+      <EMailAddress xsi:nil="true"></EMailAddress>
+      <SupportingWebsiteUrl xsi:nil="true"></SupportingWebsiteUrl>
+      <CustomizationPrefix>bs</CustomizationPrefix>
+      <CustomizationOptionValuePrefix>12684</CustomizationOptionValuePrefix>
+      <Addresses>
+        <Address>
+          <AddressNumber>1</AddressNumber>
+          <AddressTypeCode>1</AddressTypeCode>
+          <City xsi:nil="true"></City>
+          <County xsi:nil="true"></County>
+          <Country xsi:nil="true"></Country>
+          <Fax xsi:nil="true"></Fax>
+          <FreightTermsCode xsi:nil="true"></FreightTermsCode>
+          <ImportSequenceNumber xsi:nil="true"></ImportSequenceNumber>
+          <Latitude xsi:nil="true"></Latitude>
+          <Line1 xsi:nil="true"></Line1>
+          <Line2 xsi:nil="true"></Line2>
+          <Line3 xsi:nil="true"></Line3>
+          <Longitude xsi:nil="true"></Longitude>
+          <Name xsi:nil="true"></Name>
+          <PostalCode xsi:nil="true"></PostalCode>
+          <PostOfficeBox xsi:nil="true"></PostOfficeBox>
+          <PrimaryContactName xsi:nil="true"></PrimaryContactName>
+          <ShippingMethodCode>1</ShippingMethodCode>
+          <StateOrProvince xsi:nil="true"></StateOrProvince>
+          <Telephone1 xsi:nil="true"></Telephone1>
+          <Telephone2 xsi:nil="true"></Telephone2>
+          <Telephone3 xsi:nil="true"></Telephone3>
+          <TimeZoneRuleVersionNumber xsi:nil="true"></TimeZoneRuleVersionNumber>
+          <UPSZone xsi:nil="true"></UPSZone>
+          <UTCOffset xsi:nil="true"></UTCOffset>
+          <UTCConversionTimeZoneCode xsi:nil="true"></UTCConversionTimeZoneCode>
+        </Address>
+        <Address>
+          <AddressNumber>2</AddressNumber>
+          <AddressTypeCode>1</AddressTypeCode>
+          <City xsi:nil="true"></City>
+          <County xsi:nil="true"></County>
+          <Country xsi:nil="true"></Country>
+          <Fax xsi:nil="true"></Fax>
+          <FreightTermsCode xsi:nil="true"></FreightTermsCode>
+          <ImportSequenceNumber xsi:nil="true"></ImportSequenceNumber>
+          <Latitude xsi:nil="true"></Latitude>
+          <Line1 xsi:nil="true"></Line1>
+          <Line2 xsi:nil="true"></Line2>
+          <Line3 xsi:nil="true"></Line3>
+          <Longitude xsi:nil="true"></Longitude>
+          <Name xsi:nil="true"></Name>
+          <PostalCode xsi:nil="true"></PostalCode>
+          <PostOfficeBox xsi:nil="true"></PostOfficeBox>
+          <PrimaryContactName xsi:nil="true"></PrimaryContactName>
+          <ShippingMethodCode>1</ShippingMethodCode>
+          <StateOrProvince xsi:nil="true"></StateOrProvince>
+          <Telephone1 xsi:nil="true"></Telephone1>
+          <Telephone2 xsi:nil="true"></Telephone2>
+          <Telephone3 xsi:nil="true"></Telephone3>
+          <TimeZoneRuleVersionNumber xsi:nil="true"></TimeZoneRuleVersionNumber>
+          <UPSZone xsi:nil="true"></UPSZone>
+          <UTCOffset xsi:nil="true"></UTCOffset>
+          <UTCConversionTimeZoneCode xsi:nil="true"></UTCConversionTimeZoneCode>
+        </Address>
+      </Addresses>
+    </Publisher>
+    <RootComponents>
+      <RootComponent type="1" schemaName="bs_actionoverrides" behavior="0" />
+      <RootComponent type="1" schemaName="bs_bellservice" behavior="0" />
+      <RootComponent type="1" schemaName="bs_billableaccount" behavior="0" />
+      <RootComponent type="1" schemaName="bs_billableexpense" behavior="0" />
+      <RootComponent type="1" schemaName="bs_billingstatement" behavior="0" />
+      <RootComponent type="1" schemaName="bs_calculationgenerationsstatus" behavior="0" />
+      <RootComponent type="1" schemaName="bs_contract" behavior="0" />
+      <RootComponent type="1" schemaName="bs_customersite" behavior="0" />
+      <RootComponent type="1" schemaName="bs_customersitesbyuser" behavior="0" />
+      <RootComponent type="1" schemaName="bs_depositedrevenue" behavior="0" />
+      <RootComponent type="1" schemaName="bs_emailgenerationprocess" behavior="0" />
+      <RootComponent type="1" schemaName="bs_fixedfeeservice" behavior="0" />
+      <RootComponent type="1" schemaName="bs_forecastjobprofilemapping" behavior="0" />
+      <RootComponent type="1" schemaName="bs_forecastloadingprocess" behavior="0" />
+      <RootComponent type="1" schemaName="bs_forecastsummary" behavior="0" />
+      <RootComponent type="1" schemaName="bs_generalconfig" behavior="0" />
+      <RootComponent type="1" schemaName="bs_glcodeconfig" behavior="0" />
+      <RootComponent type="1" schemaName="bs_glrequestlog" behavior="0" />
+      <RootComponent type="1" schemaName="bs_internalrevenue" behavior="0" />
+      <RootComponent type="1" schemaName="bs_invoice" behavior="0" />
+      <RootComponent type="1" schemaName="bs_invoicegroup" behavior="0" />
+      <RootComponent type="1" schemaName="bs_jobcode" behavior="0" />
+      <RootComponent type="1" schemaName="bs_jobcodesbysite" behavior="0" />
+      <RootComponent type="1" schemaName="bs_jobgroup" behavior="0" />
+      <RootComponent type="1" schemaName="bs_laborhourjob" behavior="0" />
+      <RootComponent type="1" schemaName="bs_managementagreement" behavior="0" />
+      <RootComponent type="1" schemaName="bs_managementagreementexpenseaccount" behavior="0" />
+      <RootComponent type="1" schemaName="bs_managementagreementlineitem" behavior="0" />
+      <RootComponent type="1" schemaName="bs_mastercustomersite" behavior="0" />
+      <RootComponent type="1" schemaName="bs_midmonthadvance" behavior="0" />
+      <RootComponent type="1" schemaName="bs_nonglexpense" behavior="0" />
+      <RootComponent type="1" schemaName="bs_otherexpensedetail" behavior="0" />
+      <RootComponent type="1" schemaName="bs_otherrevenue" behavior="0" />
+      <RootComponent type="1" schemaName="bs_otherrevenuedetail" behavior="0" />
+      <RootComponent type="1" schemaName="bs_parkingrate" behavior="0" />
+      <RootComponent type="1" schemaName="bs_parkingratedetail" behavior="0" />
+      <RootComponent type="1" schemaName="bs_payroll" behavior="0" />
+      <RootComponent type="1" schemaName="bs_payrolldetail" behavior="0" />
+      <RootComponent type="1" schemaName="bs_profitsharebypercentage" behavior="0" />
+      <RootComponent type="1" schemaName="bs_resourcelock" behavior="0" />
+      <RootComponent type="1" schemaName="bs_revenuesharebypercent" behavior="0" />
+      <RootComponent type="1" schemaName="bs_revenuesharethreshold" behavior="0" />
+      <RootComponent type="1" schemaName="bs_sitestatistic" behavior="0" />
+      <RootComponent type="1" schemaName="bs_sitestatisticdetail" behavior="0" />
+      <RootComponent type="1" schemaName="bs_statementgenerationprocess" behavior="0" />
+      <RootComponent type="1" schemaName="bs_unitaccountbatchprocess" behavior="0" />
+      <RootComponent type="1" schemaName="bs_user" behavior="0" />
+      <RootComponent type="1" schemaName="bs_usercustomrole" behavior="0" />
+      <RootComponent type="1" schemaName="bs_validationbypercent" behavior="0" />
+      <RootComponent type="1" schemaName="cr9e8_readyforinvoice" behavior="0" />
+      <RootComponent type="9" schemaName="bs_billingstatementstatuschoices" behavior="0" />
+      <RootComponent type="9" schemaName="bs_billingtypechoices" behavior="0" />
+      <RootComponent type="9" schemaName="bs_claimtype" behavior="0" />
+      <RootComponent type="9" schemaName="bs_contracttypechoices" behavior="0" />
+      <RootComponent type="9" schemaName="bs_escalatortype" behavior="0" />
+      <RootComponent type="9" schemaName="bs_forecastloadingstatus" behavior="0" />
+      <RootComponent type="9" schemaName="bs_generalconfigchoices" behavior="0" />
+      <RootComponent type="9" schemaName="bs_generalconfiggroupchoices" behavior="0" />
+      <RootComponent type="9" schemaName="bs_glcodetypechoices" behavior="0" />
+      <RootComponent type="9" schemaName="bs_glrequeststatus" behavior="0" />
+      <RootComponent type="9" schemaName="bs_lineitemtitle" behavior="0" />
+      <RootComponent type="9" schemaName="bs_managementagreementinsurancetype" behavior="0" />
+      <RootComponent type="9" schemaName="bs_managementagreementtype" behavior="0" />
+      <RootComponent type="9" schemaName="bs_managementagreementvalidationtype" behavior="0" />
+      <RootComponent type="9" schemaName="bs_nonglexpensetype" behavior="0" />
+      <RootComponent type="9" schemaName="bs_nonglpayrolltype" behavior="0" />
+      <RootComponent type="9" schemaName="bs_otherrevenuetypes" behavior="0" />
+      <RootComponent type="9" schemaName="bs_parkingratedetailchoices" behavior="0" />
+      <RootComponent type="9" schemaName="bs_parkingratedetailtypes" behavior="0" />
+      <RootComponent type="9" schemaName="bs_payrollforecastmodetype" behavior="0" />
+      <RootComponent type="9" schemaName="bs_profitshareaccumulationtype" behavior="0" />
+      <RootComponent type="9" schemaName="bs_ptebbillingtype" behavior="0" />
+      <RootComponent type="9" schemaName="bs_ratecategorytypes" behavior="0" />
+      <RootComponent type="9" schemaName="bs_revenueaccumulationtype" behavior="0" />
+      <RootComponent type="9" schemaName="bs_sendactionchoices" behavior="0" />
+      <RootComponent type="9" schemaName="bs_sendemailstatuschoices" behavior="0" />
+      <RootComponent type="9" schemaName="bs_sitestatisticdetailchoice" behavior="0" />
+      <RootComponent type="9" schemaName="bs_statementprocesssourcechoices" behavior="0" />
+      <RootComponent type="9" schemaName="bs_statementprocessstatuschoices" behavior="0" />
+      <RootComponent type="9" schemaName="bs_supportingreporttypes" behavior="0" />
+      <RootComponent type="9" schemaName="bs_supportpayroll" behavior="0" />
+      <RootComponent type="9" schemaName="bs_supportservices" behavior="0" />
+      <RootComponent type="9" schemaName="bs_unitaccountbatchprocessstatuschoices" behavior="0" />
+      <RootComponent type="9" schemaName="bs_validationthresholdtype" behavior="0" />
+      <RootComponent type="29" id="{001c5fab-c908-f011-bae3-000d3a5ac294}" behavior="0" />
+      <RootComponent type="29" id="{0692cd04-8c60-ef11-bfe2-000d3a3b44cd}" behavior="0" />
+      <RootComponent type="29" id="{0e80e27b-0b9e-ef11-8a6a-0022480a57ac}" behavior="0" />
+      <RootComponent type="29" id="{1b21c7c0-e609-f011-bae3-000d3a5ac294}" behavior="0" />
+      <RootComponent type="29" id="{251768c4-38ea-ef11-be21-6045bd096814}" behavior="0" />
+      <RootComponent type="29" id="{2ea94e67-a8dd-ef11-a730-6045bd096814}" behavior="0" />
+      <RootComponent type="29" id="{30f5ee96-2acd-ef11-b8e9-0022480a57ac}" behavior="0" />
+      <RootComponent type="29" id="{35657f52-8cf4-ef11-be21-6045bd096814}" behavior="0" />
+      <RootComponent type="29" id="{42a88c06-ce84-ef11-ac20-0022480a57ac}" behavior="0" />
+      <RootComponent type="29" id="{42e0f31c-af6e-ef11-a670-0022480b335b}" behavior="0" />
+      <RootComponent type="29" id="{56890b89-cbee-ef11-be21-6045bd096814}" behavior="0" />
+      <RootComponent type="29" id="{5ae290eb-fa0f-f011-9989-000d3a5ac294}" behavior="0" />
+      <RootComponent type="29" id="{5ee4f1ac-07a9-ef11-b8e9-0022480a57ac}" behavior="0" />
+      <RootComponent type="29" id="{6124a954-3220-f011-9989-6045bd01b3a9}" behavior="0" />
+      <RootComponent type="29" id="{6e210605-adb8-ef11-b8e9-0022480a57ac}" behavior="0" />
+      <RootComponent type="29" id="{70e1a7ea-0ddd-ef11-a730-6045bd096814}" behavior="0" />
+      <RootComponent type="29" id="{73c084fb-660a-f011-bae3-000d3a5ac294}" behavior="0" />
+      <RootComponent type="29" id="{75fc4153-aa14-f011-998a-000d3a5ac294}" behavior="0" />
+      <RootComponent type="29" id="{76512a1a-6906-f011-bae2-000d3a5ac294}" behavior="0" />
+      <RootComponent type="29" id="{7b54328c-067a-ef11-ac20-0022480b14e6}" behavior="0" />
+      <RootComponent type="29" id="{8a2f266f-56d4-ef11-8eea-0022480a57ac}" behavior="0" />
+      <RootComponent type="29" id="{8d5f394b-71fb-ef11-bae3-000d3a5ac294}" behavior="0" />
+      <RootComponent type="29" id="{9065cf8b-3f88-f011-b4cc-7c1e5202188c}" behavior="0" />
+      <RootComponent type="29" id="{9757b486-2127-f011-8c4d-6045bd01b3a9}" behavior="0" />
+      <RootComponent type="29" id="{a2ddd2a6-43c9-ef11-b8e9-0022480a57ac}" behavior="0" />
+      <RootComponent type="29" id="{a5d3335f-058b-ef11-ac21-0022480a57ac}" behavior="0" />
+      <RootComponent type="29" id="{be2cb400-7a03-f011-bae3-000d3a5ac294}" behavior="0" />
+      <RootComponent type="29" id="{db72a935-670a-f011-bae3-000d3a5ac294}" behavior="0" />
+      <RootComponent type="29" id="{e88de41d-baf2-ef11-be21-6045bd096814}" behavior="0" />
+    </RootComponents>
+    <MissingDependencies>
+      <MissingDependency>
+        <Required type="372" schemaName="bs_5Fsendmailbyserviceprincipal" displayName="SendMailByServicePrincipal" solution="Active" id="{abdc61b8-0929-4277-9792-b6948725f29f}" />
+        <Dependent type="29" displayName="Email Generation Flow 20250324" id="{001c5fab-c908-f011-bae3-000d3a5ac294}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="372" schemaName="bs_5Fsendmailbyserviceprincipal" displayName="SendMailByServicePrincipal" solution="Active" id="{abdc61b8-0929-4277-9792-b6948725f29f}" />
+        <Dependent type="29" displayName="Total Actual Revenue Report Flow" id="{251768c4-38ea-ef11-be21-6045bd096814}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="372" schemaName="bs_5Fsendmailbyserviceprincipal" displayName="SendMailByServicePrincipal" solution="Active" id="{abdc61b8-0929-4277-9792-b6948725f29f}" />
+        <Dependent type="29" displayName="Unit Accounts Batch Flow 20250226" id="{35657f52-8cf4-ef11-be21-6045bd096814}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="372" schemaName="bs_5Fsendmailbyserviceprincipal" displayName="SendMailByServicePrincipal" solution="Active" id="{abdc61b8-0929-4277-9792-b6948725f29f}" />
+        <Dependent type="29" displayName="PnL Calculation Flow" id="{9065cf8b-3f88-f011-b4cc-7c1e5202188c}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="372" schemaName="bs_5Fsendmailbyserviceprincipal" displayName="SendMailByServicePrincipal" solution="Active" id="{abdc61b8-0929-4277-9792-b6948725f29f}" />
+        <Dependent type="connectionreference" displayName="bs_sharedbs5fsendmailbyserviceprincipal5f4c81ae98d9d3b3ec_4c912" id.connectionreferencelogicalname="bs_sharedbs5fsendmailbyserviceprincipal5f4c81ae98d9d3b3ec_4c912" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="372" schemaName="bs_5Fsendmailbyserviceprincipal" displayName="SendMailByServicePrincipal" solution="Active" id="{abdc61b8-0929-4277-9792-b6948725f29f}" />
+        <Dependent type="connectionreference" displayName="bs_sharedbs5fsendmailbyserviceprincipal5f793423c41454f92f_850b2" id.connectionreferencelogicalname="bs_sharedbs5fsendmailbyserviceprincipal5f793423c41454f92f_850b2" />
+      </MissingDependency>
+    </MissingDependencies>
+  </SolutionManifest>
+</ImportExportXml>

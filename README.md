@@ -1,0 +1,202 @@
+# autodoc.md
+
+**PoC → modular auto-documentation engine.**
+
+- Clean, modular foundation
+- Library separated from CLI
+- Plugin system with entry points
+- Evidence-first extraction into a graph
+- Universal artifacts for LLMs or human docs
+- Docs generation with clouds/CI support surface-ready later
+
+Day-to-day, you only touch 3 places:
+
+1 Extractors: autodocx/extractors/*.py
+
+- These find and parse files (OpenAPI, LogicApps/PA, K8s, Terraform, GHA, Azure Pipelines, Express, SQL, Markdown).
+
+2 Mapper: autodocx/artifacts/option1.py
+
+- Translates extracted Signals into your universal artifact JSON (Option 1).
+
+3 CLI: autodocx_cli/main.py
+
+- The command you run (autodocx) to scan and produce docs.*_
+
+**Mental model:**
+
+- Extractors read files → emit Signals with evidence.
+- Graph builder turns Signals into Nodes/Edges (for future diagrams/joins).
+- Mapper turns Signals into universal artifacts (what your docs and LLMs use).
+- Renderer writes Markdown pages (index.md, system.md, artifacts.md).
+- Optional: builds a MkDocs site (static HTML).
+
+**Quickstart:**
+
+- Create venv and install: `pip install -e .`
+- Run: `autodocx scan /path/to/repo --out out`
+- Eg: autodocx scan ./repos/Towne-Park-Billing-Source-Code --out out --debug --mkdocs-build --llm-rollup
+- Open: out/index.md, out/system.md, out/artifacts.md
+
+## How to add a new extractor
+
+Create autodocx/extractors/<[name]>.py
+Implement name, patterns, detect, discover, extract
+Register it in pyproject.toml under [project.entry-points."autodocx.extractors"]
+pip install -e . to refresh entry points
+Add joiners (e.g., link HTTP clients → servers):
+
+Create autodocx/joiners/ (later)
+Start with simple string matching; add more later
+Add validation:
+
+Install jsonschema and validate artifacts.json against your schema before writing
+
+
+## Troubleshooting tips
+
+“autodocx: command not found” → Run pip install -e . again inside your activated virtualenv.
+“0 workflows found” → Use --debug. Look for logicapps_wdl detect -> True and “candidate:” lines. If detect -> False, your files might not match patterns; share one path pattern to adjust.
+“Unicode errors” → The extractors already open files with errors="ignore"; still failing? Show the file path and we’ll tweak._
+
+## ToDo
+
+- Extend extractors (GitHub Actions, Azure Pipelines)
+- Add confidence scoring facets
+- Introduce caching and .gitignore-aware excludes
+- Introspect the target code base and draw conclusions about the architecture & publish 'Arch Standards' based on observations
+- Same as above but produce prioritized list of Risks (eg: Insufficient logging, poor error handling, Anti-patterns, etc.)
+
+---
+# Autodoc.md — Automated, Evidence‑First Documentation as a Service
+
+**Turn your code and configs into business‑ready docs, diagrams, and executive briefs.**
+
+---
+
+## The Elevator Pitch
+
+**The Autodoc.md pipeline automatically transforms your existing code, configurations, and integrations into polished documentation that executives, engineers, and compliance teams can actually use.** Our universal autodoc engine extracts structured facts from your repositories and generates confidence‑scored explanations with visual flow diagrams—no manual documentation effort required. **Get portfolio visibility, faster onboarding, and audit‑ready documentation in weeks, not months.**
+
+---
+
+## Who Buys It / Who Benefits
+
+**Buyers:** CTOs, Engineering Directors, Compliance Officers, Portfolio Managers
+**Beneficiaries:** Development teams, new hires, auditors, business stakeholders, M&A teams
+
+- **Engineering Leadership** — Portfolio visibility and technical debt assessment
+- **Compliance Teams** — Audit‑ready documentation with traceable evidence
+- **HR/Onboarding** — Accelerated developer ramp‑up with clear system maps
+- **Business Stakeholders** — Executive summaries of technical capabilities and risks
+
+---
+
+## Where It Fits
+
+**Supported Systems & Environments:**
+
+- **Enterprise Platforms Already Supported:** React.js frontends, Azure Functions, Power Automate/Logic Apps with Dataverse, TIBCO BusinessWorks, PowerBuilder
+- **Repository Elements Already Supported:** OpenAPI specs, PostgreSQL migrations, AsyncAPI, Kubernetes manifests, Terraform, Bicep templates, CI pipelines, Express APIs
+- **Integration Targets:** GitHub, Azure DevOps, GitLab, Bitbucket, on‑premises repositories, any other repository
+
+---
+
+## What We Deliver
+
+✅ **Business‑friendly documentation** with visual flow diagrams and plain‑English explanations  
+✅ **Per‑component pages** for individual services, APIs, and workflows  
+✅ **Family/portfolio summaries** grouping related systems and dependencies  
+✅ **Executive brief** with confidence scoring and risk assessment  
+✅ **Published portal** via MkDocs (GitHub Pages/Azure Static Web Apps) or Confluence integration  
+✅ **Iterative refinement** based on stakeholder feedback
+
+---
+
+## How It Works
+
+Our **autodoc engine** delivers documentation in 6 streamlined steps:
+
+1. **Discover** repositories and scan for supported file types
+2. **Extract** structured facts (SIR) from code, configs, and schemas per technology stack
+3. **Build** evidence index mapping interdependencies and data flows
+4. **Generate** plain‑English explanations with confidence scoring for each claim
+5. **Render** SVG diagrams and audience‑appropriate Markdown pages
+6. **Publish** to your chosen portal and iterate based on feedback
+
+---
+
+## Top Use Cases
+
+• **M&A Due Diligence** — Rapid technical portfolio assessment with confidence metrics  
+• **Regulatory Compliance** — Audit‑ready documentation with traceable evidence chains  
+• **Developer Onboarding** — New hire acceleration with visual system maps  
+• **Legacy System Documentation** — Reverse‑engineer undocumented applications  
+• **Technical Debt Assessment** — Portfolio‑wide visibility into architectural risks  
+• **Vendor Handoffs** — Knowledge transfer with zero tribal knowledge loss  
+• **Executive Reporting** — Technical summaries for non‑technical stakeholders  
+
+---
+
+## Business Outcomes & ROI
+
+• **Reduction** in manual documentation effort  
+• **3‑5x faster** developer onboarding (weeks to days)  
+• **Time savings** on compliance prep and audits  
+• **Complete portfolio visibility** within 2‑4 weeks  
+• **Reduced technical risk** through dependency mapping and gap identification  
+
+---
+
+## Why Us / Differentiators
+
+• **Evidence‑first approach** — Every claim traceable to source code  
+• **Confidence scoring** — Know which documentation is rock‑solid vs. inferred  
+• **Visual flow diagrams** — SVG diagrams showing data and process flows  
+• **Audience‑aware pages** — Technical, business, and executive views of the same systems  
+• **Multi‑stack expertise** — From legacy PowerBuilder to modern microservices  
+• **Rapid deployment** — Working documentation portal in 2‑6 weeks  
+• **No vendor lock‑in** — Standard Markdown output, portable across platforms  
+
+---
+
+## Engagement Model & Timeline
+
+**Phased Approach (2‑6 weeks typical):**
+
+- **Phase 1:** Discovery & scoping (3‑5 days)
+- **Phase 2:** autodoc engine deployment & fact extraction (1‑4 weeks, depending on how readily repo files are decoded)
+- **Phase 3:** Documentation generation & review cycles (1‑2 weeks)
+- **Phase 4:** Portal publishing & stakeholder training (2‑3 days)
+
+---
+
+## Prerequisites
+
+**What you provide:**
+• Repository access to decoded files (read‑only sufficient)  
+• Stakeholder availability for discovery sessions  
+• Publishing target preferences (MkDocs, Confluence, etc.)  
+• Sample of existing documentation (if any) for style matching  
+
+---
+
+## Quick FAQ
+
+**Q: How long does it take to see results?**  
+A: Working documentation portal typically live within 2‑6 weeks of kickoff.
+
+**Q: What if our code has no existing documentation?**  
+A: Perfect use case. Autodoc.md reverse‑engineers documentation from code structure, configs, and schemas.
+
+**Q: Can you handle legacy systems like PowerBuilder or TIBCO?**  
+A: Yes. We support 30+ technology stacks including legacy enterprise platforms.
+
+**Q: How accurate is the generated documentation?**  
+A: Every claim includes confidence scoring. High‑confidence items are typically 95%+ accurate.
+
+**Q: Do we need to change our development workflow?**  
+A: No. We work with your existing repositories and development practices.
+
+**Q: What about ongoing maintenance?**  
+A: Optional: We can set up automated regeneration triggered by repository changes.

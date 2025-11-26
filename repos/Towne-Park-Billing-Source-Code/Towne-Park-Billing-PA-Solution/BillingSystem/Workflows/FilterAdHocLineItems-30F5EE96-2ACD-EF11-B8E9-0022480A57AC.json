@@ -1,0 +1,244 @@
+{
+  "properties": {
+    "connectionReferences": {},
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "20eb7e11-8f5c-453a-a890-0516f36c6f61"
+          },
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "Billing Statement",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Billing Statement object with associated Invoices",
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "text"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Initialize_AdHocLineItems_variable": {
+          "runAfter": {},
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "AdHocLineItems",
+                "type": "array",
+                "value": []
+              }
+            ]
+          }
+        },
+        "Parse_BillingStatement": {
+          "runAfter": {
+            "Initialize_AdHocLineItems_variable": [
+              "Succeeded"
+            ]
+          },
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@triggerBody()?['text']",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "bs_serviceperiodstart": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "bs_serviceperiodend": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "bs_billingstatementid": {
+                  "type": "string"
+                },
+                "bs_Invoice_BillingStatement": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "bs_invoicedata": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "Apply_to_each_Invoice": {
+          "foreach": "@body('Parse_BillingStatement')?['bs_Invoice_BillingStatement']",
+          "actions": {
+            "Parse_Invoice_Data": {
+              "runAfter": {
+                "Compose_Invoice_Data": [
+                  "Succeeded"
+                ]
+              },
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@outputs('Compose_Invoice_Data')",
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "title": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "description": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "code": {
+                        "type": [
+                          "number",
+                          "integer",
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "amount": {
+                        "type": "number"
+                      },
+                      "metaData": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "lineItemType": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "isAdhoc": {
+                            "type": [
+                              "boolean",
+                              "null"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "Compose_Invoice_Data": {
+              "type": "Compose",
+              "inputs": "@json(items('Apply_to_each_Invoice')?['bs_invoicedata'])"
+            },
+            "Filter_Invoice_Data_array": {
+              "runAfter": {
+                "Parse_Invoice_Data": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Parse_Invoice_Data')",
+                "where": "@equals(item()?['metaData']?['isAdhoc'],true)"
+              }
+            },
+            "Compose_Union_AdhocLineItems": {
+              "runAfter": {
+                "Filter_Invoice_Data_array": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Compose",
+              "inputs": "@union(variables('AdHocLineItems'), body('Filter_Invoice_Data_array'))"
+            },
+            "Set_AdHocLineItems_variable": {
+              "runAfter": {
+                "Compose_Union_AdhocLineItems": [
+                  "Succeeded"
+                ]
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "AdHocLineItems",
+                "value": "@outputs('Compose_Union_AdhocLineItems')"
+              }
+            }
+          },
+          "runAfter": {
+            "Parse_BillingStatement": [
+              "Succeeded"
+            ]
+          },
+          "type": "Foreach"
+        },
+        "Respond_to_a_Power_App_or_flow": {
+          "runAfter": {
+            "Apply_to_each_Invoice": [
+              "Succeeded"
+            ]
+          },
+          "type": "Response",
+          "kind": "PowerApp",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "lineitems": {
+                  "title": "LineItems",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                }
+              },
+              "additionalProperties": {}
+            },
+            "statusCode": 200,
+            "body": {
+              "lineitems": "@{variables('AdHocLineItems')}"
+            }
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

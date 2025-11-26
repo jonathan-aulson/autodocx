@@ -1,0 +1,31 @@
+<ImportExportXml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" OrganizationVersion="9.2.25014.218" OrganizationSchemaType="Standard" CRMServerServiceabilityVersion="9.2.25014.00218">
+  <Entities></Entities>
+  <Roles></Roles>
+  <Workflows></Workflows>
+  <FieldSecurityProfiles></FieldSecurityProfiles>
+  <Templates />
+  <EntityMaps />
+  <EntityRelationships />
+  <OrganizationSettings />
+  <optionsets />
+  <CustomControls />
+  <EntityDataProviders />
+  <Connectors>
+    <Connector>
+      <connectorid>abdc61b8-0929-4277-9792-b6948725f29f</connectorid>
+      <description></description>
+      <displayname>SendMailByServicePrincipal</displayname>
+      <iconbrandcolor>#509ec7</iconbrandcolor>
+      <name>bs_5Fsendmailbyserviceprincipal</name>
+      <connectortype>1</connectortype>
+      <openapidefinition>/Connector/bs_5Fsendmailbyserviceprincipal_openapidefinition.json</openapidefinition>
+      <connectionparameters>/Connector/bs_5Fsendmailbyserviceprincipal_connectionparameters.json</connectionparameters>
+      <connectionparametersets>/Connector/bs_5Fsendmailbyserviceprincipal_connectionparametersets.json</connectionparametersets>
+      <policytemplateinstances>/Connector/bs_5Fsendmailbyserviceprincipal_policytemplateinstances.json</policytemplateinstances>
+      <iconblob>/Connector/bs_5Fsendmailbyserviceprincipal_iconblob.Png</iconblob>
+    </Connector>
+  </Connectors>
+  <Languages>
+    <Language>1033</Language>
+  </Languages>
+</ImportExportXml>

@@ -1,0 +1,108 @@
+trigger:
+  branches:
+    include:
+      - main
+
+schedules:
+  - cron: "30 10 * * *"  # Runs daily at 4:00 PM
+    displayName: Daily 4:00 PM IST (10:30 AM UTC)
+    branches:
+      include:
+        - main
+    always: true
+
+pool:
+  vmImage: 'windows-latest'  
+
+steps:
+  # Step 1: Install Node.js
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '22.x'   
+    displayName: 'Install Node.js'
+    continueOnError: true
+
+  # Step 2: Install dependencies
+  - script: |
+      npm install --force
+      npm install cypress
+      npm install @bahmutov/cypress-esbuild-preprocessor
+      npm install @badeball/cypress-cucumber-preprocessor
+      npm install cypress-cucumber-preprocessor
+      npm install multiple-cucumber-html-reporter
+
+    displayName: 'Install dependencies'
+
+  # Step 3: Run Cypress Tests
+  - script: |
+      npm run cypress:run:all
+    displayName: 'cypress:run:FixedFee'
+    continueOnError: true  # Continue even if tests fail, to publish results
+
+   # Step 4: Generate HTML Report from Cucumber JSON
+  - script: |
+      npm run report:run
+    displayName: 'Generate HTML Report'
+
+  # Step 5: Publish HTML Report as Pipeline Artifact
+  - task: PublishPipelineArtifact@1
+    inputs:
+      targetPath: 'cypress/reports'
+      artifact: 'CucumberHtmlReport'
+      publishLocation: 'pipeline'
+    displayName: 'Publish HTML Report Artifact'
+
+  # Step 6: Send Email Notification with Test Results
+  - task: PowerShell@2
+    inputs:
+     targetType: 'inline'
+     script: |
+      # Email recipients and sender
+      $emailTo = @(
+        "Gayasuddin.Gayasi@townepark.com", 
+        "jonathan.aulson@townepark.com", 
+        "chris.thompson@townepark.com", 
+        "jayant.malewar@townepark.com",
+        "yash.chavda@townepark.com"
+      )
+      $emailFrom = "approvaltestuser@townepark.com"
+      $subject = "TownePark Billing App Test Results" 
+      
+      # Construct build artifacts URL
+      $buildUri = "$(System.TeamFoundationCollectionUri)$(System.TeamProject)/_build/results?buildId=$(Build.BuildId)&view=artifacts&pathAsName=false&type=publishedArtifacts"
+      $body = "The test scripts run is complete. <br/><a href='$buildUri'>Click here to download Test Results.</a>"
+
+      # SMTP settings
+      $smtpServer = "smtp.office365.com"
+      $smtpPort = 587
+      $smtpUser = "approvaltestuser@townepark.com"
+      $smtpPass = "$(smtpPassword)"  # Make sure this is defined as a secret variable
+
+      # Logging for debug
+      Write-Host "Email will be sent to: $($emailTo -join ', ')"
+      Write-Host "Build URL: $buildUri"
+
+      # Convert plain password to secure string and create credentials
+      $securePassword = ConvertTo-SecureString $smtpPass -AsPlainText -Force
+      $credential = New-Object System.Management.Automation.PSCredential($smtpUser, $securePassword)
+
+      # Try to send email
+      try {
+        Send-MailMessage `
+          -To $emailTo `
+          -From $emailFrom `
+          -Subject $subject `
+          -Body $body `
+          -SmtpServer $smtpServer `
+          -Port $smtpPort `
+          -UseSsl `
+          -Credential $credential `
+          -BodyAsHtml `
+          -ErrorAction Stop
+
+        Write-Host "✅ Email sent successfully."
+      } catch {
+        Write-Error "❌ Failed to send email: $_"
+        throw
+      }
+    displayName: 'Send Email Notification'

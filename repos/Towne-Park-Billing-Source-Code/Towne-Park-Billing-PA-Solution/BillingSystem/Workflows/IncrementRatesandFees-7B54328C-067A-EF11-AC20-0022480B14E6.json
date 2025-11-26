@@ -1,0 +1,552 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps-1": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_7558e"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "type": "Recurrence",
+          "recurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "startTime": "2024-09-23T06:00:00Z"
+          },
+          "metadata": {
+            "operationMetadataId": "ac2be575-8b8d-4573-a009-99c214067a28"
+          }
+        }
+      },
+      "actions": {
+        "NextMonth": {
+          "type": "Expression",
+          "kind": "AddToTime",
+          "inputs": {
+            "baseTime": "@{utcNow()}",
+            "interval": 1,
+            "timeUnit": "Month"
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "8a2b29cf-0b9a-408a-b049-86a11132ff51"
+          }
+        },
+        "Initialize_variable:_EndOfMonthWorkingDay": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "EndOfMonthWorkingDay",
+                "type": "string"
+              }
+            ]
+          },
+          "runAfter": {
+            "NextMonth": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "3551c1ea-deef-437c-b35c-c5aec569b691"
+          }
+        },
+        "Initialize_variable:_CurrentMonthEndDate": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "CurrentMonthEndDate",
+                "type": "string",
+                "value": "@addDays(startOfMonth(body('NextMonth')),-1,'yyyy-MM-dd')"
+              }
+            ]
+          },
+          "runAfter": {
+            "NextMonth": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "c6e8307f-612f-45f5-ac21-14e9068d59f5"
+          }
+        },
+        "If_Last_Day_of_Month_is_Week_Day": {
+          "type": "If",
+          "expression": {
+            "or": [
+              {
+                "equals": [
+                  "@dayOfWeek(variables('CurrentMonthEndDate'))",
+                  1
+                ]
+              },
+              {
+                "equals": [
+                  "@dayOfWeek(variables('CurrentMonthEndDate'))",
+                  2
+                ]
+              },
+              {
+                "equals": [
+                  "@dayOfWeek(variables('CurrentMonthEndDate'))",
+                  3
+                ]
+              },
+              {
+                "equals": [
+                  "@dayOfWeek(variables('CurrentMonthEndDate'))",
+                  4
+                ]
+              },
+              {
+                "equals": [
+                  "@dayOfWeek(variables('CurrentMonthEndDate'))",
+                  5
+                ]
+              }
+            ]
+          },
+          "actions": {
+            "Set_EndOfMonthWorkingDay_as_Mon-Fri": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "EndOfMonthWorkingDay",
+                "value": "@variables('CurrentMonthEndDate')"
+              },
+              "metadata": {
+                "operationMetadataId": "dfbbe715-012d-4b59-8f66-2cb95cc4db0b"
+              }
+            }
+          },
+          "else": {
+            "actions": {
+              "If_Last_Day_of_Month_is_Saturday": {
+                "type": "If",
+                "expression": {
+                  "and": [
+                    {
+                      "equals": [
+                        "@dayOfWeek(variables('CurrentMonthEndDate'))",
+                        6
+                      ]
+                    }
+                  ]
+                },
+                "actions": {
+                  "Subtract_1_day": {
+                    "type": "Compose",
+                    "inputs": "@addDays(variables('CurrentMonthEndDate'), -1)",
+                    "metadata": {
+                      "operationMetadataId": "b92c8eb0-1468-4666-97d2-b83c202a802e"
+                    }
+                  },
+                  "Set_EndOfMonthWorkingDay_as_Fri": {
+                    "type": "SetVariable",
+                    "inputs": {
+                      "name": "EndOfMonthWorkingDay",
+                      "value": "@outputs('Subtract_1_day')"
+                    },
+                    "runAfter": {
+                      "Subtract_1_day": [
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "2b215e53-32ef-4dba-a7e7-99450e533669"
+                    }
+                  }
+                },
+                "else": {
+                  "actions": {
+                    "Subtract_2_days": {
+                      "type": "Compose",
+                      "inputs": "@addDays(variables('CurrentMonthEndDate'), -2)",
+                      "metadata": {
+                        "operationMetadataId": "91446d9f-ba46-4075-a902-1e94b67c70da"
+                      }
+                    },
+                    "Set_EndOfMonthWorkingDay_as_Fri_2": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "EndOfMonthWorkingDay",
+                        "value": "@outputs('Subtract_2_days')"
+                      },
+                      "runAfter": {
+                        "Subtract_2_days": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "7dc39a7e-fe80-4536-816d-3c259b540f1d"
+                      }
+                    }
+                  }
+                },
+                "metadata": {
+                  "operationMetadataId": "9c844dc1-6b0b-4e7e-b467-c50ac69d3927"
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_variable:_EndOfMonthWorkingDay": [
+              "Succeeded"
+            ],
+            "Initialize_variable:_CurrentDate": [
+              "SUCCEEDED"
+            ],
+            "Initialize_variable:_CurrentMonthEndDate": [
+              "SUCCEEDED"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "2f7fd725-0e73-4820-b33b-dfd8f8eac32f"
+          }
+        },
+        "Initialize_variable:_CurrentDate": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "CurrentDate",
+                "type": "string",
+                "value": "@utcNow('yyyy-MM-dd')"
+              }
+            ]
+          },
+          "runAfter": {
+            "NextMonth": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "f007de7f-0295-4655-bfc4-18ee36e91116"
+          }
+        },
+        "If_Today_is_Last_Business_Day_of_Month": {
+          "type": "If",
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@variables('CurrentDate')",
+                  "@formatDateTime(variables('EndOfMonthWorkingDay'), 'yyyy-MM-dd')\r\n"
+                ]
+              }
+            ]
+          },
+          "actions": {
+            "Iterate_Contracts_for_Increment": {
+              "type": "Foreach",
+              "foreach": "@outputs('List_Contracts_for_Increment')?['body/value']",
+              "actions": {
+                "Iterate_Services_for_Increment": {
+                  "type": "Foreach",
+                  "foreach": "@outputs('List_Fixed_Fee_Services_to_Increment')?['body/value']",
+                  "actions": {
+                    "Add_a_new_Service_row": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "parameters": {
+                          "entityName": "bs_fixedfeeservices",
+                          "item/bs_code": "@items('Iterate_Services_for_Increment')?['bs_code']",
+                          "item/bs_ContractFK@odata.bind": "@concat('/bs_contracts(', items('Iterate_Services_for_Increment')?['_bs_contractfk_value'], ')')\r\n",
+                          "item/bs_displayname": "@items('Iterate_Services_for_Increment')?['bs_displayname']",
+                          "item/bs_fee": "@mul(item()?['bs_fee'], variables('IncrementAmount'))",
+                          "item/bs_name": "@items('Iterate_Services_for_Increment')?['bs_name']",
+                          "item/bs_startdate": "@addDays(startOfMonth(body('NextMonth')),0,'yyyy-MM-dd')",
+                          "item/bs_invoicegroup": "@items('Iterate_Services_for_Increment')?['bs_invoicegroup']"
+                        },
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                          "operationId": "CreateRecord",
+                          "connectionName": "shared_commondataserviceforapps-1"
+                        }
+                      }
+                    },
+                    "Update_a_row_Set_End_Date_for_Old_Service": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "parameters": {
+                          "entityName": "bs_fixedfeeservices",
+                          "recordId": "@item()?['bs_fixedfeeserviceid']",
+                          "item/bs_enddate": "@variables('CurrentMonthEndDate')"
+                        },
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                          "operationId": "UpdateOnlyRecord",
+                          "connectionName": "shared_commondataserviceforapps-1"
+                        }
+                      },
+                      "runAfter": {
+                        "Add_a_new_Service_row": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "List_Fixed_Fee_Services_to_Increment": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Set_IncrementAmount": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "IncrementAmount",
+                    "value": "@add(div(item()?['bs_incrementamount'], 100), 1)"
+                  },
+                  "runAfter": {
+                    "Set_ContractId": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "dfbbe715-012d-4b59-8f66-2cb95cc4db0b"
+                  }
+                },
+                "Iterate_Job_Rates_for_Increment": {
+                  "type": "Foreach",
+                  "foreach": "@outputs('List_Job_Rates_to_Increment')?['body/value']",
+                  "actions": {
+                    "Add_a_new_Job_row": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "parameters": {
+                          "entityName": "bs_laborhourjobs",
+                          "item/bs_code": "@item()?['bs_code']",
+                          "item/bs_ContractFK@odata.bind": "@concat('/bs_contracts(', items('Iterate_Job_Rates_for_Increment')?['_bs_contractfk_value'], ')')",
+                          "item/bs_displayname": "@item()?['bs_displayname']",
+                          "item/bs_issalaried": "@item()?['bs_issalaried']",
+                          "item/bs_jobcode": "@item()?['bs_jobcode']",
+                          "item/bs_name": "@item()?['bs_name']",
+                          "item/bs_rate": "@mul(item()?['bs_rate'], variables('IncrementAmount'))",
+                          "item/bs_startdate": "@addDays(startOfMonth(body('NextMonth')),0,'yyyy-MM-dd')",
+                          "item/bs_invoicegroup": "@item()?['bs_invoicegroup']",
+                          "item/bs_overtimerate": "@mul(item()?['bs_overtimerate'], variables('IncrementAmount'))"
+                        },
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                          "operationId": "CreateRecord",
+                          "connectionName": "shared_commondataserviceforapps-1"
+                        }
+                      }
+                    },
+                    "Update_a_row_Set_End_Date_for_Old_Job": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "parameters": {
+                          "entityName": "bs_laborhourjobs",
+                          "recordId": "@item()?['bs_laborhourjobid']",
+                          "item/bs_enddate": "@variables('CurrentMonthEndDate')"
+                        },
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                          "operationId": "UpdateOnlyRecord",
+                          "connectionName": "shared_commondataserviceforapps-1"
+                        }
+                      },
+                      "runAfter": {
+                        "Add_a_new_Job_row": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "List_Job_Rates_to_Increment": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Set_ContractId": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "ContractId",
+                    "value": "@item()?['bs_contractid']"
+                  }
+                },
+                "List_Fixed_Fee_Services_to_Increment": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "entityName": "bs_fixedfeeservices",
+                      "$filter": "_bs_contractfk_value eq @{item()?['bs_contractid']} and bs_enddate eq null"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "operationId": "ListRecords",
+                      "connectionName": "shared_commondataserviceforapps-1"
+                    }
+                  },
+                  "runAfter": {
+                    "Set_IncrementAmount": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "List_Job_Rates_to_Increment": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "entityName": "bs_laborhourjobs",
+                      "$filter": "_bs_contractfk_value eq @{item()?['bs_contractid']} and bs_enddate eq null"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "operationId": "ListRecords",
+                      "connectionName": "shared_commondataserviceforapps-1"
+                    }
+                  },
+                  "runAfter": {
+                    "Set_IncrementAmount": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "runAfter": {
+                "List_Contracts_for_Increment": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "List_Contracts_for_Increment": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "bs_contracts",
+                  "$select": "bs_contractid, bs_incrementamount, bs_incrementmonth, bs_billingtype",
+                  "$filter": "(bs_incrementamount gt 0 and bs_incrementmonth eq @{variables('AdvancedMonthAsInt')} and bs_billingtype eq 126840000) or (bs_incrementamount gt 0 and bs_incrementmonth eq @{variables('CurrentMonthAsInt')} and bs_billingtype eq 126840001)"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "connectionName": "shared_commondataserviceforapps-1"
+                }
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "Initialize_IncrementAmount": [
+              "SUCCEEDED"
+            ]
+          }
+        },
+        "Initialize_ContractId": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "ContractId",
+                "type": "string"
+              }
+            ]
+          },
+          "runAfter": {
+            "If_Last_Day_of_Month_is_Week_Day": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Get_Current_Month": {
+          "type": "Compose",
+          "inputs": "@formatDateTime(utcNow(), 'MM')",
+          "runAfter": {
+            "Initialize_ContractId": [
+              "Succeeded"
+            ]
+          }
+        },
+        "NextMonthInt": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "AdvancedMonthAsInt",
+                "type": "integer",
+                "value": "@add(int(outputs('Current_Month_as_Int')), 2)"
+              }
+            ]
+          },
+          "runAfter": {
+            "Current_Month_as_Int": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Current_Month_as_Int": {
+          "type": "Compose",
+          "inputs": "@int(outputs('Get_Current_Month'))",
+          "runAfter": {
+            "Get_Current_Month": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Initialize_IncrementAmount": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "IncrementAmount",
+                "type": "float"
+              }
+            ]
+          },
+          "runAfter": {
+            "NextMonthInt": [
+              "Succeeded"
+            ],
+            "Initialize_CurrentMonthAsInt": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Initialize_CurrentMonthAsInt": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "CurrentMonthAsInt",
+                "type": "integer",
+                "value": "@outputs('Current_Month_as_Int')"
+              }
+            ]
+          },
+          "runAfter": {
+            "Current_Month_as_Int": [
+              "Succeeded"
+            ]
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

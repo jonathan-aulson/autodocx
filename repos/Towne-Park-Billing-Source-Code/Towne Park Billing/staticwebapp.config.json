@@ -1,0 +1,45 @@
+{
+    "routes": [
+      {
+        "route": "/",
+        "allowedRoles": ["anonymous"]
+      },
+      {
+        "route": "/billing/*",
+        "allowedRoles": ["authenticated"]
+      },
+      {
+        "route": "/forecasts/*",
+        "allowedRoles": ["authenticated"]
+      },
+      {
+        "route": "/api/contracts/deviations",
+        "methods": ["PUT", "POST", "PATCH", "DELETE"],
+        "allowedRoles": ["admin"]
+      },
+      {
+        "route": "/api/*",
+        "allowedRoles": ["authenticated"]
+      }
+    ],
+    "auth": {
+      "identityProviders": {
+        "azureActiveDirectory": {
+          "registration": {
+            "openIdIssuer": "https://login.microsoftonline.com/9454df09-bc28-486b-af85-64ca36c21d47/v2.0",
+            "clientIdSettingName": "AZURE_CLIENT_ID",
+            "clientSecretSettingName": "AZURE_CLIENT_SECRET"
+          }
+        }
+      }
+    },
+    "navigationFallback": {
+      "rewrite": "/index.html"
+    },
+    "responseOverrides": {
+      "401": {
+        "statusCode": 302,
+        "redirect": "/"
+      }
+    }
+  }

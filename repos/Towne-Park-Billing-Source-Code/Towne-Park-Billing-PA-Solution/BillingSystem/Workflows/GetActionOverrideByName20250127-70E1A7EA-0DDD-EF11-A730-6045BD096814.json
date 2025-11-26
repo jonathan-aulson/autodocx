@@ -1,0 +1,151 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_7558e"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "9fc6de0d-f7dd-4bd3-a3e1-b55ed5a28d55"
+          },
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "title": "Action Override Name",
+                  "type": "string",
+                  "x-ms-dynamically-added": true,
+                  "description": "Please enter action override name",
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "text"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Respond_to_a_Power_App_or_flow": {
+          "runAfter": {
+            "Scope_try": [
+              "Succeeded",
+              "TimedOut",
+              "Skipped",
+              "Failed"
+            ]
+          },
+          "type": "Response",
+          "kind": "PowerApp",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "title": "value",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                }
+              },
+              "additionalProperties": {}
+            },
+            "statusCode": 200,
+            "body": {
+              "value": "@{variables('returnValue')}"
+            }
+          }
+        },
+        "Scope_try": {
+          "actions": {
+            "List_rows_Action_Override_By_Name": {
+              "metadata": {
+                "operationMetadataId": "810058fe-51cd-47e0-bd69-6e87bdcc01ce"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "bs_actionoverrideses",
+                  "$select": "bs_name,bs_description,bs_value,bs_isactive",
+                  "$filter": "bs_name eq '@{triggerBody()['text']}' and bs_isactive eq true",
+                  "$top": 1
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "connectionName": "shared_commondataserviceforapps"
+                }
+              }
+            },
+            "Compose_Action_Override_Value": {
+              "runAfter": {
+                "List_rows_Action_Override_By_Name": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Compose",
+              "inputs": "@if(\r\n    empty(\r\n        first(\r\n            outputs('List_rows_Action_Override_By_Name')?['body/value']\r\n        )?['bs_value']\r\n    ),\r\n    '',\r\n    first(\r\n        outputs('List_rows_Action_Override_By_Name')?['body/value']\r\n    )?['bs_value']\r\n)"
+            },
+            "Set_returnValue_variable": {
+              "runAfter": {
+                "Compose_Action_Override_Value": [
+                  "Succeeded"
+                ]
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "returnValue",
+                "value": "@outputs('Compose_Action_Override_Value')"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_returnValue_variable": [
+              "Succeeded"
+            ]
+          },
+          "type": "Scope"
+        },
+        "Initialize_returnValue_variable": {
+          "runAfter": {},
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "returnValue",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

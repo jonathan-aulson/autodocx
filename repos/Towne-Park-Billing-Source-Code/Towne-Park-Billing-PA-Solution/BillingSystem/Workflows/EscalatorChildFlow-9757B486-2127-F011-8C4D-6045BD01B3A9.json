@@ -1,0 +1,1601 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_7558e"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "type": "Recurrence",
+          "recurrence": {
+            "interval": 1,
+            "frequency": "Day",
+            "startTime": "2025-05-05T06:00:00Z"
+          }
+        }
+      },
+      "actions": {
+        "Initialize_EscalatorMonth_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "EscalatorMonth",
+                "type": "integer",
+                "value": 1
+              }
+            ]
+          },
+          "runAfter": {}
+        },
+        "Initialize_CurrentYear_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "CurrentYear",
+                "type": "integer",
+                "value": 0
+              }
+            ]
+          },
+          "runAfter": {}
+        },
+        "Initialize_UpdatedProfitShareTierData_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "UpdatedProfitShareTierData",
+                "type": "array",
+                "value": []
+              }
+            ]
+          },
+          "runAfter": {}
+        },
+        "List_rows_-_Get_all_contract_Ids": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "bs_contracts",
+              "$select": "bs_contractid"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "connectionName": "shared_commondataserviceforapps"
+            }
+          },
+          "runAfter": {
+            "Initialize_EscalatorMonth_variable": [
+              "Succeeded"
+            ],
+            "Initialize_CurrentYear_variable": [
+              "Succeeded"
+            ],
+            "Initialize_UpdatedProfitShareTierData_variable": [
+              "Succeeded"
+            ],
+            "Initialize_UpdatedPerLaborHourJobCodeData_variable": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Apply_to_each_-_Iterate_for_all_contracts": {
+          "type": "Foreach",
+          "foreach": "@outputs('List_rows_-_Get_all_contract_Ids')?['body/value']",
+          "actions": {
+            "Get_a_Contract_by_ID": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "bs_contracts",
+                  "recordId": "@items('Apply_to_each_-_Iterate_for_all_contracts')?['bs_contractid']",
+                  "$select": "bs_billingtype, bs_consumerpriceindex, bs_contracttype,bs_incrementamount,bs_incrementmonth,bs_occupiedroominvoicegroup,bs_occupiedroomrate, bs_occupiedroomcode, bs_paymentterms, _bs_customersitefk_value, bs_deviationamount, bs_deviationpercentage, bs_supportingreports,bs_purchaseorder,",
+                  "$expand": "bs_FixedFeeService_Contract($select=bs_name,bs_displayname,bs_fee,bs_code,bs_invoicegroup;$filter=  bs_startdate le @{utcNow()} and (bs_enddate ge @{utcNow()} or bs_enddate eq null)), bs_LaborHourJob_Contract($select=bs_name,bs_displayname,bs_rate,bs_overtimerate,bs_code,bs_jobcode,bs_invoicegroup;$filter=  bs_startdate le @{utcNow()} and (bs_enddate ge @{utcNow()} or bs_enddate eq null)),\nbs_InvoiceGroup_Contract($select=bs_invoicegroupid,bs_title,bs_description,bs_groupnumber,bs_vendorid,bs_sitenumber,bs_customername,bs_billingcontactemails),\nbs_RevenueShareThreshold_Contract($select=bs_tierdata,bs_revenuecodedata,bs_revenueaccumulationtype,bs_invoicegroup,bs_validationthresholdamount,bs_validationthresholdtype),\nbs_CustomerSiteFK($select=bs_startdate,bs_glstring),\nbs_MidMonthAdvance_bs_Contract($select=bs_invoicegroup,bs_amount,bs_linetitle), bs_DepositedRevenue_Contract($select=bs_invoicegroup,bs_towneparkresponsibleforparkingtax,bs_depositedrevenueenabled), \nbs_BellService_bs_Contract($select=bs_invoicegroup),\nbs_BillableAccount_Contract($select=bs_payrollaccountsdata,bs_payrollaccountsinvoicegroup,bs_payrollaccountslinetitle,bs_payrolltaxesbillingtype,bs_payrolltaxesenabled,bs_payrolltaxeslinetitle,bs_payrolltaxespercentage,bs_payrollsupportenabled,bs_payrollsupportlinetitle,bs_payrollsupportbillingtype,bs_payrollsupportpayrolltype,bs_payrollsupportamount,bs_expenseaccountsdata,bs_expenseaccountsinvoicegroup,bs_expenseaccountslinetitle,bs_additionalpayrollamount,bs_payrolltaxesescalatorenable,bs_payrolltaxesescalatormonth,bs_payrolltaxesescalatortype,bs_payrolltaxesescalatorvalue),\nbs_ManagementAgreement_Contract($select=bs_invoicegroup,bs_managementagreementtype,bs_fixedfeeamount,bs_perlaborhourjobcode,bs_perlaborhourrate,bs_perlaborhourovertimerate,bs_revenuepercentageamount,bs_claimstype,bs_claimslinetitle,bs_claimsenabled,bs_claimscapamount,bs_insuranceadditionalpercentage,bs_insuranceenabled,bs_insurancefixedfeeamount,bs_insurancelinetitle,bs_insurancetype,bs_validationthresholdamount,bs_validationthresholdenabled,bs_validationthresholdtype,bs_profitshareaccumulationtype,bs_profitshareenabled,bs_profitsharetierdata,bs_perlaborhourjobcodedata,bs_nonglbillableexpensesenabled,bs_profitshareescalatorenabled,bs_profitshareescalatormonth,bs_profitshareescalatortype,bs_managementfeeescalatorenabled,bs_managementfeeescalatormonth,bs_managementfeeescalatortype,bs_managementfeeescalatorvalue),\nbs_nonglexpense_ContractFK_bs_contract($select=bs_expenseamount,bs_expensepayrolltype,bs_nonglexpenseid,bs_finalperiodbilled,bs_nonglexpensetype,bs_expensetitle)\n"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "GetItem",
+                  "connectionName": "shared_commondataserviceforapps"
+                }
+              }
+            },
+            "Parse_Contract_JSON": {
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@body('Get_a_Contract_by_ID')",
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "bs_billingtype": {
+                      "type": "integer"
+                    },
+                    "bs_consumerpriceindex": {
+                      "type": "boolean"
+                    },
+                    "bs_contracttype": {
+                      "type": "string"
+                    },
+                    "bs_incrementamount": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "bs_incrementmonth": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "bs_occupiedroominvoicegroup": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "bs_occupiedroomrate": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "bs_paymentterms": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "_bs_customersitefk_value@OData.Community.Display.V1.FormattedValue": {
+                      "type": "string"
+                    },
+                    "_bs_customersitefk_value": {
+                      "type": "string"
+                    },
+                    "bs_contractid": {
+                      "type": "string"
+                    },
+                    "bs_FixedFeeService_Contract": {
+                      "type": "array"
+                    },
+                    "bs_LaborHourJob_Contract": {
+                      "type": "array"
+                    },
+                    "bs_InvoiceGroup_Contract": {
+                      "type": "array"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Get_a_Contract_by_ID": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Condition_-_Is_Management_Agreement_not_empty": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@not(empty(body('Parse_Contract_JSON')?['bs_ManagementAgreement_Contract']))",
+                      "@true"
+                    ]
+                  }
+                ]
+              },
+              "actions": {
+                "Compose_-_Management_Agreement_Object": {
+                  "type": "Compose",
+                  "inputs": "@string(body('Parse_Contract_JSON')?['bs_ManagementAgreement_Contract'])"
+                },
+                "Condition_-_Is_Management_Agreement_not_null": {
+                  "type": "If",
+                  "expression": {
+                    "and": [
+                      {
+                        "not": {
+                          "equals": [
+                            "@outputs('Compose_-_Management_Agreement_Object')",
+                            "@null"
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "Parse_JSON_-_Management_Agreement_Object": {
+                      "type": "ParseJson",
+                      "inputs": {
+                        "content": "@outputs('Compose_-_Management_Agreement_Object')",
+                        "schema": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "bs_invoicegroup@OData.Community.Display.V1.FormattedValue": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_invoicegroup": {
+                                "type": [
+                                  "integer",
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "bs_managementagreementtype@OData.Community.Display.V1.FormattedValue": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_managementagreementtype": {
+                                "type": [
+                                  "integer",
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "bs_fixedfeeamount@OData.Community.Display.V1.FormattedValue": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_fixedfeeamount": {
+                                "type": [
+                                  "integer",
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "bs_perlaborhourjobcode": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_perlaborhourrate@OData.Community.Display.V1.FormattedValue": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_perlaborhourrate": {
+                                "type": [
+                                  "integer",
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "bs_perlaborhourovertimerate@OData.Community.Display.V1.FormattedValue": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_perlaborhourovertimerate": {
+                                "type": [
+                                  "integer",
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "bs_revenuepercentageamount@OData.Community.Display.V1.FormattedValue": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_revenuepercentageamount": {
+                                "type": [
+                                  "integer",
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "bs_claimstype": {
+                                "type": [
+                                  "integer",
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "bs_claimslinetitle": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_claimsenabled@OData.Community.Display.V1.FormattedValue": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_claimsenabled": {
+                                "type": [
+                                  "boolean",
+                                  "null"
+                                ]
+                              },
+                              "bs_claimscapamount": {
+                                "type": [
+                                  "integer",
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "bs_insuranceadditionalpercentage@OData.Community.Display.V1.FormattedValue": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_insuranceadditionalpercentage": {
+                                "type": [
+                                  "integer",
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "bs_insuranceenabled@OData.Community.Display.V1.FormattedValue": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_insuranceenabled": {
+                                "type": [
+                                  "boolean",
+                                  "null"
+                                ]
+                              },
+                              "bs_insurancefixedfeeamount@OData.Community.Display.V1.FormattedValue": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_insurancefixedfeeamount": {
+                                "type": [
+                                  "integer",
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "bs_insurancelinetitle": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_insurancetype@OData.Community.Display.V1.FormattedValue": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_insurancetype": {
+                                "type": [
+                                  "integer",
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "bs_validationthresholdamount": {
+                                "type": [
+                                  "integer",
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "bs_validationthresholdenabled@OData.Community.Display.V1.FormattedValue": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_validationthresholdenabled": {
+                                "type": [
+                                  "boolean",
+                                  "null"
+                                ]
+                              },
+                              "bs_validationthresholdtype": {
+                                "type": [
+                                  "integer",
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "bs_profitshareaccumulationtype": {
+                                "type": [
+                                  "integer",
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "bs_profitshareenabled@OData.Community.Display.V1.FormattedValue": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_profitshareenabled": {
+                                "type": [
+                                  "boolean",
+                                  "null"
+                                ]
+                              },
+                              "bs_profitsharetierdata": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_managementagreementid": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "Condition_-_Is_Profit_Share_Enabled": {
+                      "type": "If",
+                      "expression": {
+                        "and": [
+                          {
+                            "equals": [
+                              "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_profitshareenabled",
+                              "@true"
+                            ]
+                          }
+                        ]
+                      },
+                      "actions": {
+                        "Condition_-_Is_Profit_Share_Escalator_Enabled_": {
+                          "type": "If",
+                          "expression": {
+                            "and": [
+                              {
+                                "equals": [
+                                  "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_profitshareescalatorenabled",
+                                  "@true"
+                                ]
+                              }
+                            ]
+                          },
+                          "actions": {
+                            "Set_EscalatorMonth_variable": {
+                              "type": "SetVariable",
+                              "inputs": {
+                                "name": "EscalatorMonth",
+                                "value": "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_profitshareescalatormonth"
+                              }
+                            },
+                            "Set_CurrentYear_variable": {
+                              "type": "SetVariable",
+                              "inputs": {
+                                "name": "CurrentYear",
+                                "value": "@int(formatDateTime(utcNow(), 'yyyy'))"
+                              }
+                            },
+                            "Compose_-_Get_Previous_Month": {
+                              "type": "Compose",
+                              "inputs": "@if(equals(variables('EscalatorMonth'), 1), 12, sub(variables('EscalatorMonth'), 1))",
+                              "runAfter": {
+                                "Set_EscalatorMonth_variable": [
+                                  "Succeeded"
+                                ],
+                                "Set_CurrentYear_variable": [
+                                  "Succeeded"
+                                ]
+                              }
+                            },
+                            "Compose_-_Get_Year": {
+                              "type": "Compose",
+                              "inputs": "@if(equals(variables('EscalatorMonth'), 1), sub(variables('CurrentYear'), 1), variables('CurrentYear'))",
+                              "runAfter": {
+                                "Compose_-_Get_Previous_Month": [
+                                  "Succeeded"
+                                ]
+                              }
+                            },
+                            "Compose_-_Last_Day_of_Previous_Month": {
+                              "type": "Compose",
+                              "inputs": "@formatDateTime(addDays(addToTime(concat(outputs('Compose_-_Get_Year'), '-', string(outputs('Compose_-_Get_Previous_Month')), '-01'), 1, 'Month'), -1 ), 'yyyy-MM-dd')",
+                              "runAfter": {
+                                "Compose_-_Get_Year": [
+                                  "Succeeded"
+                                ]
+                              }
+                            },
+                            "Compose_-_Days_to_subtract_from_last_day_of_previous_month": {
+                              "type": "Compose",
+                              "inputs": "@mod(add(dayOfWeek(outputs('Compose_-_Last_Day_of_Previous_Month')), 2), 7)",
+                              "runAfter": {
+                                "Compose_-_Last_Day_of_Previous_Month": [
+                                  "Succeeded"
+                                ]
+                              }
+                            },
+                            "Compose_-_Get_Last_Friday_of_Previous_Month": {
+                              "type": "Compose",
+                              "inputs": "@formatDateTime(addDays(outputs('Compose_-_Last_Day_of_Previous_Month'), mul(-1, outputs('Compose_-_Days_to_subtract_from_last_day_of_previous_month'))), 'yyyy-MM-dd')",
+                              "runAfter": {
+                                "Compose_-_Days_to_subtract_from_last_day_of_previous_month": [
+                                  "Succeeded"
+                                ]
+                              }
+                            },
+                            "Compose_-_Json_Tier_Data": {
+                              "type": "Compose",
+                              "inputs": "@json(first(body('Parse_JSON_-_Management_Agreement_Object')).bs_profitsharetierdata)",
+                              "runAfter": {
+                                "Compose_-_Get_Last_Friday_of_Previous_Month": [
+                                  "Succeeded"
+                                ]
+                              }
+                            },
+                            "Condition_-_Is_Profit_Share_Escalator_day": {
+                              "type": "If",
+                              "expression": {
+                                "and": [
+                                  {
+                                    "equals": [
+                                      "@formatDateTime(utcNow(), 'MM-dd')",
+                                      "@formatDateTime(outputs('Compose_-_Get_Last_Friday_of_Previous_Month'), 'MM-dd')"
+                                    ]
+                                  }
+                                ]
+                              },
+                              "actions": {
+                                "Switch": {
+                                  "type": "Switch",
+                                  "expression": "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_profitshareescalatortype",
+                                  "default": {
+                                    "actions": {}
+                                  },
+                                  "cases": {
+                                    "Case_-_Percentage": {
+                                      "actions": {
+                                        "Apply_to_each_-_For_Percentage": {
+                                          "type": "Foreach",
+                                          "foreach": "@outputs('Compose_-_Json_Tier_Data')",
+                                          "actions": {
+                                            "Compose_-_Share_Percentage": {
+                                              "type": "Compose",
+                                              "inputs": "@float(formatNumber(mul(items('Apply_to_each_-_For_Percentage')?['SharePercentage'], add(1, div(items('Apply_to_each_-_For_Percentage')?['EscalatorValue'], 100))), '##0.00'))"
+                                            },
+                                            "Compose_-_Updated_Tier_Data": {
+                                              "type": "Compose",
+                                              "inputs": {
+                                                "SharePercentage": "@outputs('Compose_-_Share_Percentage')",
+                                                "Amount": "@float(formatNumber(items('Apply_to_each_-_For_Percentage')?['Amount'], '##0.00'))",
+                                                "EscalatorValue": "@float(formatNumber(items('Apply_to_each_-_For_Percentage')?['EscalatorValue'], '##0.00'))"
+                                              },
+                                              "runAfter": {
+                                                "Compose_-_Share_Percentage": [
+                                                  "Succeeded"
+                                                ]
+                                              }
+                                            },
+                                            "Append_to_UpdatedTierData_variable": {
+                                              "type": "AppendToArrayVariable",
+                                              "inputs": {
+                                                "name": "UpdatedProfitShareTierData",
+                                                "value": "@outputs('Compose_-_Updated_Tier_Data')"
+                                              },
+                                              "runAfter": {
+                                                "Compose_-_Updated_Tier_Data": [
+                                                  "Succeeded"
+                                                ]
+                                              }
+                                            }
+                                          }
+                                        }
+                                      },
+                                      "case": 126840000
+                                    },
+                                    "Case_-_Fixed_Amount": {
+                                      "actions": {
+                                        "Apply_to_each_-_For_Fixed_Amount": {
+                                          "type": "Foreach",
+                                          "foreach": "@outputs('Compose_-_Json_Tier_Data')",
+                                          "actions": {
+                                            "Compose_-_Update_Share_Percentage_for_Fixed_Amount": {
+                                              "type": "Compose",
+                                              "inputs": "@float(formatNumber(add(items('Apply_to_each_-_For_Fixed_Amount')?['SharePercentage'], items('Apply_to_each_-_For_Fixed_Amount')?['EscalatorValue']), '##0.00'))"
+                                            },
+                                            "Compose__-_Updated_Tier_Data_for_Fixed_Amount": {
+                                              "type": "Compose",
+                                              "inputs": {
+                                                "SharePercentage": "@outputs('Compose_-_Update_Share_Percentage_for_Fixed_Amount')",
+                                                "Amount": "@float(formatNumber(items('Apply_to_each_-_For_Fixed_Amount')?['Amount'], '##0.00'))",
+                                                "EscalatorValue": "@float(formatNumber(items('Apply_to_each_-_For_Fixed_Amount')?['EscalatorValue'], '##0.00'))"
+                                              },
+                                              "runAfter": {
+                                                "Compose_-_Update_Share_Percentage_for_Fixed_Amount": [
+                                                  "Succeeded"
+                                                ]
+                                              }
+                                            },
+                                            "Append_to_Updated_Tier_Data_for_Fixed_Amount_variable": {
+                                              "type": "AppendToArrayVariable",
+                                              "inputs": {
+                                                "name": "UpdatedProfitShareTierData",
+                                                "value": "@outputs('Compose__-_Updated_Tier_Data_for_Fixed_Amount')"
+                                              },
+                                              "runAfter": {
+                                                "Compose__-_Updated_Tier_Data_for_Fixed_Amount": [
+                                                  "Succeeded"
+                                                ]
+                                              }
+                                            }
+                                          }
+                                        }
+                                      },
+                                      "case": 126840001
+                                    }
+                                  }
+                                },
+                                "Update_ProfitShareTierData_": {
+                                  "type": "OpenApiConnection",
+                                  "inputs": {
+                                    "parameters": {
+                                      "entityName": "bs_managementagreements",
+                                      "recordId": "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_managementagreementid",
+                                      "item/bs_profitsharetierdata": "@variables('UpdatedProfitShareTierData')"
+                                    },
+                                    "host": {
+                                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                                      "operationId": "UpdateOnlyRecord",
+                                      "connectionName": "shared_commondataserviceforapps"
+                                    }
+                                  },
+                                  "runAfter": {
+                                    "Switch": [
+                                      "Succeeded"
+                                    ]
+                                  }
+                                },
+                                "Reset_UpdatedProfitShareTierData": {
+                                  "type": "SetVariable",
+                                  "inputs": {
+                                    "name": "UpdatedProfitShareTierData",
+                                    "value": []
+                                  },
+                                  "runAfter": {
+                                    "Update_ProfitShareTierData_": [
+                                      "Succeeded"
+                                    ]
+                                  }
+                                }
+                              },
+                              "else": {
+                                "actions": {}
+                              },
+                              "runAfter": {
+                                "Compose_-_Json_Tier_Data": [
+                                  "Succeeded"
+                                ]
+                              }
+                            }
+                          },
+                          "else": {
+                            "actions": {}
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {}
+                      },
+                      "runAfter": {
+                        "Parse_JSON_-_Management_Agreement_Object": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Condition_-_Is_Management_Fee_Escalator_Enabled": {
+                      "type": "If",
+                      "expression": {
+                        "and": [
+                          {
+                            "equals": [
+                              "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_managementfeeescalatorenabled",
+                              "@true"
+                            ]
+                          }
+                        ]
+                      },
+                      "actions": {
+                        "Compose_-_Management_Fee_Escalator_Month": {
+                          "type": "Compose",
+                          "inputs": "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_managementfeeescalatormonth"
+                        },
+                        "Compose_-_Current_Year": {
+                          "type": "Compose",
+                          "inputs": "@int(formatDateTime(utcNow(), 'yyyy'))"
+                        },
+                        "Compose_-_Get_previous_month_for_Management_Fee_Escalator": {
+                          "type": "Compose",
+                          "inputs": "@if(equals(outputs('Compose_-_Management_Fee_Escalator_Month'), 1), 12, sub(outputs('Compose_-_Management_Fee_Escalator_Month'), 1))",
+                          "runAfter": {
+                            "Compose_-_Management_Fee_Escalator_Month": [
+                              "Succeeded"
+                            ],
+                            "Compose_-_Current_Year": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Compose_-_Get_Year_for_Management_Fee_Escalator": {
+                          "type": "Compose",
+                          "inputs": "@if(equals(outputs('Compose_-_Management_Fee_Escalator_Month'), 1), sub(outputs('Compose_-_Current_Year'), 1), outputs('Compose_-_Current_Year'))",
+                          "runAfter": {
+                            "Compose_-_Get_previous_month_for_Management_Fee_Escalator": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Compose_-_Last_Day_of_Previous_Month_for_Management_Fee_Escalator": {
+                          "type": "Compose",
+                          "inputs": "@formatDateTime(addDays(addToTime(concat(outputs('Compose_-_Get_Year_for_Management_Fee_Escalator'), '-', string(outputs('Compose_-_Get_previous_month_for_Management_Fee_Escalator')), '-01'), 1, 'Month'), -1 ), 'yyyy-MM-dd')",
+                          "runAfter": {
+                            "Compose_-_Get_Year_for_Management_Fee_Escalator": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Compose_-__Days_to_subtract_from_last_day_of_previous_month_for_Management_Fee": {
+                          "type": "Compose",
+                          "inputs": "@mod(add(dayOfWeek(outputs('Compose_-_Last_Day_of_Previous_Month_for_Management_Fee_Escalator')), 2), 7)",
+                          "runAfter": {
+                            "Compose_-_Last_Day_of_Previous_Month_for_Management_Fee_Escalator": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Compose_-_Get_Last_Friday_of_Previous_Month_for_Management_Fee": {
+                          "type": "Compose",
+                          "inputs": "@formatDateTime(addDays(outputs('Compose_-_Last_Day_of_Previous_Month_for_Management_Fee_Escalator'), mul(-1, outputs('Compose_-__Days_to_subtract_from_last_day_of_previous_month_for_Management_Fee'))), 'yyyy-MM-dd')",
+                          "runAfter": {
+                            "Compose_-__Days_to_subtract_from_last_day_of_previous_month_for_Management_Fee": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Condition_-_Is_Management_Fee_Escalator_Day": {
+                          "type": "If",
+                          "expression": {
+                            "and": [
+                              {
+                                "equals": [
+                                  "@formatDateTime(utcNow(), 'MM-dd')",
+                                  "@formatDateTime(outputs('Compose_-_Get_Last_Friday_of_Previous_Month_for_Management_Fee'), 'MM-dd')"
+                                ]
+                              }
+                            ]
+                          },
+                          "actions": {
+                            "Switch_-_Management_Agreement_Type": {
+                              "type": "Switch",
+                              "expression": "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_managementagreementtype",
+                              "default": {
+                                "actions": {}
+                              },
+                              "cases": {
+                                "Case_Fixed_Fee": {
+                                  "actions": {
+                                    "Switch_-_Management_Fee_Escalator_Type_for_Fixed_Fee": {
+                                      "type": "Switch",
+                                      "expression": "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_managementfeeescalatortype",
+                                      "default": {
+                                        "actions": {}
+                                      },
+                                      "cases": {
+                                        "Case_Percentage_for_Fixed_Fee": {
+                                          "actions": {
+                                            "Compose_-_Add_Percentage_value_to_Fixed_Fee": {
+                                              "type": "Compose",
+                                              "inputs": "@float(\r\n  formatNumber(\r\n    add(\r\n      outputs('Compose_-_Fixed_Fee_value'), \r\n      div(\r\n        mul(\r\n          outputs('Compose_-_Fixed_Fee_Escalator_Value'), \r\n          outputs('Compose_-_Fixed_Fee_value')\r\n        ),\r\n        100\r\n      )\r\n    ),\r\n    '0.00'\r\n  )\r\n)"
+                                            },
+                                            "Update_Fixed_Fee_Amount_for_Percentage": {
+                                              "type": "OpenApiConnection",
+                                              "inputs": {
+                                                "parameters": {
+                                                  "entityName": "bs_managementagreements",
+                                                  "recordId": "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_managementagreementid",
+                                                  "item/bs_fixedfeeamount": "@outputs('Compose_-_Add_Percentage_value_to_Fixed_Fee')"
+                                                },
+                                                "host": {
+                                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                                                  "operationId": "UpdateOnlyRecord",
+                                                  "connectionName": "shared_commondataserviceforapps"
+                                                }
+                                              },
+                                              "runAfter": {
+                                                "Compose_-_Add_Percentage_value_to_Fixed_Fee": [
+                                                  "Succeeded"
+                                                ]
+                                              }
+                                            }
+                                          },
+                                          "case": 126840000
+                                        },
+                                        "Case_Fixed_Amount_for_Fixed_Fee": {
+                                          "actions": {
+                                            "Compose_-_Add_FixedAmount_value_to_Fixed_Fee": {
+                                              "type": "Compose",
+                                              "inputs": "@float(\r\n  formatNumber(\r\n    add(\r\n      outputs('Compose_-_Fixed_Fee_value'), \r\n      outputs('Compose_-_Fixed_Fee_Escalator_Value')\r\n    ),\r\n    '0.00'\r\n  )\r\n)"
+                                            },
+                                            "Update_Fixed_Fee_Amount_for_FixedAmount": {
+                                              "type": "OpenApiConnection",
+                                              "inputs": {
+                                                "parameters": {
+                                                  "entityName": "bs_managementagreements",
+                                                  "recordId": "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_managementagreementid",
+                                                  "item/bs_fixedfeeamount": "@outputs('Compose_-_Add_FixedAmount_value_to_Fixed_Fee')"
+                                                },
+                                                "host": {
+                                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                                                  "operationId": "UpdateOnlyRecord",
+                                                  "connectionName": "shared_commondataserviceforapps"
+                                                }
+                                              },
+                                              "runAfter": {
+                                                "Compose_-_Add_FixedAmount_value_to_Fixed_Fee": [
+                                                  "Succeeded"
+                                                ]
+                                              }
+                                            }
+                                          },
+                                          "case": 126840001
+                                        }
+                                      },
+                                      "runAfter": {
+                                        "Compose_-_Fixed_Fee_Escalator_Value": [
+                                          "Succeeded"
+                                        ],
+                                        "Compose_-_Fixed_Fee_value": [
+                                          "Succeeded"
+                                        ]
+                                      }
+                                    },
+                                    "Compose_-_Fixed_Fee_Escalator_Value": {
+                                      "type": "Compose",
+                                      "inputs": "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_managementfeeescalatorvalue"
+                                    },
+                                    "Compose_-_Fixed_Fee_value": {
+                                      "type": "Compose",
+                                      "inputs": "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_fixedfeeamount"
+                                    }
+                                  },
+                                  "case": 126840000
+                                },
+                                "Case_Per_Labor_Hour": {
+                                  "actions": {
+                                    "Compose_-_Parse_Per_Labour_Hour_to_Json": {
+                                      "type": "Compose",
+                                      "inputs": "@json(first(body('Parse_JSON_-_Management_Agreement_Object')).bs_perlaborhourjobcodedata)"
+                                    },
+                                    "Switch_-_Management_Fee_Escalator_Type_for_Per_Labor_Hour": {
+                                      "type": "Switch",
+                                      "expression": "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_managementfeeescalatortype",
+                                      "default": {
+                                        "actions": {}
+                                      },
+                                      "cases": {
+                                        "Case_Percentage_for_Per_Labor_Hour": {
+                                          "actions": {
+                                            "Apply_to_each_-_Per_Labor_Hour_for_Percentage": {
+                                              "type": "Foreach",
+                                              "foreach": "@outputs('Compose_-_Parse_Per_Labour_Hour_to_Json')",
+                                              "actions": {
+                                                "Compose_-_Add_Percentage_to_Standard_Rate": {
+                                                  "type": "Compose",
+                                                  "inputs": "@float(\r\n  formatNumber(\r\n    add(\r\n      items('Apply_to_each_-_Per_Labor_Hour_for_Percentage')?['StandardRate'], \r\n      div(\r\n        mul(\r\n          items('Apply_to_each_-_Per_Labor_Hour_for_Percentage')?['StandardRateEscalatorValue'], \r\n          items('Apply_to_each_-_Per_Labor_Hour_for_Percentage')?['StandardRate']\r\n        ),\r\n        100\r\n      )\r\n    ),\r\n    '0.00'\r\n  )\r\n)"
+                                                },
+                                                "Compose_-_Add_Percentage_to_Overtime_Rate": {
+                                                  "type": "Compose",
+                                                  "inputs": "@float(\r\n  formatNumber(\r\n    add(\r\n      items('Apply_to_each_-_Per_Labor_Hour_for_Percentage')?['OvertimeRate'], \r\n      div(\r\n        mul(\r\n          items('Apply_to_each_-_Per_Labor_Hour_for_Percentage')?['OvertimeRateEscalatorValue'], \r\n          items('Apply_to_each_-_Per_Labor_Hour_for_Percentage')?['OvertimeRate']\r\n        ),\r\n        100\r\n      )\r\n    ),\r\n    '0.00'\r\n  )\r\n)"
+                                                },
+                                                "Compose_-_Updated_Per_Labor_Hour_data_for_Percentage": {
+                                                  "type": "Compose",
+                                                  "inputs": {
+                                                    "Code": "@items('Apply_to_each_-_Per_Labor_Hour_for_Percentage')?['Code']",
+                                                    "Description": "@items('Apply_to_each_-_Per_Labor_Hour_for_Percentage')?['Description']",
+                                                    "StandardRate": "@outputs('Compose_-_Add_Percentage_to_Standard_Rate')",
+                                                    "OvertimeRate": "@outputs('Compose_-_Add_Percentage_to_Overtime_Rate')",
+                                                    "StandardRateEscalatorValue": "@float(formatNumber(items('Apply_to_each_-_Per_Labor_Hour_for_Percentage')?['StandardRateEscalatorValue'], '0.00'))",
+                                                    "OvertimeRateEscalatorValue": "@float(formatNumber(items('Apply_to_each_-_Per_Labor_Hour_for_Percentage')?['OvertimeRateEscalatorValue'], '0.00'))"
+                                                  },
+                                                  "runAfter": {
+                                                    "Compose_-_Add_Percentage_to_Standard_Rate": [
+                                                      "Succeeded"
+                                                    ],
+                                                    "Compose_-_Add_Percentage_to_Overtime_Rate": [
+                                                      "Succeeded"
+                                                    ]
+                                                  }
+                                                },
+                                                "Append_to_UpdatedPerLaborHourJobCodeData_variable_for_Percentage": {
+                                                  "type": "AppendToArrayVariable",
+                                                  "inputs": {
+                                                    "name": "UpdatedPerLaborHourJobCodeData",
+                                                    "value": "@outputs('Compose_-_Updated_Per_Labor_Hour_data_for_Percentage')"
+                                                  },
+                                                  "runAfter": {
+                                                    "Compose_-_Updated_Per_Labor_Hour_data_for_Percentage": [
+                                                      "Succeeded"
+                                                    ]
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          },
+                                          "case": 126840000
+                                        },
+                                        "Case_Fixed_Amount_for_Per_Labor_Hour": {
+                                          "actions": {
+                                            "Apply_to_each_-_Per_Labor_Hour_for_Fixed_Amount": {
+                                              "type": "Foreach",
+                                              "foreach": "@outputs('Compose_-_Parse_Per_Labour_Hour_to_Json')",
+                                              "actions": {
+                                                "Compose_-_Add_Fixed_Amount_to_Standard_Rate": {
+                                                  "type": "Compose",
+                                                  "inputs": "@float(\r\n  formatNumber(\r\n    add(\r\n      items('Apply_to_each_-_Per_Labor_Hour_for_Fixed_Amount')?['StandardRate'], \r\n      items('Apply_to_each_-_Per_Labor_Hour_for_Fixed_Amount')?['StandardRateEscalatorValue']\r\n    ),\r\n    '0.00'\r\n  )\r\n)"
+                                                },
+                                                "Compose_-_Add_Fixed_Amount_to_Overtime_Rate": {
+                                                  "type": "Compose",
+                                                  "inputs": "@float(\r\n  formatNumber(\r\n    add(\r\n      items('Apply_to_each_-_Per_Labor_Hour_for_Fixed_Amount')?['OvertimeRate'], \r\n      items('Apply_to_each_-_Per_Labor_Hour_for_Fixed_Amount')?['OvertimeRateEscalatorValue']\r\n    ),\r\n    '0.00'\r\n  )\r\n)"
+                                                },
+                                                "Compose_-_Updated_Per_Labor_Hour_data_for_Fixed_Amount": {
+                                                  "type": "Compose",
+                                                  "inputs": {
+                                                    "Code": "@items('Apply_to_each_-_Per_Labor_Hour_for_Fixed_Amount')?['Code']",
+                                                    "Description": "@items('Apply_to_each_-_Per_Labor_Hour_for_Fixed_Amount')?['Description']",
+                                                    "StandardRate": "@outputs('Compose_-_Add_Fixed_Amount_to_Standard_Rate')",
+                                                    "OvertimeRate": "@outputs('Compose_-_Add_Fixed_Amount_to_Overtime_Rate')",
+                                                    "StandardRateEscalatorValue": "@float(formatNumber(items('Apply_to_each_-_Per_Labor_Hour_for_Fixed_Amount')?['StandardRateEscalatorValue'], '0.00'))",
+                                                    "OvertimeRateEscalatorValue": "@float(formatNumber(items('Apply_to_each_-_Per_Labor_Hour_for_Fixed_Amount')?['OvertimeRateEscalatorValue'], '0.00'))"
+                                                  },
+                                                  "runAfter": {
+                                                    "Compose_-_Add_Fixed_Amount_to_Standard_Rate": [
+                                                      "Succeeded"
+                                                    ],
+                                                    "Compose_-_Add_Fixed_Amount_to_Overtime_Rate": [
+                                                      "Succeeded"
+                                                    ]
+                                                  }
+                                                },
+                                                "Append_to_UpdatedPerLaborHourJobCodeData_variable_for_Fixed_Amount": {
+                                                  "type": "AppendToArrayVariable",
+                                                  "inputs": {
+                                                    "name": "UpdatedPerLaborHourJobCodeData",
+                                                    "value": "@outputs('Compose_-_Updated_Per_Labor_Hour_data_for_Fixed_Amount')"
+                                                  },
+                                                  "runAfter": {
+                                                    "Compose_-_Updated_Per_Labor_Hour_data_for_Fixed_Amount": [
+                                                      "Succeeded"
+                                                    ]
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          },
+                                          "case": 126840001
+                                        }
+                                      },
+                                      "runAfter": {
+                                        "Compose_-_Parse_Per_Labour_Hour_to_Json": [
+                                          "Succeeded"
+                                        ]
+                                      }
+                                    },
+                                    "Update_Per_Labor_Hour_data": {
+                                      "type": "OpenApiConnection",
+                                      "inputs": {
+                                        "parameters": {
+                                          "entityName": "bs_managementagreements",
+                                          "recordId": "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_managementagreementid",
+                                          "item/bs_perlaborhourjobcodedata": "@variables('UpdatedPerLaborHourJobCodeData')"
+                                        },
+                                        "host": {
+                                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                                          "operationId": "UpdateOnlyRecord",
+                                          "connectionName": "shared_commondataserviceforapps"
+                                        }
+                                      },
+                                      "runAfter": {
+                                        "Switch_-_Management_Fee_Escalator_Type_for_Per_Labor_Hour": [
+                                          "Succeeded"
+                                        ]
+                                      }
+                                    },
+                                    "Reset_UpdatedPerLaborHourJobCodeData_variable": {
+                                      "type": "SetVariable",
+                                      "inputs": {
+                                        "name": "UpdatedPerLaborHourJobCodeData",
+                                        "value": []
+                                      },
+                                      "runAfter": {
+                                        "Update_Per_Labor_Hour_data": [
+                                          "Succeeded"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "case": 126840001
+                                },
+                                "Case_Revenue_Percentage": {
+                                  "actions": {
+                                    "Compose_-_Revenue_Escalator_Value": {
+                                      "type": "Compose",
+                                      "inputs": "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_managementfeeescalatorvalue"
+                                    },
+                                    "Compose_-_Revenue_Percentage_value": {
+                                      "type": "Compose",
+                                      "inputs": "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_revenuepercentageamount"
+                                    },
+                                    "Switch_-_Management_Fee_Escalator_type_for_Revenue": {
+                                      "type": "Switch",
+                                      "expression": "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_managementfeeescalatortype",
+                                      "default": {
+                                        "actions": {}
+                                      },
+                                      "cases": {
+                                        "Case_Percentage_for_Revenue": {
+                                          "actions": {
+                                            "Compose_-_Add_Percentage_to_Revenue_Percentage": {
+                                              "type": "Compose",
+                                              "inputs": "@float(formatNumber(mul(outputs('Compose_-_Revenue_Percentage_value'), add(1, div(outputs('Compose_-_Revenue_Escalator_Value'), 100))), '0.00'))"
+                                            },
+                                            "Update_Revenue_Percentage_for_Percentage": {
+                                              "type": "OpenApiConnection",
+                                              "inputs": {
+                                                "parameters": {
+                                                  "entityName": "bs_managementagreements",
+                                                  "recordId": "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_managementagreementid",
+                                                  "item/bs_revenuepercentageamount": "@outputs('Compose_-_Add_Percentage_to_Revenue_Percentage')"
+                                                },
+                                                "host": {
+                                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                                                  "operationId": "UpdateOnlyRecord",
+                                                  "connectionName": "shared_commondataserviceforapps"
+                                                }
+                                              },
+                                              "runAfter": {
+                                                "Compose_-_Add_Percentage_to_Revenue_Percentage": [
+                                                  "Succeeded"
+                                                ]
+                                              }
+                                            }
+                                          },
+                                          "case": 126840000
+                                        },
+                                        "Case_Fixed_Amount_for_Revenue": {
+                                          "actions": {
+                                            "Compose_-_Add_Fixed_Amount_to_Revenue_Percentage": {
+                                              "type": "Compose",
+                                              "inputs": "@float(\r\n  formatNumber(\r\n    add(\r\n      outputs('Compose_-_Revenue_Percentage_value'), outputs('Compose_-_Revenue_Escalator_Value')\r\n    ), \r\n    '0.00'\r\n  )\r\n)"
+                                            },
+                                            "Update_Revenue_Percentage_for_Fixed_Amount": {
+                                              "type": "OpenApiConnection",
+                                              "inputs": {
+                                                "parameters": {
+                                                  "entityName": "bs_managementagreements",
+                                                  "recordId": "@first(body('Parse_JSON_-_Management_Agreement_Object')).bs_managementagreementid",
+                                                  "item/bs_revenuepercentageamount": "@outputs('Compose_-_Add_Fixed_Amount_to_Revenue_Percentage')"
+                                                },
+                                                "host": {
+                                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                                                  "operationId": "UpdateOnlyRecord",
+                                                  "connectionName": "shared_commondataserviceforapps"
+                                                }
+                                              },
+                                              "runAfter": {
+                                                "Compose_-_Add_Fixed_Amount_to_Revenue_Percentage": [
+                                                  "Succeeded"
+                                                ]
+                                              }
+                                            }
+                                          },
+                                          "case": 126840001
+                                        }
+                                      },
+                                      "runAfter": {
+                                        "Compose_-_Revenue_Escalator_Value": [
+                                          "Succeeded"
+                                        ],
+                                        "Compose_-_Revenue_Percentage_value": [
+                                          "Succeeded"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "case": 126840002
+                                }
+                              }
+                            }
+                          },
+                          "else": {
+                            "actions": {}
+                          },
+                          "runAfter": {
+                            "Compose_-_Get_Last_Friday_of_Previous_Month_for_Management_Fee": [
+                              "Succeeded"
+                            ]
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {}
+                      },
+                      "runAfter": {
+                        "Parse_JSON_-_Management_Agreement_Object": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {}
+                  },
+                  "runAfter": {
+                    "Compose_-_Management_Agreement_Object": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "Parse_Contract_JSON": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Condition_-Is_Billable_Account_not_empty": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@not(empty(body('Parse_Contract_JSON')?['bs_BillableAccount_Contract']))",
+                      "@true"
+                    ]
+                  }
+                ]
+              },
+              "actions": {
+                "Compose_-_Billable_Account_object": {
+                  "type": "Compose",
+                  "inputs": "@string(body('Parse_Contract_JSON')?\r\n['bs_BillableAccount_Contract'])"
+                },
+                "Condition_-_Is_Billable_Account_not_null": {
+                  "type": "If",
+                  "expression": {
+                    "and": [
+                      {
+                        "not": {
+                          "equals": [
+                            "@outputs('Compose_-_Billable_Account_object')",
+                            "@null"
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "Parse_JSON-_Billable_Account__Object": {
+                      "type": "ParseJson",
+                      "inputs": {
+                        "content": "@outputs('Compose_-_Billable_Account_object')",
+                        "schema": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "@@odata.type": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_payrollaccountsdata": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_payrollaccountsinvoicegroup": {
+                                "type": [
+                                  "integer",
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "bs_payrollaccountslinetitle": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_payrolltaxesbillingtype@OData.Community.Display.V1.FormattedValue": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_payrolltaxesbillingtype": {
+                                "type": [
+                                  "integer",
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "bs_payrolltaxesenabled@OData.Community.Display.V1.FormattedValue": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_payrolltaxesenabled": {
+                                "type": [
+                                  "boolean",
+                                  "null"
+                                ]
+                              },
+                              "bs_payrolltaxeslinetitle": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_payrolltaxespercentage@OData.Community.Display.V1.FormattedValue": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_payrolltaxespercentage": {
+                                "type": [
+                                  "integer",
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "bs_payrollsupportenabled": {
+                                "type": [
+                                  "boolean",
+                                  "null"
+                                ]
+                              },
+                              "bs_payrollsupportlinetitle": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_payrollsupportbillingtype@OData.Community.Display.V1.FormattedValue": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_payrollsupportbillingtype": {
+                                "type": [
+                                  "integer",
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "bs_payrollsupportpayrolltype@OData.Community.Display.V1.FormattedValue": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_payrollsupportpayrolltype": {
+                                "type": [
+                                  "integer",
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "bs_payrollsupportamount": {
+                                "type": [
+                                  "integer",
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "bs_expenseaccountsdata": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_expenseaccountsinvoicegroup": {
+                                "type": [
+                                  "integer",
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "bs_expenseaccountslinetitle": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "Condition_-_Is_Payroll_Taxes_Employee_Benefits_Escalator_Enabled": {
+                      "type": "If",
+                      "expression": {
+                        "and": [
+                          {
+                            "equals": [
+                              "@first(body('Parse_JSON-_Billable_Account__Object')).\r\nbs_payrolltaxesescalatorenable",
+                              "@true"
+                            ]
+                          }
+                        ]
+                      },
+                      "actions": {
+                        "Compose_-__Payroll_Taxes_Employee_Benefits_Month": {
+                          "type": "Compose",
+                          "inputs": "@first(body('Parse_JSON-_Billable_Account__Object')).bs_payrolltaxesescalatormonth"
+                        },
+                        "Compose-Payroll_Taxes_Employee_Current_Year": {
+                          "type": "Compose",
+                          "inputs": "@int(formatDateTime(utcNow(), 'yyyy'))"
+                        },
+                        "Compose_-__Get_previous_month_for_Payroll_Taxes_Employee__Escalator": {
+                          "type": "Compose",
+                          "inputs": "@if(equals(outputs('Compose_-__Payroll_Taxes_Employee_Benefits_Month') ,1), 12,\r\nsub(outputs('Compose_-__Payroll_Taxes_Employee_Benefits_Month'), 1))",
+                          "runAfter": {
+                            "Compose_-__Payroll_Taxes_Employee_Benefits_Month": [
+                              "Succeeded"
+                            ],
+                            "Compose-Payroll_Taxes_Employee_Current_Year": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Compose-_Get_Year_for_Payroll_Taxes_Employee__Escalator": {
+                          "type": "Compose",
+                          "inputs": "@if(equals(outputs('Compose_-__Payroll_Taxes_Employee_Benefits_Month'), 1), sub(outputs('Compose-Payroll_Taxes_Employee_Current_Year'), 1), outputs('Compose-Payroll_Taxes_Employee_Current_Year'))",
+                          "runAfter": {
+                            "Compose_-__Get_previous_month_for_Payroll_Taxes_Employee__Escalator": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Compose_-__Last_Day_of_previous_month_for_Payroll_Taxes_Employee__Escalator": {
+                          "type": "Compose",
+                          "inputs": "@formatDateTime(addDays(addToTime(concat(outputs('Compose-_Get_Year_for_Payroll_Taxes_Employee__Escalator'),'-', string(outputs('Compose_-__Get_previous_month_for_Payroll_Taxes_Employee__Escalator')), '-01'), 1, 'Month'), -1 ), 'yyyy-MM-dd')",
+                          "runAfter": {
+                            "Compose-_Get_Year_for_Payroll_Taxes_Employee__Escalator": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Compose_-_Days_to_subtract_from_last_day_of_previous_month_for_PTEB": {
+                          "type": "Compose",
+                          "inputs": "@mod(add(dayOfWeek(outputs('Compose_-__Last_Day_of_previous_month_for_Payroll_Taxes_Employee__Escalator')), 2), 7)",
+                          "runAfter": {
+                            "Compose_-__Last_Day_of_previous_month_for_Payroll_Taxes_Employee__Escalator": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Compose_-_Get_Last_Friday_of_Previous_Month_for_PTEB_": {
+                          "type": "Compose",
+                          "inputs": "@formatDateTime(addDays(outputs('Compose_-__Last_Day_of_previous_month_for_Payroll_Taxes_Employee__Escalator'), mul(-1,outputs('Compose_-_Days_to_subtract_from_last_day_of_previous_month_for_PTEB'))), 'yyyy-MM-dd')",
+                          "runAfter": {
+                            "Compose_-_Days_to_subtract_from_last_day_of_previous_month_for_PTEB": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Condition_-_Is_Payroll_Taxes_Employee_Escalator_Day": {
+                          "type": "If",
+                          "expression": {
+                            "and": [
+                              {
+                                "equals": [
+                                  "@formatDateTime(utcNow(), 'MM-dd')",
+                                  "@formatDateTime(outputs('Compose_-_Get_Last_Friday_of_Previous_Month_for_PTEB_'), 'MM-dd')"
+                                ]
+                              }
+                            ]
+                          },
+                          "actions": {
+                            "Compose_PTEB": {
+                              "type": "Compose",
+                              "inputs": "@first(body('Parse_JSON-_Billable_Account__Object')).bs_payrolltaxesescalatorvalue"
+                            },
+                            "Compose_-PTEB_value": {
+                              "type": "Compose",
+                              "inputs": "@first(body('Parse_JSON-_Billable_Account__Object')).bs_payrolltaxespercentage"
+                            },
+                            "Switch_-_Payroll_Taxes_Employee_": {
+                              "type": "Switch",
+                              "expression": "@first(body('Parse_JSON-_Billable_Account__Object')).bs_payrolltaxesescalatortype",
+                              "default": {
+                                "actions": {}
+                              },
+                              "cases": {
+                                "Case_Percentage_for_PTEB": {
+                                  "actions": {
+                                    "Compose_-_Add_Percentage_value_to_PTEB": {
+                                      "type": "Compose",
+                                      "inputs": "@float(\r\n  formatNumber(\r\n    add(\r\n      outputs('Compose_-PTEB_value'),\r\n      div(\r\n        mul(\r\n          outputs('Compose_PTEB'),\r\n          outputs('Compose_-PTEB_value')\r\n        ),\r\n        100\r\n      )\r\n    ),\r\n    '0.00'\r\n  )\r\n)"
+                                    },
+                                    "Update_PTEB_for_Percentage": {
+                                      "type": "OpenApiConnection",
+                                      "inputs": {
+                                        "parameters": {
+                                          "entityName": "bs_billableaccounts",
+                                          "recordId": "@first(body('Parse_JSON-_Billable_Account__Object')).bs_billableaccountid",
+                                          "item/bs_payrolltaxespercentage": "@outputs('Compose_-_Add_Percentage_value_to_PTEB')"
+                                        },
+                                        "host": {
+                                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                                          "operationId": "UpdateOnlyRecord",
+                                          "connectionName": "shared_commondataserviceforapps"
+                                        }
+                                      },
+                                      "runAfter": {
+                                        "Compose_-_Add_Percentage_value_to_PTEB": [
+                                          "Succeeded"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "case": 126840000
+                                },
+                                "Case_Fixed_Amount_for_PTEB": {
+                                  "actions": {
+                                    "Compose_-_Add_FixedAmount_value_to_PTEB": {
+                                      "type": "Compose",
+                                      "inputs": "@float(\r\n  formatNumber(\r\n    add(\r\n      outputs('Compose_-PTEB_value'),\r\n    outputs('Compose_PTEB')\r\n  ),\r\n   '0.00'\r\n)\r\n)"
+                                    },
+                                    "Update_PTEB_Fixed_Amount": {
+                                      "type": "OpenApiConnection",
+                                      "inputs": {
+                                        "parameters": {
+                                          "entityName": "bs_billableaccounts",
+                                          "recordId": "@first(body('Parse_JSON-_Billable_Account__Object')).bs_billableaccountid",
+                                          "item/bs_payrolltaxespercentage": "@outputs('Compose_-_Add_FixedAmount_value_to_PTEB')"
+                                        },
+                                        "host": {
+                                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                                          "operationId": "UpdateOnlyRecord",
+                                          "connectionName": "shared_commondataserviceforapps"
+                                        }
+                                      },
+                                      "runAfter": {
+                                        "Compose_-_Add_FixedAmount_value_to_PTEB": [
+                                          "Succeeded"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "case": 126840001
+                                }
+                              },
+                              "runAfter": {
+                                "Compose_PTEB": [
+                                  "Succeeded"
+                                ],
+                                "Compose_-PTEB_value": [
+                                  "Succeeded"
+                                ]
+                              }
+                            }
+                          },
+                          "else": {
+                            "actions": {}
+                          },
+                          "runAfter": {
+                            "Compose_-_Get_Last_Friday_of_Previous_Month_for_PTEB_": [
+                              "Succeeded"
+                            ]
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {}
+                      },
+                      "runAfter": {
+                        "Parse_JSON-_Billable_Account__Object": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {}
+                  },
+                  "runAfter": {
+                    "Compose_-_Billable_Account_object": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "Parse_Contract_JSON": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "runAfter": {
+            "List_rows_-_Get_all_contract_Ids": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Initialize_UpdatedPerLaborHourJobCodeData_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "UpdatedPerLaborHourJobCodeData",
+                "type": "array",
+                "value": []
+              }
+            ]
+          },
+          "runAfter": {}
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

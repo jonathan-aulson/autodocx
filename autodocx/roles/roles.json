@@ -1,0 +1,21 @@
+{
+  "prefix_roles": {
+    "http": ["interface.receive","interface.reply"],
+    "rest": ["interface.receive","interface.reply"],
+    "soap": ["interface.receive","interface.reply"],
+    "function": ["interface.receive"],
+    "process": ["invoke.process"],
+    "bw": ["invoke.process"],
+    "callprocess": ["invoke.process"],
+    "jdbc": ["data.jdbc"],
+    "sql": ["data.jdbc"],
+    "jms": ["messaging.jms"],
+    "kafka": ["messaging.jms"],
+    "mapper": ["transform.mapper"],
+    "timer": ["schedule.timer"],
+    "cron": ["schedule.timer"],
+    "log": ["ops.log"],
+    "file": ["ops.log"],
+    "error": ["error.throw"]
+  }
+}

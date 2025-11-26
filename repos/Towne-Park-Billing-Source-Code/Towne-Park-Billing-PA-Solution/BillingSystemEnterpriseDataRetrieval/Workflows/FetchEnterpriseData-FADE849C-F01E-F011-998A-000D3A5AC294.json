@@ -1,0 +1,449 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sql": {
+        "api": {
+          "name": "shared_sql"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "bs_TowneParkSQLEDW"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Http",
+          "inputs": {
+            "triggerAuthenticationType": "Tenant",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "storedProcedureId": {
+                  "type": "integer"
+                },
+                "storedProcedureParameters": {
+                  "type": "object",
+                  "properties": {
+                    "COST_CENTER": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "PERIOD": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "f38a04ae-674e-42e1-98e4-d0f4abdaa6fd"
+          }
+        }
+      },
+      "actions": {
+        "Response": {
+          "type": "Response",
+          "kind": "Http",
+          "inputs": {
+            "statusCode": 200,
+            "body": "@if(empty(variables('returnArray')),variables('returnObject'),variables('returnArray'))"
+          },
+          "runAfter": {
+            "Switch_Stored_Procedure_ID": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "4e10f68f-987b-4225-9165-a21720d2e814"
+          }
+        },
+        "Switch_Stored_Procedure_ID": {
+          "type": "Switch",
+          "expression": "@triggerBody()?['storedProcedureId']",
+          "default": {
+            "actions": {}
+          },
+          "cases": {
+            "Case_Site_Statistic_Budget_Daily_Detail": {
+              "actions": {
+                "Execute_stored_procedure_(V2)_spBUDGET_DAILY_DETAIL": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "server": "default",
+                      "database": "default",
+                      "procedure": "@outputs('Compose_spBUDGET_DAILY_DETAIL')",
+                      "parameters": "@triggerBody()?['storedProcedureParameters']"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+                      "operationId": "ExecuteProcedure_V2",
+                      "connectionName": "shared_sql"
+                    }
+                  },
+                  "runAfter": {
+                    "Compose_spBUDGET_DAILY_DETAIL": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Compose_spBUDGET_DAILY_DETAIL": {
+                  "type": "Compose",
+                  "inputs": "[dbo].[spBUDGET_DAILY_DETAIL]"
+                },
+                "Parse_JSON_spBUDGET_DAILY_DETAIL_results": {
+                  "type": "ParseJson",
+                  "inputs": {
+                    "content": "@body('Execute_stored_procedure_(V2)_spBUDGET_DAILY_DETAIL')?['ResultSets']?['Table1']",
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Date": {
+                            "type": "string"
+                          },
+                          "External Revenue": {
+                            "type": "number"
+                          },
+                          "Occupied Rooms": {
+                            "type": "number"
+                          },
+                          "Valet Daily": {
+                            "type": "number"
+                          },
+                          "Valet Overnight": {
+                            "type": "number"
+                          },
+                          "Valet Monthly": {
+                            "type": "number"
+                          },
+                          "Valet Comps": {
+                            "type": "number"
+                          },
+                          "Self Daily": {
+                            "type": "number"
+                          },
+                          "Self Overnight": {
+                            "type": "number"
+                          },
+                          "Self Monthly": {
+                            "type": "number"
+                          },
+                          "Self Comps": {
+                            "type": "number"
+                          },
+                          "Valet - Daily Revenue": {
+                            "type": "number"
+                          },
+                          "Valet - Overnight Revenue": {
+                            "type": "number"
+                          },
+                          "Valet - Monthly Revenue": {
+                            "type": "number"
+                          },
+                          "Self - Daily Revenue": {
+                            "type": "number"
+                          },
+                          "Self - Overnight Revenue": {
+                            "type": "number"
+                          },
+                          "Self - Monthly Revenue": {
+                            "type": "number"
+                          },
+                          "Valet - Daily Rate": {
+                            "type": "number"
+                          },
+                          "Valet - Overnight Rate": {
+                            "type": "number"
+                          },
+                          "Valet - Monthly Rate": {
+                            "type": "number"
+                          },
+                          "Self - Daily Rate": {
+                            "type": "number"
+                          },
+                          "Self - Overnight Rate": {
+                            "type": "number"
+                          },
+                          "Self - Monthly Rate": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Execute_stored_procedure_(V2)_spBUDGET_DAILY_DETAIL": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "5438105a-abf9-4151-b30c-295a3919be6b"
+                  }
+                },
+                "Select_Map_budget_detail_for_DTO": {
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@body('Parse_JSON_spBUDGET_DAILY_DETAIL_results')",
+                    "select": {
+                      "siteStatisticDetailId": "@null",
+                      "type": "Budget",
+                      "Date": "@formatDateTime(item()?['Date'],'yyyy-MM-dd')",
+                      "ValetRateDaily": "@item()?['Valet - Daily Rate']",
+                      "ValetRateMonthly": "@item()?['Valet - Monthly Rate']",
+                      "ValetRateOvernight": "@item()?['Valet - Overnight Rate']",
+                      "SelfRateDaily": "@item()?['Self - Daily Rate']",
+                      "SelfRateMonthly": "@item()?['Self - Monthly Rate']",
+                      "SelfRateOvernight": "@item()?['Self - Overnight Rate']",
+                      "BaseRevenue": 0,
+                      "OccupiedRooms": "@int(formatNumber(item()?['Occupied Rooms'],'0'))",
+                      "Occupancy": 0,
+                      "SelfOvernight": "@item()?['Self Overnight']",
+                      "ValetOvernight": "@item()?['Valet Overnight']",
+                      "ValetDaily": "@item()?['Valet Daily']",
+                      "ValetMonthly": "@item()?['Valet Monthly']",
+                      "SelfDaily": "@item()?['Self Daily']",
+                      "SelfMonthly": "@item()?['Self Monthly']",
+                      "ValetComps": "@item()?['Valet Comps']",
+                      "SelfComps": "@item()?['Self Comps']",
+                      "DriveInRatio": 0,
+                      "CaptureRatio": 0,
+                      "SelfAggregator": 0,
+                      "ValetAggregator": 0,
+                      "ExternalRevenue": "@item()?['External Revenue']"
+                    }
+                  },
+                  "runAfter": {
+                    "Parse_JSON_spBUDGET_DAILY_DETAIL_results": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "75f1ca0c-2068-4a28-b91e-667bf6c77a6e"
+                  }
+                },
+                "Set_variable_returnValue_with_Daily_Budget_Data": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "returnArray",
+                    "value": "@body('Select_Map_budget_detail_for_DTO')"
+                  },
+                  "runAfter": {
+                    "Select_Map_budget_detail_for_DTO": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "case": 1
+            },
+            "Case_P&L_Budget_Actual_Summary": {
+              "actions": {
+                "Compose_spBudget_Actual_Summary": {
+                  "type": "Compose",
+                  "inputs": "[dbo].[spBudget_Actual_Summary]"
+                },
+                "Execute_stored_procedure_(V2)_spBudget_Actual_Summary": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "server": "default",
+                      "database": "default",
+                      "procedure": "@outputs('Compose_spBudget_Actual_Summary')",
+                      "parameters": "@triggerBody()?['storedProcedureParameters']"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+                      "operationId": "ExecuteProcedure_V2",
+                      "connectionName": "shared_sql"
+                    }
+                  },
+                  "runAfter": {
+                    "Compose_spBudget_Actual_Summary": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Parse_JSON_spBudget_Actual_Summary_Results": {
+                  "type": "ParseJson",
+                  "inputs": {
+                    "content": "@body('Execute_stored_procedure_(V2)_spBudget_Actual_Summary')?['ResultSets']?['Table1']",
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "MonthNum": {
+                            "type": "integer"
+                          },
+                          "PERIOD": {
+                            "type": "string"
+                          },
+                          "TYPE": {
+                            "type": "string"
+                          },
+                          "EXTERNAL_REVENUE": {
+                            "type": "number"
+                          },
+                          "INTERNAL_REVENUE": {
+                            "type": "number"
+                          },
+                          "PAYROLL": {
+                            "type": "number"
+                          },
+                          "CLAIMS": {
+                            "type": "number"
+                          },
+                          "PARKING_RENTS": {
+                            "type": "number"
+                          },
+                          "OTHER_EXPENSE": {
+                            "type": "number"
+                          },
+                          "PTEB": {
+                            "type": "number"
+                          },
+                          "INSURANCE": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Execute_stored_procedure_(V2)_spBudget_Actual_Summary": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Select_Map_P_L_Budget_Actuals_for_DTO": {
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@body('Parse_JSON_spBudget_Actual_Summary_Results')",
+                    "select": {
+                      "MonthNum": "@item()?['MonthNum']",
+                      "PERIOD": "@item()?['PERIOD']",
+                      "EXTERNAL_REVENUE": "@item()?['EXTERNAL_REVENUE']",
+                      "INTERNAL_REVENUE": "@item()?['INTERNAL_REVENUE']",
+                      "PAYROLL": "@item()?['PAYROLL']",
+                      "CLAIMS": "@item()?['CLAIMS']",
+                      "PARKING_RENTS": "@item()?['PARKING_RENTS']",
+                      "OTHER_EXPENSE": "@item()?['OTHER_EXPENSE']",
+                      "PTEB": "@item()?['PTEB']",
+                      "INSURANCE": "@item()?['INSURANCE']",
+                      "TYPE": "@item()?['TYPE']"
+                    }
+                  },
+                  "runAfter": {
+                    "Parse_JSON_spBudget_Actual_Summary_Results": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Set_variable_returnObject_with_P_L_Budget_Actual_Data": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "returnObject",
+                    "value": {
+                      "actual": "@body('Filter_array_Actuals')",
+                      "budget": "@body('Filter_array_Budget')"
+                    }
+                  },
+                  "runAfter": {
+                    "Filter_array_Actuals": [
+                      "Succeeded"
+                    ],
+                    "Filter_array_Budget": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Filter_array_Actuals": {
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@body('Select_Map_P_L_Budget_Actuals_for_DTO')",
+                    "where": "@equals(item()?['TYPE'],'ACTUAL')"
+                  },
+                  "runAfter": {
+                    "Select_Map_P_L_Budget_Actuals_for_DTO": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Filter_array_Budget": {
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@body('Select_Map_P_L_Budget_Actuals_for_DTO')",
+                    "where": "@equals(item()?['TYPE'],'BUDGET')"
+                  },
+                  "runAfter": {
+                    "Select_Map_P_L_Budget_Actuals_for_DTO": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "case": 2
+            }
+          },
+          "runAfter": {
+            "Initialize_variable_returnArray": [
+              "Succeeded"
+            ],
+            "Initialize_variable": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Initialize_variable_returnArray": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "returnArray",
+                "type": "array"
+              }
+            ]
+          },
+          "runAfter": {}
+        },
+        "Initialize_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "returnObject",
+                "type": "object"
+              }
+            ]
+          },
+          "runAfter": {}
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

@@ -1,0 +1,425 @@
+{
+  "properties": {
+    "connectionReferences": {},
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "a8e60de6-dbd5-4e14-ac44-78736025f1d6"
+          },
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "description": "Stringified Array of Fixed Fee Services",
+                  "title": "FixedFeeService",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "number": {
+                  "description": "Target invoice group",
+                  "title": "InvoiceGroup",
+                  "type": "number",
+                  "x-ms-content-hint": "NUMBER",
+                  "x-ms-dynamically-added": true
+                },
+                "text_1": {
+                  "description": "Comma separated string of Contract Types integer values",
+                  "title": "ContractType",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                }
+              },
+              "required": [
+                "text",
+                "number",
+                "text_1"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Parse_Fixed_Fee_Services_JSON_array": {
+          "runAfter": {
+            "Is_FixedFee_Enabled_Condition": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "95bed4e0-d706-4fd9-a460-eff1f103f139"
+          },
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@triggerBody()?['text']",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "bs_name": {
+                    "type": "string"
+                  },
+                  "bs_displayname": {
+                    "type": "string"
+                  },
+                  "bs_fee": {
+                    "type": "number"
+                  },
+                  "bs_code": {
+                    "type": "string"
+                  },
+                  "bs_invoicegroup": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "bs_fixedfeeserviceid": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "bs_name",
+                  "bs_displayname",
+                  "bs_fee",
+                  "bs_code",
+                  "bs_invoicegroup",
+                  "bs_fixedfeeserviceid"
+                ]
+              }
+            }
+          }
+        },
+        "Filter_Fixed_Fee_Services_array": {
+          "runAfter": {
+            "Parse_Fixed_Fee_Services_JSON_array": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "5a963767-f4f8-4208-b477-afdbd893370f"
+          },
+          "type": "Query",
+          "inputs": {
+            "from": "@body('Parse_Fixed_Fee_Services_JSON_array')",
+            "where": "@equals(coalesce(item()['bs_invoicegroup'], 1),triggerBody()?['number'])"
+          }
+        },
+        "Apply_to_each_Filtered_Fixed_Fee_Service": {
+          "foreach": "@body('Filter_Fixed_Fee_Services_array')",
+          "actions": {
+            "Compose_Line_Item": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "9065dab5-8315-450d-8ab2-ffc1181226be"
+              },
+              "type": "Compose",
+              "inputs": {
+                "title": "@item()?['bs_displayname']",
+                "code": "@item()?['bs_code']",
+                "amount": "@item()?['bs_fee']"
+              }
+            },
+            "Append_to_Line_Items": {
+              "runAfter": {
+                "Compose_Line_Item": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "1947a0c0-9237-4059-8e79-bac430f8e734"
+              },
+              "type": "AppendToArrayVariable",
+              "inputs": {
+                "name": "LineItems",
+                "value": "@outputs('Compose_Line_Item')"
+              }
+            },
+            "Increment_Invoice_Sub_Total": {
+              "runAfter": {
+                "Compose_Line_Item": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "039b0870-bc53-44d7-a8e8-1a2378e78e83"
+              },
+              "type": "IncrementVariable",
+              "inputs": {
+                "name": "InvoiceSubTotal",
+                "value": "@outputs('Compose_Line_Item')?['amount']"
+              }
+            }
+          },
+          "runAfter": {
+            "Filter_Fixed_Fee_Services_array": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "0bc0ea1f-a65c-430d-b2b3-d2024f9d2a3a"
+          },
+          "type": "Foreach"
+        },
+        "Respond_to_a_Power_App_or_flow": {
+          "runAfter": {
+            "Apply_to_each_Filtered_Fixed_Fee_Service": [
+              "Succeeded",
+              "TimedOut",
+              "Skipped",
+              "Failed"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "abd8c398-bed0-47d7-b077-edad7519cd96"
+          },
+          "type": "Response",
+          "kind": "PowerApp",
+          "inputs": {
+            "statusCode": 200,
+            "body": {
+              "lineitems": "@variables('LineItems')",
+              "invoicesubtotal": "@variables('InvoiceSubTotal')"
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "lineitems": {
+                  "title": "LineItems",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                },
+                "invoicesubtotal": {
+                  "title": "InvoiceSubTotal",
+                  "x-ms-dynamically-added": true,
+                  "type": "number"
+                }
+              }
+            }
+          }
+        },
+        "Is_FixedFee_Enabled_Condition": {
+          "actions": {
+            "Respond_Empty_to_Parent_2": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "274e04de-57f7-4318-b598-af82a7323b4f"
+              },
+              "type": "Response",
+              "kind": "PowerApp",
+              "inputs": {
+                "statusCode": 200,
+                "body": {
+                  "lineitems": "@variables('LineItems')",
+                  "invoicesubtotal": "@variables('InvoiceSubTotal')"
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "lineitems": {
+                      "title": "LineItems",
+                      "x-ms-dynamically-added": true,
+                      "type": "string"
+                    },
+                    "invoicesubtotal": {
+                      "title": "InvoiceSubTotal",
+                      "x-ms-dynamically-added": true,
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            },
+            "Terminate_2": {
+              "runAfter": {
+                "Respond_Empty_to_Parent_2": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "7416abdb-0b9e-4664-8d45-277df162a71d"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Succeeded"
+              }
+            }
+          },
+          "runAfter": {
+            "Compose_ContractType_array": [
+              "Succeeded"
+            ]
+          },
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@contains(triggerBody()?['text_1'], '126840000')",
+                  "@false"
+                ]
+              }
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "df98cbc2-dbe6-4c8a-a8a8-9dcf86a54642"
+          },
+          "type": "If"
+        },
+        "Compose_ContractType_array": {
+          "runAfter": {
+            "Condition": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "859ec431-5091-4145-8ede-f41831bc6e21"
+          },
+          "type": "Compose",
+          "inputs": "@split(triggerBody()?['text_1'], ',')"
+        },
+        "Condition": {
+          "actions": {
+            "Respond_Empty_To_Parent": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "98b02035-3d19-4c63-97bf-c1f7f2422be8"
+              },
+              "type": "Response",
+              "kind": "PowerApp",
+              "inputs": {
+                "statusCode": 200,
+                "body": {
+                  "lineitems": "@variables('LineItems')",
+                  "invoicesubtotal": "@variables('InvoiceSubTotal')"
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "lineitems": {
+                      "title": "LineItems",
+                      "x-ms-dynamically-added": true,
+                      "type": "string"
+                    },
+                    "invoicesubtotal": {
+                      "title": "InvoiceSubTotal",
+                      "x-ms-dynamically-added": true,
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            },
+            "Terminate": {
+              "runAfter": {
+                "Respond_Empty_To_Parent": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "cc4ee7d7-4566-4173-af02-5a2e6daf3d4c"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Succeeded"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_Line_Item_array_variable": [
+              "Succeeded"
+            ],
+            "Initialize_Invoice_Sub_Total_variable": [
+              "Succeeded"
+            ]
+          },
+          "expression": {
+            "or": [
+              {
+                "equals": [
+                  "@triggerBody()?['text']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@empty(triggerBody()?['text'])",
+                  "@true"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['number']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['text_1']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@empty(triggerBody()?['text_1'])",
+                  "@true"
+                ]
+              }
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "4a8f5518-cf58-4e15-aa29-bafdc8a08705"
+          },
+          "type": "If"
+        },
+        "Initialize_Line_Item_array_variable": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "cbf8a02e-bfe5-4067-b289-59b6805e0e7c"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "LineItems",
+                "type": "array",
+                "value": []
+              }
+            ]
+          }
+        },
+        "Initialize_Invoice_Sub_Total_variable": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "af62633f-94fc-4e89-b1ca-39868b0d7781"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "InvoiceSubTotal",
+                "type": "float",
+                "value": 0
+              }
+            ]
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

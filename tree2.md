@@ -1,0 +1,137 @@
+﻿# Folder Tree (depth 6)
+
+- .venv
+  - Include
+    - site
+      - python3.13
+        - greenlet
+  - Lib
+    - site-packages
+      - (many.... abbreviated)
+  - Scripts
+- .vscode
+- autodocx
+- autodocx.egg-info
+  - __pycache__
+  - artifacts
+    - __pycache__
+    - schema
+  - cache
+  - extractors
+    - __pycache__
+  - features
+    - __pycache__
+  - graph
+    - __pycache__
+  - joiners
+    - __pycache__
+  - llm
+    - __pycache__
+  - render
+    - __pycache__
+    - templates
+  - report
+  - roles
+  - scoring
+    - __pycache__
+  - universal
+  - utils
+    - __pycache__
+  - visuals
+    - __pycache__
+- autodocx_cli
+- out
+  - docs
+    - assets
+      - graphs
+        - bw-samples-master
+          - TN2018
+        - TEST
+          - Postman-Collection.json
+    - components
+      - bw-samples-master
+      - TEST
+      - Towne-Park-Billing-Source-Code
+      - ungrouped
+  - metrics
+  - sir
+  - site
+    - artifacts
+    - assets
+      - images
+      - javascripts
+        - lunr
+          - min
+        - workers
+      - stylesheets
+    - bw-samples-master
+    - bw-samples-master__evidence
+    - components
+      - bw-samples-master
+        - BW_MonitoringData_Cleanup_Script
+        - BWCE-Minikube
+        - Custom_Config_Management
+        - Custom_Config_Management_for_BWCE_2.5.0
+        - Custom_Driver_Support
+        - LICENSE.md
+        - Open_API
+        - README.md
+        - TN2018
+      - TEST
+        - Azure_function.json
+        - Cron_Job.yml
+        - Express.js
+        - JSON_Schema.json
+        - Kubernetes_Ingress.yaml
+        - Postgres_migration.sql
+        - Postman_Collection.json
+        - Terraform.tf
+        - WSDL_SOAP_v1-1.wsdl
+        - WSDL_v2.wsdl
+        - XSD.xsd
+      - Towne-Park-Billing-Source-Code
+        - Towne_Park_Billing
+        - Towne-Park-Azure-Components
+        - Towne-Park-Billing-API-Functions
+        - Towne-Park-Billing-PA-Solution
+        - Towne-Park-Billing-PDF
+        - Towne-Park-Billing-QA
+        - Towne-Park-Ready-for-Invoicing
+    - search
+    - system
+    - TEST
+    - TEST__evidence
+    - Towne-Park-Billing-Source-Code
+    - Towne-Park-Billing-Source-Code__evidence
+- repos
+  - bw-samples-master
+    - .github
+      - ISSUE_TEMPLATE
+    - BW_MonitoringData_Cleanup_Script
+    - BWCE-Minikube
+      - images
+      - MovieCatalogMainApi
+      - MovieSearchBackend
+    - Custom Config Management
+    - Custom Config Management for BWCE 2.5.0
+      - (many.... abbreviated)
+  - TEST
+  - Towne-Park-Billing-Source-Code
+    - Towne Park Billing
+      - (many.... abbreviated)
+    - Towne-Park-Azure-Components
+      - logic-apps
+      - logic-apps-custom-connectors
+    - Towne-Park-Billing-API-Functions
+      - (many.... abbreviated)
+    - Towne-Park-Billing-PA-Solution
+      - (many.... abbreviated)
+    - Towne-Park-Billing-PDF
+      - (many.... abbreviated)
+    - Towne-Park-Billing-QA
+      - (many.... abbreviated)
+    - Towne-Park-Ready-for-Invoicing
+      - (many.... abbreviated)
+- scripts
+  - legacy
+- tests

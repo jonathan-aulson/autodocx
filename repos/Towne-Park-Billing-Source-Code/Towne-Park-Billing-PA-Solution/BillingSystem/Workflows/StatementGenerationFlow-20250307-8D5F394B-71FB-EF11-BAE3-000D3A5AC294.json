@@ -1,0 +1,2034 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps-2": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_7558e"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "staticResults": {
+        "Add_a_new_Invoice_row0": {
+          "status": "Succeeded"
+        }
+      },
+      "triggers": {
+        "When_a_row_is_added_to_Statement_Generation_Processes_table": {
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "parameters": {
+              "subscriptionRequest/message": 1,
+              "subscriptionRequest/entityname": "bs_statementgenerationprocess",
+              "subscriptionRequest/scope": 2,
+              "subscriptionRequest/name": "9c2976cd-10cd-ef11-b8e9-0022480a57ac"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "SubscribeWebhookTrigger",
+              "connectionName": "shared_commondataserviceforapps-2"
+            }
+          },
+          "conditions": [],
+          "runtimeConfiguration": {
+            "concurrency": {
+              "runs": 10,
+              "maximumWaitingRuns": 100
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "4dfc30b2-ecfa-4b17-a416-5e4cd24969ed"
+          }
+        }
+      },
+      "actions": {
+        "Get_a_Contract_by_ID": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "bs_contracts",
+              "recordId": "@triggerOutputs()?['body/_bs_contractfk_value']",
+              "$select": "bs_billingtype, bs_consumerpriceindex, bs_contracttype,bs_incrementamount,bs_incrementmonth,bs_occupiedroominvoicegroup,bs_occupiedroomrate, bs_occupiedroomcode, bs_paymentterms, _bs_customersitefk_value, bs_deviationamount, bs_deviationpercentage, bs_supportingreports,bs_purchaseorder,",
+              "$expand": "bs_FixedFeeService_Contract($select=bs_name,bs_displayname,bs_fee,bs_code,bs_invoicegroup;$filter=  bs_startdate le @{utcNow()} and (bs_enddate ge @{utcNow()} or bs_enddate eq null)), bs_LaborHourJob_Contract($select=bs_name,bs_displayname,bs_rate,bs_overtimerate,bs_code,bs_jobcode,bs_invoicegroup;$filter=  bs_startdate le @{utcNow()} and (bs_enddate ge @{utcNow()} or bs_enddate eq null)),\nbs_InvoiceGroup_Contract($select=bs_invoicegroupid,bs_title,bs_description,bs_groupnumber,bs_vendorid,bs_sitenumber,bs_customername,bs_billingcontactemails),\nbs_RevenueShareThreshold_Contract($select=bs_tierdata,bs_revenuecodedata,bs_revenueaccumulationtype,bs_invoicegroup,bs_validationthresholdamount,bs_validationthresholdtype),\nbs_CustomerSiteFK($select=bs_startdate,bs_glstring),\nbs_MidMonthAdvance_bs_Contract($select=bs_invoicegroup,bs_amount,bs_linetitle), bs_DepositedRevenue_Contract($select=bs_invoicegroup,bs_towneparkresponsibleforparkingtax,bs_depositedrevenueenabled), \nbs_BellService_bs_Contract($select=bs_invoicegroup),\nbs_BillableAccount_Contract($select=bs_payrollaccountsdata,bs_payrollaccountsinvoicegroup,bs_payrollaccountslinetitle,bs_payrolltaxesbillingtype,bs_payrolltaxesenabled,bs_payrolltaxeslinetitle,bs_payrolltaxespercentage,bs_payrollsupportenabled,bs_payrollsupportlinetitle,bs_payrollsupportbillingtype,bs_payrollsupportpayrolltype,bs_payrollsupportamount,bs_expenseaccountsdata,bs_expenseaccountsinvoicegroup,bs_expenseaccountslinetitle,bs_additionalpayrollamount),\nbs_ManagementAgreement_Contract($select=bs_invoicegroup,bs_managementagreementtype,bs_fixedfeeamount,bs_perlaborhourjobcode,bs_perlaborhourrate,bs_perlaborhourovertimerate,bs_revenuepercentageamount,bs_claimstype,bs_claimslinetitle,bs_claimsenabled,bs_claimscapamount,bs_insuranceadditionalpercentage,bs_insuranceenabled,bs_insurancefixedfeeamount,bs_insurancelinetitle,bs_insurancetype,bs_validationthresholdamount,bs_validationthresholdenabled,bs_validationthresholdtype,bs_profitshareaccumulationtype,bs_profitshareenabled,bs_profitsharetierdata,bs_perlaborhourjobcodedata,bs_nonglbillableexpensesenabled,bs_profitshareescalatorenabled,bs_profitshareescalatormonth,bs_profitshareescalatortype),\nbs_nonglexpense_ContractFK_bs_contract($select=bs_expenseamount,bs_expensepayrolltype,bs_nonglexpenseid,bs_finalperiodbilled,bs_nonglexpensetype,bs_expensetitle)\n"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "GetItem",
+              "connectionName": "shared_commondataserviceforapps-2"
+            }
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "a77d1e3c-69fa-442a-b388-ebec5ab7a11f"
+          }
+        },
+        "Add_a_new_Statement_row": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "bs_billingstatements",
+              "item/bs_CustomerSiteFK@odata.bind": "bs_customersites(@{outputs('Get_a_Contract_by_ID')?['body/_bs_customersitefk_value']})",
+              "item/bs_serviceperiodend": "@addDays(startOfMonth(addToTime(outputs('Compose_Service_Period_Start'), 1, 'Month')), -1)",
+              "item/bs_serviceperiodstart": "@outputs('Compose_Service_Period_Start')",
+              "item/bs_statementstatus": 126840000,
+              "item/bs_purchaseorder": "@body('Get_a_Contract_by_ID')?['bs_purchaseorder']"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "CreateRecord",
+              "connectionName": "shared_commondataserviceforapps-2"
+            }
+          },
+          "runAfter": {
+            "Compose_Service_Period_Start": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "2416cbc4-190f-41f2-89ba-51c0e5c75dee"
+          }
+        },
+        "Initialize_IsAdvanced_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "IsAdvanced",
+                "type": "boolean",
+                "value": "@equals(outputs('Get_a_Contract_by_ID')?['body/bs_billingtype'], 126840000)"
+              }
+            ]
+          },
+          "runAfter": {
+            "Get_a_Contract_by_ID": [
+              "Succeeded"
+            ],
+            "Update_Process_status_when_started": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "92dd3deb-77fc-421e-aceb-49c70b1b2749"
+          }
+        },
+        "Apply_to_each_Invoice_Group": {
+          "type": "Foreach",
+          "foreach": "@if(empty(body('Parse_Contract_JSON')?['bs_InvoiceGroup_Contract']), variables('EmptyInvoiceGroup'), body('Parse_Contract_JSON')?['bs_InvoiceGroup_Contract'])",
+          "actions": {
+            "Set_LineItems_variable": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "LineItems",
+                "value": []
+              },
+              "runAfter": {
+                "Parse_InvoiceGroup_JSON": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "64a475c1-f17c-4848-804d-98d9360dea30"
+              }
+            },
+            "Set_InvoiceTotal_variable": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "InvoiceTotal",
+                "value": 0
+              },
+              "runAfter": {
+                "Parse_InvoiceGroup_JSON": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "321df2ee-0e38-4efa-81ae-0b200c441fb9"
+              }
+            },
+            "Set_InvoiceNumber_variable": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "InvoiceNumber",
+                "value": "@concat(\r\n    coalesce(body('Parse_InvoiceGroup_JSON')['bs_sitenumber'],body('Parse_Contract_JSON')?['_bs_customersitefk_value@OData.Community.Display.V1.FormattedValue']),\r\n    '-',\r\n    formatDateTime(\r\n        if(\r\n            variables('IsAdvanced'),\r\n            subtractFromTime(\r\n                outputs('Add_a_new_Statement_row')?['body/bs_serviceperiodstart'],\r\n                1,'Month'\r\n            ),\r\n            outputs('Add_a_new_Statement_row')?['body/bs_serviceperiodstart']\r\n        ),\r\n        'yyyyMM'\r\n    ),\r\n    '-'\r\n)"
+              },
+              "runAfter": {
+                "Parse_InvoiceGroup_JSON": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "635af1b7-6c21-492e-b7de-6caa3b90a444"
+              }
+            },
+            "Append_to_InvoiceNumber_variable": {
+              "type": "AppendToStringVariable",
+              "inputs": {
+                "name": "InvoiceNumber",
+                "value": "@formatNumber(body('Parse_InvoiceGroup_JSON')['bs_groupnumber'], '00')"
+              },
+              "runAfter": {
+                "Set_InvoiceNumber_variable": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "26479365-fc77-4718-96de-b0c6bd2998ee"
+              }
+            },
+            "Parse_InvoiceGroup_JSON": {
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@items('Apply_to_each_Invoice_Group')",
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "bs_invoicegroupid": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "bs_title": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "bs_description": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "bs_groupnumber": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "bs_groupnumber"
+                  ]
+                }
+              },
+              "metadata": {
+                "operationMetadataId": "1d855cda-3132-4b6e-a995-307826655ed1"
+              }
+            },
+            "Increment_InvoiceTotal_variable": {
+              "type": "IncrementVariable",
+              "inputs": {
+                "name": "InvoiceTotal",
+                "value": "@add(\r\n    body('Run_Per_Labor_Hour_Child_Flow')?['invoicesubtotal'],\r\n    add(\r\n        body('Run_FixedFee_Child_Flow')?['invoicesubtotal'],\r\n        add(\r\n            body('Run_Per_Occupied_Room_Child_Flow')?['invoicesubtotal'],\r\n            add(\r\n                body('Run_Bell_Service_Fee_Child_Flow')?['invoicesubtotal'],\r\n                add(\r\n                    coalesce(\r\n                        body('Run_a_Child_Flow_-_Revenue_Sharing')?['invoicesubtotal'], \r\n                        0\r\n                    ),\r\n                    add(\r\n                        body('Run_Mid_Month_Advance_Child_Flow')?['invoicesubtotal'],\r\n                        add(\r\n                            coalesce(\r\n                                body('Run_a_Child_Flow_-_Revenue_Share_Validations')?['invoicesubtotal'], \r\n                                0\r\n                            ),\r\n                            add(\r\n                               add(\r\n                                    body('Run_Deposited_Revenue_Child_Flow')?['invoicesubtotal'],\r\n                                    add(\r\n                                        body('Run_Insurance_and_Claims_Child_Flow')?['invoicesubtotal'],\r\n                                        body('Run_Management_Fee_Child_Flow')?['invoicesubtotal']\r\n                                    )\r\n                                ),\r\n                                body('Run_a_NonGL_Billable__Expense_Child_Flow')?['invoicesubtotal']\r\n                            )\r\n                        )  \r\n                    )\r\n                )\r\n            )\r\n        )\r\n    )\r\n)"
+              },
+              "runAfter": {
+                "Child_Flows_Scope": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "ed804d67-47fa-44f3-8361-e92db9d5ef5f"
+              }
+            },
+            "Set_union_result_to_LineItems_variable": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "LineItems",
+                "value": "@body('Filter_array_exclude_zero_amount_LineItems')"
+              },
+              "runAfter": {
+                "Filter_array_exclude_zero_amount_LineItems": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "85f34e52-4004-4ffc-9495-4849ee072536"
+              }
+            },
+            "Compose_union_of_LineItems": {
+              "type": "Compose",
+              "inputs": "@json(\r\n    replace(\r\n        replace(\r\n            concat(\r\n                variables('LineItems'),\r\n                body('Run_FixedFee_Child_Flow')?['lineitems'],\r\n                body('Run_Per_Occupied_Room_Child_Flow')?['lineitems'],\r\n                body('Run_Bell_Service_Fee_Child_Flow')?['lineitems'],\r\n                body('Run_Deposited_Revenue_Child_Flow')?['lineitems'],\r\n                body('Run_Insurance_and_Claims_Child_Flow')?['lineitems'],\r\n                body('Run_Management_Fee_Child_Flow')?['lineitems'],\r\n                body('Run_a_NonGL_Billable__Expense_Child_Flow')?['lineitems'],\r\n                body('Run_Mid_Month_Advance_Child_Flow')?['lineitems'],\r\n                body('Run_Per_Labor_Hour_Child_Flow')?['lineitems'],\r\n                body('Filter_AdhocLineItems_array'),\r\n                if(\r\n                    equals(body('Run_a_Child_Flow_-_Revenue_Sharing')?['lineitems'], null),\r\n                    json('[]'),\r\n                    body('Run_a_Child_Flow_-_Revenue_Sharing')?['lineitems']\r\n                ),\r\n                if(\r\n                    equals(body('Run_a_Child_Flow_-_Revenue_Share_Validations')?['lineitems'], null),\r\n                    json('[]'),\r\n                    body('Run_a_Child_Flow_-_Revenue_Share_Validations')?['lineitems']\r\n                )\r\n            ),\r\n            '[]',  \r\n            ''     \r\n        ),\r\n        '][',    \r\n        ','\r\n    )\r\n)",
+              "runAfter": {
+                "For_each_Adhoc_Line_Item": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "1f5457f7-560c-448c-b895-55c10d7cfc71"
+              }
+            },
+            "Is_LineItems_Not_Empty_Condition": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "not": {
+                      "equals": [
+                        "@empty(variables('LineItems'))",
+                        "@true"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "actions": {
+                "Add_a_new_Invoice_row": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "entityName": "bs_invoices",
+                      "item/bs_amount": "@body('Run_Profit_Share_Child_Flow')?['invoicesubtotal']",
+                      "item/bs_BillingStatementFK@odata.bind": "bs_billingstatements(@{body('Add_a_new_Statement_row')?['bs_billingstatementid']})",
+                      "item/bs_invoicedata": "@string(body('Run_Profit_Share_Child_Flow')?['lineitems'])",
+                      "item/bs_invoicedate": "@if(\r\n    variables('IsAdvanced'),\r\n    subtractFromTime(outputs('Add_a_new_Statement_row')?['body/bs_serviceperiodstart'],1,'Month'),\r\n    outputs('Add_a_new_Statement_row')?['body/bs_serviceperiodend']\r\n)",
+                      "item/bs_invoicenumber": "@variables('InvoiceNumber')",
+                      "item/bs_paymentterms": "@body('Get_a_Contract_by_ID')?['bs_paymentterms']",
+                      "item/bs_description": "@body('Parse_InvoiceGroup_JSON')['bs_description']",
+                      "item/bs_InvoiceGroupFK@odata.bind": "@if(equals(empty(body('Parse_InvoiceGroup_JSON')?['bs_invoicegroupid']), false), concat('bs_invoicegroups(', body('Parse_InvoiceGroup_JSON')['bs_invoicegroupid'], ')'), null)",
+                      "item/bs_purchaseorder": "@body('Get_a_Contract_by_ID')?['bs_purchaseorder']",
+                      "item/bs_title": "@body('Parse_InvoiceGroup_JSON')['bs_title']"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "operationId": "CreateRecord",
+                      "connectionName": "shared_commondataserviceforapps-2"
+                    }
+                  },
+                  "runAfter": {
+                    "Run_Profit_Share_Child_Flow": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "9ea3fef1-8975-465d-a2cf-f203ff2b1c92"
+                  }
+                },
+                "Increment_variable": {
+                  "type": "IncrementVariable",
+                  "inputs": {
+                    "name": "InvoiceCount",
+                    "value": 1
+                  },
+                  "runAfter": {
+                    "Add_a_new_Invoice_row": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "79b2c3f0-49d5-434a-a1b8-ff7498dd011d"
+                  }
+                },
+                "Run_Profit_Share_Child_Flow": {
+                  "type": "Workflow",
+                  "inputs": {
+                    "host": {
+                      "workflowReferenceName": "db72a935-670a-f011-bae3-000d3a5ac294"
+                    },
+                    "body": {
+                      "date": "@outputs('Add_a_new_Statement_row')?['body/bs_serviceperiodstart']",
+                      "number_1": "@body('Parse_InvoiceGroup_JSON')['bs_groupnumber']",
+                      "text": "@body('Parse_Contract_JSON')?['_bs_customersitefk_value@OData.Community.Display.V1.FormattedValue']",
+                      "date_1": "@outputs('Add_a_new_Statement_row')?['body/bs_serviceperiodend']",
+                      "text_2": "@body('Parse_Contract_JSON')?['bs_contracttype']",
+                      "text_3": "@string(body('Parse_Contract_JSON')?['bs_ManagementAgreement_Contract'])",
+                      "text_4": "@string(variables('LineItems'))",
+                      "number": "@variables('InvoiceTotal')",
+                      "date_2": "@formatDateTime(body('Get_a_Contract_by_ID')?['bs_CustomerSiteFK']['bs_startdate'], 'yyyy-MM-dd')",
+                      "text_1": "@string(body('Run_a_NonGL_Billable__Expense_Child_Flow')?['lineitems'])"
+                    },
+                    "retryPolicy": {
+                      "type": "fixed",
+                      "count": 2,
+                      "interval": "PT45S"
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "f022afc6-ef8f-48b7-ad06-9640fd2e6442"
+                  }
+                },
+                "Set_variable_LineItems_with_Profit_Share": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "LineItems",
+                    "value": "@outputs('Compose_line_items_with_profit_share')"
+                  },
+                  "runAfter": {
+                    "Compose_line_items_with_profit_share": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "c5ad6f2f-cf46-45a2-9068-0498564ab686"
+                  }
+                },
+                "Compose_line_items_with_profit_share": {
+                  "type": "Compose",
+                  "inputs": "@json(body('Run_Profit_Share_Child_Flow')?['lineitems'])",
+                  "runAfter": {
+                    "Run_Profit_Share_Child_Flow": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "6b821436-848c-43a2-ba22-fe4a009339d4"
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "Increment_InvoiceTotal_variable": [
+                  "Succeeded"
+                ],
+                "Set_union_result_to_LineItems_variable": [
+                  "Succeeded"
+                ],
+                "Append_BillingStatementVersion_to_InvoiceNumber": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "86783dda-ca2d-4261-a01b-1dac44b447bd"
+              }
+            },
+            "Child_Flows_Scope": {
+              "type": "Scope",
+              "actions": {
+                "Run_FixedFee_Child_Flow": {
+                  "type": "Workflow",
+                  "inputs": {
+                    "host": {
+                      "workflowReferenceName": "0692cd04-8c60-ef11-bfe2-000d3a3b44cd"
+                    },
+                    "body": {
+                      "text": "@body('Parse_Contract_JSON')?['bs_FixedFeeService_Contract']",
+                      "number": "@body('Parse_InvoiceGroup_JSON')['bs_groupnumber']",
+                      "text_1": "@body('Get_a_Contract_by_ID')?['bs_contracttype']"
+                    },
+                    "retryPolicy": {
+                      "type": "fixed",
+                      "count": 2,
+                      "interval": "PT45S"
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "d203c165-42b6-4890-bf76-7d770163aa1b"
+                  }
+                },
+                "Run_Per_Occupied_Room_Child_Flow": {
+                  "type": "Workflow",
+                  "inputs": {
+                    "host": {
+                      "workflowReferenceName": "e88de41d-baf2-ef11-be21-6045bd096814"
+                    },
+                    "body": {
+                      "number_1": "@body('Parse_InvoiceGroup_JSON')['bs_groupnumber']",
+                      "text": "@body('Get_a_Contract_by_ID')?['bs_contracttype']",
+                      "text_1": "@body('Parse_Contract_JSON')?['_bs_customersitefk_value@OData.Community.Display.V1.FormattedValue']",
+                      "text_2": "@body('Get_a_Contract_by_ID')?['bs_occupiedroomcode']",
+                      "date": "@body('Add_a_new_Statement_row')?['bs_serviceperiodstart']",
+                      "number": "@coalesce(body('Get_a_Contract_by_ID')?['bs_occupiedroomrate'],0)",
+                      "number_2": "@coalesce(body('Get_a_Contract_by_ID')?['bs_occupiedroominvoicegroup'],0)"
+                    },
+                    "retryPolicy": {
+                      "type": "fixed",
+                      "count": 2,
+                      "interval": "PT45S"
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "b48e76a7-850e-4c25-9719-8f0bf1bd37c9"
+                  }
+                },
+                "Run_Per_Labor_Hour_Child_Flow": {
+                  "type": "Workflow",
+                  "inputs": {
+                    "host": {
+                      "workflowReferenceName": "56890b89-cbee-ef11-be21-6045bd096814"
+                    },
+                    "body": {
+                      "text": "@string(body('Parse_Contract_JSON')?['bs_LaborHourJob_Contract'])",
+                      "number": "@body('Parse_InvoiceGroup_JSON')['bs_groupnumber']",
+                      "text_1": "@body('Parse_Contract_JSON')?['bs_contracttype']",
+                      "date": "@body('Add_a_new_Statement_row')?['bs_serviceperiodstart']",
+                      "date_1": "@body('Add_a_new_Statement_row')?['bs_serviceperiodend']",
+                      "text_2": "@body('Parse_Contract_JSON')?['_bs_customersitefk_value@OData.Community.Display.V1.FormattedValue']"
+                    },
+                    "retryPolicy": {
+                      "type": "fixed",
+                      "count": 2,
+                      "interval": "PT45S"
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "f2cae920-8118-42e6-970d-dc79b87f7b31"
+                  }
+                },
+                "Condition_-_If_configured_Building_Blocks_includes_Revenue_Sharing": {
+                  "type": "If",
+                  "expression": {
+                    "and": [
+                      {
+                        "contains": [
+                          "@body('Parse_Contract_JSON')?['bs_contracttype']",
+                          "@string(126840004)"
+                        ]
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "Run_a_Child_Flow_-_Revenue_Sharing": {
+                      "type": "Workflow",
+                      "inputs": {
+                        "host": {
+                          "workflowReferenceName": "1b21c7c0-e609-f011-bae3-000d3a5ac294"
+                        },
+                        "body": {
+                          "text": "@body('Parse_Contract_JSON')?['_bs_customersitefk_value@OData.Community.Display.V1.FormattedValue']",
+                          "number": "@body('Parse_InvoiceGroup_JSON')['bs_groupnumber']",
+                          "date": "@body('Add_a_new_Statement_row')?['bs_serviceperiodstart']",
+                          "date_1": "@body('Add_a_new_Statement_row')?['bs_serviceperiodend']",
+                          "text_1": "@string(body('Parse_Contract_JSON')?['bs_RevenueShareThreshold_Contract'])",
+                          "date_2": "@formatDateTime(body('Get_a_Contract_by_ID')?['bs_CustomerSiteFK']['bs_startdate'], 'yyyy-MM-dd')",
+                          "text_2": "@body('Parse_Contract_JSON')?['bs_contracttype']"
+                        },
+                        "retryPolicy": {
+                          "type": "fixed",
+                          "count": 2,
+                          "interval": "PT45S"
+                        }
+                      },
+                      "metadata": {
+                        "operationMetadataId": "9ad3562e-af88-4608-ab51-c7f378fe2274"
+                      }
+                    },
+                    "Run_a_Child_Flow_-_Revenue_Share_Validations": {
+                      "type": "Workflow",
+                      "inputs": {
+                        "host": {
+                          "workflowReferenceName": "73c084fb-660a-f011-bae3-000d3a5ac294"
+                        },
+                        "body": {
+                          "text": "@body('Parse_Contract_JSON')?['_bs_customersitefk_value@OData.Community.Display.V1.FormattedValue']",
+                          "number": "@body('Parse_InvoiceGroup_JSON')['bs_groupnumber']",
+                          "text_1": "@string(body('Parse_Contract_JSON')?['bs_RevenueShareThreshold_Contract'])",
+                          "text_2": "@string(body('Run_a_Child_Flow_-_Revenue_Sharing')?['revenuedistributionitems'])",
+                          "date": "@body('Add_a_new_Statement_row')?['bs_serviceperiodstart']",
+                          "date_1": "@body('Add_a_new_Statement_row')?['bs_serviceperiodend']"
+                        },
+                        "retryPolicy": {
+                          "type": "fixed",
+                          "count": 2,
+                          "interval": "PT45S"
+                        }
+                      },
+                      "runAfter": {
+                        "Run_a_Child_Flow_-_Revenue_Sharing": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "9ea3cb1f-c915-4afd-b99a-da5c2162a168"
+                      }
+                    },
+                    "Parse_JSON_-_Revenue_Share_Distribution_Items": {
+                      "type": "ParseJson",
+                      "inputs": {
+                        "content": "@string(body('Run_a_Child_Flow_-_Revenue_Sharing')?['revenuedistributionitems'])",
+                        "schema": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "revenueAmount": {
+                                "type": [
+                                  "integer",
+                                  "number"
+                                ]
+                              },
+                              "sharePercentageToCharge": {
+                                "type": [
+                                  "integer",
+                                  "number"
+                                ]
+                              },
+                              "amountDueToTownePark": {
+                                "type": [
+                                  "integer",
+                                  "number"
+                                ]
+                              },
+                              "tierLimitAmount": {
+                                "type": [
+                                  "integer",
+                                  "number"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "runAfter": {
+                        "Run_a_Child_Flow_-_Revenue_Sharing": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "99e36513-458e-41fe-a932-8e3944b3d055"
+                      }
+                    },
+                    "Condition_Distribution_items_exist": {
+                      "type": "If",
+                      "expression": {
+                        "and": [
+                          {
+                            "greater": [
+                              "@length(body('Parse_JSON_-_Revenue_Share_Distribution_Items'))",
+                              0
+                            ]
+                          }
+                        ]
+                      },
+                      "actions": {
+                        "List_Revenue_Share_By_Percent_rows": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "parameters": {
+                              "entityName": "bs_revenuesharebypercents",
+                              "$select": "bs_revenuesharebypercentid",
+                              "$filter": "bs_site eq '@{body('Parse_Contract_JSON')?['_bs_customersitefk_value@OData.Community.Display.V1.FormattedValue']}' and bs_month eq '@{formatDateTime(body('Add_a_new_Statement_row')?['bs_serviceperiodstart'],'MM')}' and bs_year eq '@{formatDateTime(body('Add_a_new_Statement_row')?['bs_serviceperiodstart'],'yyyy')}'"
+                            },
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                              "operationId": "ListRecords",
+                              "connectionName": "shared_commondataserviceforapps-2"
+                            }
+                          },
+                          "metadata": {
+                            "operationMetadataId": "14b59695-6a49-449e-ad62-5f2b2efc8473"
+                          }
+                        },
+                        "For_each_Revenue_Share_By_Percent_row": {
+                          "type": "Foreach",
+                          "foreach": "@outputs('List_Revenue_Share_By_Percent_rows')?['body/value']",
+                          "actions": {
+                            "Delete_a_Revenue_Share_By_Percent_row": {
+                              "type": "OpenApiConnection",
+                              "inputs": {
+                                "parameters": {
+                                  "entityName": "bs_revenuesharebypercents",
+                                  "recordId": "@items('For_each_Revenue_Share_By_Percent_row')?['bs_revenuesharebypercentid']"
+                                },
+                                "host": {
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                                  "operationId": "DeleteRecord",
+                                  "connectionName": "shared_commondataserviceforapps-2"
+                                }
+                              },
+                              "metadata": {
+                                "operationMetadataId": "43a2369c-d038-441f-853f-a127b9023463"
+                              }
+                            }
+                          },
+                          "runAfter": {
+                            "List_Revenue_Share_By_Percent_rows": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "b6f9fce3-b5cc-446c-801d-9ff5b0ab59d2"
+                          }
+                        },
+                        "For_each_distribution_item": {
+                          "type": "Foreach",
+                          "foreach": "@body('Parse_JSON_-_Revenue_Share_Distribution_Items')",
+                          "actions": {
+                            "Add_a_new_Revenue_Share_By_Percent_row": {
+                              "type": "OpenApiConnection",
+                              "inputs": {
+                                "parameters": {
+                                  "entityName": "bs_revenuesharebypercents",
+                                  "item/bs_BillingStatementFK@odata.bind": "bs_billingstatements(@{body('Add_a_new_Statement_row')?['bs_billingstatementid']})",
+                                  "item/bs_month": "@formatDateTime(body('Add_a_new_Statement_row')?['bs_serviceperiodstart'], 'MM')",
+                                  "item/bs_ownerpercentdisplay": "@if(\r\n    greaterOrEquals(item()?['sharePercentageToCharge'], 0), \r\n    formatNumber(\r\n        sub(100, item()?['sharePercentageToCharge']), \r\n        '0.00'\r\n    ), \r\n    formatNumber(100, '0.00')\r\n)",
+                                  "item/bs_percenttocharge": "@item()?['sharePercentageToCharge']",
+                                  "item/bs_period": "@formatDateTime(body('Add_a_new_Statement_row')?['bs_serviceperiodstart'], 'yyyyMM')",
+                                  "item/bs_revenueamount": "@item()?['revenueAmount']",
+                                  "item/bs_site": "@body('Parse_Contract_JSON')?['_bs_customersitefk_value@OData.Community.Display.V1.FormattedValue']",
+                                  "item/bs_tierlimitamount": "@if(\r\n    equals(item()?['tierLimitAmount'], 0), \r\n    '∞', \r\n    formatNumber(\r\n        item()?['tierLimitAmount'], \r\n        '#,##0'\r\n    )\r\n)",
+                                  "item/bs_totalduetotownepark": "@item()?['amountDueToTownePark']",
+                                  "item/bs_year": "@formatDateTime(body('Add_a_new_Statement_row')?['bs_serviceperiodstart'], 'yyyy')"
+                                },
+                                "host": {
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                                  "operationId": "CreateRecord",
+                                  "connectionName": "shared_commondataserviceforapps-2"
+                                }
+                              },
+                              "metadata": {
+                                "operationMetadataId": "cd1f8926-ac69-432a-984e-49f02a884a47"
+                              }
+                            }
+                          },
+                          "runAfter": {
+                            "For_each_Revenue_Share_By_Percent_row": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "bcfbafbb-1b6c-476e-b37d-51b90015e1ef"
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {}
+                      },
+                      "runAfter": {
+                        "Parse_JSON_-_Revenue_Share_Distribution_Items": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {}
+                  },
+                  "metadata": {
+                    "operationMetadataId": "bce99478-1e8e-4796-b5c0-55ff3c223347"
+                  }
+                },
+                "Run_Bell_Service_Fee_Child_Flow": {
+                  "type": "Workflow",
+                  "inputs": {
+                    "host": {
+                      "workflowReferenceName": "42a88c06-ce84-ef11-ac20-0022480a57ac"
+                    },
+                    "body": {
+                      "date": "@body('Add_a_new_Statement_row')?['bs_serviceperiodstart']",
+                      "number_1": "@body('Parse_InvoiceGroup_JSON')['bs_groupnumber']",
+                      "text": "@body('Parse_Contract_JSON')?['_bs_customersitefk_value@OData.Community.Display.V1.FormattedValue']",
+                      "date_1": "@body('Add_a_new_Statement_row')?['bs_serviceperiodend']",
+                      "text_1": "@string(body('Parse_Contract_JSON')?['bs_BellService_bs_Contract'])",
+                      "text_2": "@body('Parse_Contract_JSON')?['bs_contracttype']"
+                    },
+                    "retryPolicy": {
+                      "type": "fixed",
+                      "count": 2,
+                      "interval": "PT45S"
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "54ce17ae-f8ae-4178-9020-9d2d040dfc0e"
+                  }
+                },
+                "Run_Mid_Month_Advance_Child_Flow": {
+                  "type": "Workflow",
+                  "inputs": {
+                    "host": {
+                      "workflowReferenceName": "a5d3335f-058b-ef11-ac21-0022480a57ac"
+                    },
+                    "body": {
+                      "text": "@string(body('Parse_Contract_JSON')?['bs_MidMonthAdvance_bs_Contract'])",
+                      "number": "@body('Parse_InvoiceGroup_JSON')['bs_groupnumber']",
+                      "text_1": "@body('Parse_Contract_JSON')?['bs_contracttype']"
+                    },
+                    "retryPolicy": {
+                      "type": "fixed",
+                      "count": 2,
+                      "interval": "PT45S"
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "3a656457-f572-4194-8df9-f620f5b68480"
+                  }
+                },
+                "Run_Deposited_Revenue_Child_Flow": {
+                  "type": "Workflow",
+                  "inputs": {
+                    "host": {
+                      "workflowReferenceName": "8a2f266f-56d4-ef11-8eea-0022480a57ac"
+                    },
+                    "body": {
+                      "text": "@string(body('Parse_Contract_JSON')?['bs_DepositedRevenue_Contract'])",
+                      "number": "@body('Parse_InvoiceGroup_JSON')['bs_groupnumber']",
+                      "text_1": "@body('Parse_Contract_JSON')?['bs_contracttype']",
+                      "date": "@outputs('Add_a_new_Statement_row')?['body/bs_serviceperiodstart']",
+                      "date_1": "@outputs('Add_a_new_Statement_row')?['body/bs_serviceperiodend']",
+                      "text_2": "@body('Parse_Contract_JSON')?['_bs_customersitefk_value@OData.Community.Display.V1.FormattedValue']"
+                    },
+                    "retryPolicy": {
+                      "type": "fixed",
+                      "count": 2,
+                      "interval": "PT45S"
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "023696f1-98e8-4f81-98dd-5f80f86b1743"
+                  }
+                },
+                "Run_Billable_Accounts_Child_Flow": {
+                  "type": "Workflow",
+                  "inputs": {
+                    "host": {
+                      "workflowReferenceName": "0e80e27b-0b9e-ef11-8a6a-0022480a57ac"
+                    },
+                    "body": {
+                      "date": "@outputs('Add_a_new_Statement_row')?['body/bs_serviceperiodstart']",
+                      "number_1": "@body('Parse_InvoiceGroup_JSON')['bs_groupnumber']",
+                      "text": "@body('Parse_Contract_JSON')?['_bs_customersitefk_value@OData.Community.Display.V1.FormattedValue']",
+                      "date_1": "@outputs('Add_a_new_Statement_row')?['body/bs_serviceperiodend']",
+                      "text_1": "@string(body('Parse_Contract_JSON')?['bs_BillableAccount_Contract'])",
+                      "text_2": "@body('Parse_Contract_JSON')?['bs_contracttype']"
+                    },
+                    "retryPolicy": {
+                      "type": "fixed",
+                      "count": 2,
+                      "interval": "PT45S"
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "4d099074-8b72-4de5-9991-5895428e8d97"
+                  }
+                },
+                "Run_Management_Fee_Child_Flow": {
+                  "type": "Workflow",
+                  "inputs": {
+                    "host": {
+                      "workflowReferenceName": "75fc4153-aa14-f011-998a-000d3a5ac294"
+                    },
+                    "body": {
+                      "date": "@outputs('Add_a_new_Statement_row')?['body/bs_serviceperiodstart']",
+                      "number_1": "@body('Parse_InvoiceGroup_JSON')['bs_groupnumber']",
+                      "text": "@body('Parse_Contract_JSON')?['_bs_customersitefk_value@OData.Community.Display.V1.FormattedValue']",
+                      "date_1": "@outputs('Add_a_new_Statement_row')?['body/bs_serviceperiodend']",
+                      "text_1": "@string(body('Parse_Contract_JSON')?['bs_ManagementAgreement_Contract'])",
+                      "text_2": "@body('Parse_Contract_JSON')?['bs_contracttype']"
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "fd0c235f-ad18-4b8c-965a-0b924f0fccc5"
+                  }
+                },
+                "Run_Insurance_and_Claims_Child_Flow": {
+                  "type": "Workflow",
+                  "inputs": {
+                    "host": {
+                      "workflowReferenceName": "5ee4f1ac-07a9-ef11-b8e9-0022480a57ac"
+                    },
+                    "body": {
+                      "date": "@outputs('Add_a_new_Statement_row')?['body/bs_serviceperiodstart']",
+                      "number_1": "@body('Parse_InvoiceGroup_JSON')['bs_groupnumber']",
+                      "text": "@body('Parse_Contract_JSON')?['_bs_customersitefk_value@OData.Community.Display.V1.FormattedValue']",
+                      "date_1": "@outputs('Add_a_new_Statement_row')?['body/bs_serviceperiodend']",
+                      "text_1": "@string(body('Parse_Contract_JSON')?['bs_BillableAccount_Contract'])",
+                      "text_2": "@body('Parse_Contract_JSON')?['bs_contracttype']",
+                      "text_3": "@string(body('Parse_Contract_JSON')?['bs_ManagementAgreement_Contract'])",
+                      "text_4": "@string(body('Run_Billable_Accounts_Child_Flow'))",
+                      "text_5": "@body('Get_a_Contract_by_ID')?['bs_CustomerSiteFK']['bs_glstring']",
+                      "date_2": "@formatDateTime(body('Get_a_Contract_by_ID')?['bs_CustomerSiteFK']['bs_startdate'], 'yyyy-MM-dd')"
+                    },
+                    "retryPolicy": {
+                      "type": "fixed",
+                      "count": 2,
+                      "interval": "PT45S"
+                    }
+                  },
+                  "runAfter": {
+                    "Run_Billable_Accounts_Child_Flow": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "323ee84b-4ada-41dd-a5e2-034e3091ce3a"
+                  }
+                },
+                "Run_a_NonGL_Billable__Expense_Child_Flow": {
+                  "type": "Workflow",
+                  "inputs": {
+                    "host": {
+                      "workflowReferenceName": "6124a954-3220-f011-9989-6045bd01b3a9"
+                    },
+                    "body": {
+                      "text": "@body('Parse_Contract_JSON')?['bs_contracttype']",
+                      "date": "@outputs('Add_a_new_Statement_row')?['body/bs_serviceperiodstart']",
+                      "date_1": "@outputs('Add_a_new_Statement_row')?['body/bs_serviceperiodend']",
+                      "text_1": "@body('Parse_Contract_JSON')?['_bs_customersitefk_value@OData.Community.Display.V1.FormattedValue']",
+                      "number": "@body('Parse_InvoiceGroup_JSON')['bs_groupnumber']",
+                      "text_2": "@string(body('Parse_Contract_JSON')?['bs_ManagementAgreement_Contract'])",
+                      "text_3": "@string(body('Parse_Contract_JSON')?['bs_nonglexpense_ContractFK_bs_contract'])",
+                      "text_4": "@string(body('Parse_Contract_JSON')?['bs_BillableAccount_Contract'])"
+                    },
+                    "retryPolicy": {
+                      "type": "fixed",
+                      "count": 2,
+                      "interval": "PT45S"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Set_LineItems_variable": [
+                  "Succeeded"
+                ],
+                "Set_InvoiceTotal_variable": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "45538f1a-dddd-4a38-999a-e79700ea7407"
+              }
+            },
+            "Append_BillingStatementVersion_to_InvoiceNumber": {
+              "type": "AppendToStringVariable",
+              "inputs": {
+                "name": "InvoiceNumber",
+                "value": "@concat('-', variables('BillingStatementVersion'))"
+              },
+              "runAfter": {
+                "Append_to_InvoiceNumber_variable": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "3e028108-795f-4143-9dfd-02c32566258c"
+              }
+            },
+            "Filter_AdhocLineItems_array": {
+              "type": "Query",
+              "inputs": {
+                "from": "@variables('AdhocLineItems')",
+                "where": "@equals(item()?['metaData']?['invoiceGroup'],string(body('Parse_InvoiceGroup_JSON')['bs_groupnumber']))"
+              },
+              "runAfter": {
+                "Child_Flows_Scope": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "fab5e73e-d2cf-48ac-9799-7914fc185a9c"
+              }
+            },
+            "For_each_Adhoc_Line_Item": {
+              "type": "Foreach",
+              "foreach": "@outputs('Filter_AdhocLineItems_array')['body']",
+              "actions": {
+                "Increment_InvoiceTotal_variable_Adhoc": {
+                  "type": "IncrementVariable",
+                  "inputs": {
+                    "name": "InvoiceTotal",
+                    "value": "@item()?['amount']"
+                  },
+                  "metadata": {
+                    "operationMetadataId": "7c76f2ca-6752-4fe5-802f-2c5623a98dbe"
+                  }
+                }
+              },
+              "runAfter": {
+                "Filter_AdhocLineItems_array": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "070f776f-600e-4abc-ae78-cb84a2c8b71c"
+              }
+            },
+            "Compose_add_LineItems_to_AllLineItems": {
+              "type": "Compose",
+              "inputs": "@json(\r\nconcat(variables('LineItems'),variables('AllLineItems')))",
+              "runAfter": {
+                "Is_LineItems_Not_Empty_Condition": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "3c1b2ee1-f6bf-4456-b132-c7077c48664e"
+              }
+            },
+            "Set_variable_AllLineItems": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "AllLineItems",
+                "value": "@outputs('Compose_add_LineItems_to_AllLineItems')"
+              },
+              "runAfter": {
+                "Compose_add_LineItems_to_AllLineItems": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "e8c8e9e6-5ca4-4802-a4a0-e27d8a6829cb"
+              }
+            },
+            "Filter_array_exclude_zero_amount_LineItems": {
+              "type": "Query",
+              "inputs": {
+                "from": "@coalesce(outputs('Compose_union_of_LineItems'), json('[]'))",
+                "where": "@not(equals(item()?['amount'],0))"
+              },
+              "runAfter": {
+                "Compose_union_of_LineItems": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Apply_to_each_InvoiceGroupLineItems": {
+              "type": "Foreach",
+              "foreach": "@variables('LineItems')",
+              "actions": {
+                "Append_to_AlIInvoiceGroupLineItem_array_variable": {
+                  "type": "AppendToArrayVariable",
+                  "inputs": {
+                    "name": "AllInvoiceGroupLineItems",
+                    "value": "@items('Apply_to_each_InvoiceGroupLineItems')"
+                  }
+                }
+              },
+              "runAfter": {
+                "Set_variable_AllLineItems": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "runAfter": {
+            "Condition_-_Comments_exist_on_Ready_for_Invoice_row": [
+              "Succeeded"
+            ],
+            "For_each_billing_statement": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "359328c2-ce7c-499a-8358-38418bedab49"
+          }
+        },
+        "Initialize_LineItems_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "LineItems",
+                "type": "array"
+              }
+            ]
+          },
+          "runAfter": {
+            "Add_a_new_Statement_row": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "c890fcb5-29c9-4dd0-a6bc-cfc8de5e9bdc"
+          }
+        },
+        "Initialize_InvoiceTotal_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "InvoiceTotal",
+                "type": "float",
+                "value": 0
+              }
+            ]
+          },
+          "runAfter": {
+            "Add_a_new_Statement_row": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "419fc00d-c4ab-4604-8f07-ba3512258c38"
+          }
+        },
+        "Initialize_InvoiceNumber_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "InvoiceNumber",
+                "type": "string"
+              }
+            ]
+          },
+          "runAfter": {
+            "Add_a_new_Statement_row": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "1b8f23f5-1f23-4bb5-a803-a42197962369"
+          }
+        },
+        "Update_Process_status_when_failed": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "bs_statementgenerationprocesses",
+              "recordId": "@triggerBody()?['bs_statementgenerationprocessid']",
+              "item/bs_status": 126840002
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "UpdateRecord",
+              "connectionName": "shared_commondataserviceforapps-2"
+            }
+          },
+          "runAfter": {
+            "Apply_to_each_Invoice_Group": [
+              "TimedOut",
+              "Skipped",
+              "Failed"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "09aa0269-627d-4b41-854c-bf07da329af8"
+          }
+        },
+        "Parse_Contract_JSON": {
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@body('Get_a_Contract_by_ID')",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "bs_billingtype": {
+                  "type": "integer"
+                },
+                "bs_consumerpriceindex": {
+                  "type": "boolean"
+                },
+                "bs_contracttype": {
+                  "type": "string"
+                },
+                "bs_incrementamount": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "bs_incrementmonth": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "bs_occupiedroominvoicegroup": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "bs_occupiedroomrate": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "bs_paymentterms": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "_bs_customersitefk_value@OData.Community.Display.V1.FormattedValue": {
+                  "type": "string"
+                },
+                "_bs_customersitefk_value": {
+                  "type": "string"
+                },
+                "bs_contractid": {
+                  "type": "string"
+                },
+                "bs_FixedFeeService_Contract": {
+                  "type": "array"
+                },
+                "bs_LaborHourJob_Contract": {
+                  "type": "array"
+                },
+                "bs_InvoiceGroup_Contract": {
+                  "type": "array"
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Add_a_new_Statement_row": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "63545254-5fc9-4359-825f-bae651110c70"
+          }
+        },
+        "Initialize_EmptyInvoiceGroup_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "EmptyInvoiceGroup",
+                "type": "array",
+                "value": [
+                  {
+                    "bs_groupnumber": 1,
+                    "bs_description": null,
+                    "bs_title": null,
+                    "bs_sitenumber": "@{body('Get_a_Contract_by_ID')?['_bs_customersitefk_value@OData.Community.Display.V1.FormattedValue']}",
+                    "bs_invoicegroupid": null
+                  }
+                ]
+              }
+            ]
+          },
+          "runAfter": {
+            "Add_a_new_Statement_row": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "74c15b81-2592-470a-92a4-d22d7df2e9ac"
+          }
+        },
+        "Update_Process_status_when_started": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "bs_statementgenerationprocesses",
+              "recordId": "@triggerBody()?['bs_statementgenerationprocessid']",
+              "item/bs_status": 126840000
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "UpdateRecord",
+              "connectionName": "shared_commondataserviceforapps-2"
+            }
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "bec186ee-69cd-470b-bc32-be0bed680d2b"
+          }
+        },
+        "Initialize_InvoiceCount_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "InvoiceCount",
+                "type": "integer",
+                "value": 0
+              }
+            ]
+          },
+          "runAfter": {
+            "Add_a_new_Statement_row": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "d198c0ba-0e23-4f6c-98bf-576ea9c83623"
+          }
+        },
+        "Condition_Invoices_Added": {
+          "type": "If",
+          "expression": {
+            "and": [
+              {
+                "greater": [
+                  "@variables('InvoiceCount')",
+                  0
+                ]
+              }
+            ]
+          },
+          "actions": {
+            "Update_Process_status_when_successful": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "bs_statementgenerationprocesses",
+                  "recordId": "@triggerBody()?['bs_statementgenerationprocessid']",
+                  "item/bs_status": 126840001
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "UpdateRecord",
+                  "connectionName": "shared_commondataserviceforapps-2"
+                }
+              },
+              "metadata": {
+                "operationMetadataId": "5270790b-09de-48ea-ae75-0022f8d8b999"
+              }
+            }
+          },
+          "else": {
+            "actions": {
+              "Delete_Statement_row_if_no_invoices_added": {
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "parameters": {
+                    "entityName": "bs_billingstatements",
+                    "recordId": "@body('Add_a_new_Statement_row')?['bs_billingstatementid']"
+                  },
+                  "host": {
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                    "operationId": "DeleteRecord",
+                    "connectionName": "shared_commondataserviceforapps-2"
+                  }
+                },
+                "metadata": {
+                  "operationMetadataId": "d4f6adb2-0316-4ac5-ad0c-e0a86153dca5"
+                }
+              },
+              "Update_Process_status_when_no_invoices_added": {
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "parameters": {
+                    "entityName": "bs_statementgenerationprocesses",
+                    "recordId": "@triggerBody()?['bs_statementgenerationprocessid']",
+                    "item/bs_status": 126840002
+                  },
+                  "host": {
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                    "operationId": "UpdateRecord",
+                    "connectionName": "shared_commondataserviceforapps-2"
+                  }
+                },
+                "runAfter": {
+                  "Delete_Statement_row_if_no_invoices_added": [
+                    "Succeeded",
+                    "TimedOut",
+                    "Skipped",
+                    "Failed"
+                  ]
+                },
+                "metadata": {
+                  "operationMetadataId": "937c545e-dbd2-45e9-8f89-e20e28cad754"
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Scope": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "c1c19915-f35e-4eda-bbc6-a9ea1a4b33d8"
+          }
+        },
+        "Get_ready_for_invoice_row": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "cr9e8_readyforinvoices",
+              "$select": "cr9e8_invoicestatus,cr9e8_period,cr9e8_comments,cr9e8_site",
+              "$filter": "cr9e8_site eq '@{body('Parse_Contract_JSON')?['_bs_customersitefk_value@OData.Community.Display.V1.FormattedValue']}' and cr9e8_period eq '@{formatDateTime(addToTime(utcNow(), -1, 'Month'), 'yyyyMM')}'",
+              "$top": 1
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "connectionName": "shared_commondataserviceforapps-2"
+            }
+          },
+          "runAfter": {
+            "Initialize_LineItems_variable": [
+              "Succeeded"
+            ],
+            "Initialize_InvoiceTotal_variable": [
+              "Succeeded"
+            ],
+            "Initialize_InvoiceNumber_variable": [
+              "Succeeded"
+            ],
+            "Parse_Contract_JSON": [
+              "Succeeded"
+            ],
+            "Initialize_EmptyInvoiceGroup_variable": [
+              "Succeeded"
+            ],
+            "Initialize_InvoiceCount_variable": [
+              "Succeeded"
+            ],
+            "Initialize_AllLineItems_variable": [
+              "Succeeded"
+            ],
+            "Initialize_StatementStatus_variable_as_Generating": [
+              "Succeeded"
+            ],
+            "Initialize_BillingStatementVersion": [
+              "Succeeded"
+            ],
+            "Initialize_AdhocLineItems_variable": [
+              "Succeeded"
+            ],
+            "Initialize_AllInvoiceGroupLineItems_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "e0971348-8b74-4457-9584-73f19d593c98"
+          }
+        },
+        "Compose_Ready_for_Invoice_Row_Comments": {
+          "type": "Compose",
+          "inputs": "@first(outputs('Get_ready_for_invoice_row')?['body/value'])?['cr9e8_comments']",
+          "runAfter": {
+            "Get_ready_for_invoice_row": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "bf0ba58c-7fd2-4b57-89c9-97c1fd0b3b59"
+          }
+        },
+        "Condition_-_Comments_exist_on_Ready_for_Invoice_row": {
+          "type": "If",
+          "expression": {
+            "and": [
+              {
+                "not": {
+                  "equals": [
+                    "@empty(outputs('Compose_Ready_for_Invoice_Row_Comments'))",
+                    "@true"
+                  ]
+                }
+              },
+              {
+                "equals": [
+                  "@variables('IsAdvanced')",
+                  "@false"
+                ]
+              }
+            ]
+          },
+          "actions": {
+            "Update_Statement_Row_AR_Review": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "bs_billingstatements",
+                  "recordId": "@body('Add_a_new_Statement_row')?['bs_billingstatementid']",
+                  "item/bs_statementstatus": "@variables('StatementStatus')"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "UpdateRecord",
+                  "connectionName": "shared_commondataserviceforapps-2"
+                }
+              },
+              "runAfter": {
+                "Set_StatementStatus_variable_to_AR_Review_Value": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "0827b076-7dc4-4424-8528-dc2e375306b0"
+              }
+            },
+            "Set_StatementStatus_variable_to_AR_Review_Value": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "StatementStatus",
+                "value": 126840004
+              },
+              "metadata": {
+                "operationMetadataId": "3f0844ff-a0e0-48c7-a1d7-89bf0d70ab2c"
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "Compose_Ready_for_Invoice_Row_Comments": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "d6d68765-a533-4364-b50a-b6d1ee874627"
+          }
+        },
+        "List_Billing_Statement_Rows": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "bs_billingstatements",
+              "$select": "_bs_customersitefk_value,bs_serviceperiodstart,bs_serviceperiodend,bs_statementstatus,bs_statementversionnumber,bs_billingstatementid",
+              "$filter": "_bs_customersitefk_value eq '@{body('Parse_Contract_JSON')?['_bs_customersitefk_value']}' and bs_billingstatementid ne '@{outputs('Add_a_new_Statement_row')?['body/bs_billingstatementid']}' and bs_serviceperiodstart eq @{outputs('Add_a_new_Statement_row')?['body/bs_serviceperiodstart']} ",
+              "$orderby": "bs_statementversionnumber\n",
+              "$expand": "bs_Invoice_BillingStatement($select=bs_invoiceid,bs_invoicenumber,bs_amount,bs_description,bs_invoicedate,bs_paymentterms,bs_title,bs_invoicedata)"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "connectionName": "shared_commondataserviceforapps-2"
+            }
+          },
+          "runAfter": {
+            "Get_ready_for_invoice_row": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "8f53b15a-bd4b-471c-879f-472481ada817"
+          }
+        },
+        "For_each_billing_statement": {
+          "type": "Foreach",
+          "foreach": "@outputs('List_Billing_Statement_Rows')?['body/value']",
+          "actions": {
+            "Is_Statement_Status_Set_to_Sent": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@items('For_each_billing_statement')?['bs_statementstatus']",
+                      126840003
+                    ]
+                  }
+                ]
+              },
+              "actions": {
+                "Convert_BillingStatementVersion_to_Int_And_Add_1_to_Version": {
+                  "type": "Compose",
+                  "inputs": "@formatNumber(\r\n    add(\r\n        coalesce(\r\n            items('For_each_billing_statement')?['bs_statementversionnumber'], \r\n            1\r\n        ), \r\n        1\r\n    ), \r\n    '00'\r\n)\r\n",
+                  "metadata": {
+                    "operationMetadataId": "732735af-2700-4f85-bfe5-f01eeba18813"
+                  }
+                },
+                "Set_Incremented_BillingStatementVersion": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "BillingStatementVersion",
+                    "value": "@outputs('Convert_BillingStatementVersion_to_Int_And_Add_1_to_Version')"
+                  },
+                  "runAfter": {
+                    "Convert_BillingStatementVersion_to_Int_And_Add_1_to_Version": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "02683f93-3d28-44bf-bd07-2070be5f6c24"
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Delete_a_billing_statement_row": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "parameters": {
+                        "entityName": "bs_billingstatements",
+                        "recordId": "@item()?['bs_billingstatementid']"
+                      },
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                        "operationId": "DeleteRecord",
+                        "connectionName": "shared_commondataserviceforapps-2"
+                      }
+                    },
+                    "runAfter": {
+                      "Set_BillingStatementVersion": [
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "7c4016ae-0bd5-4d4c-9ea4-3abd87c0bb5e"
+                    }
+                  },
+                  "Set_BillingStatementVersion": {
+                    "type": "SetVariable",
+                    "inputs": {
+                      "name": "BillingStatementVersion",
+                      "value": "@formatNumber(\r\n    coalesce(\r\n        items('For_each_billing_statement')?['bs_statementversionnumber'], \r\n        1\r\n    ), \r\n    '00'\r\n)\r\n"
+                    },
+                    "metadata": {
+                      "operationMetadataId": "1eb017f6-fedb-490f-bb58-8d3d46bd4b4f"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Set_AdhocLineItems_variable": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "fc92f2f5-054b-4a6b-b0eb-ad194ee089c0"
+              }
+            },
+            "Filter_Ad_Hoc_Line_Items_Child_Flow": {
+              "type": "Workflow",
+              "inputs": {
+                "host": {
+                  "workflowReferenceName": "30f5ee96-2acd-ef11-b8e9-0022480a57ac"
+                },
+                "body": {
+                  "text": "@items('For_each_billing_statement')"
+                },
+                "retryPolicy": {
+                  "type": "fixed",
+                  "count": 2,
+                  "interval": "PT45S"
+                }
+              },
+              "metadata": {
+                "operationMetadataId": "0c4a8a3e-ef77-4f91-8bcd-84ace6a3c39c"
+              }
+            },
+            "Set_AdhocLineItems_variable": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "AdhocLineItems",
+                "value": "@json(body('Filter_Ad_Hoc_Line_Items_Child_Flow')?['lineitems'])"
+              },
+              "runAfter": {
+                "Filter_Ad_Hoc_Line_Items_Child_Flow": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "fdf6421f-77b4-4b9b-b9ac-9ce6f802e80b"
+              }
+            }
+          },
+          "runAfter": {
+            "List_Billing_Statement_Rows": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "4868a046-5619-4b9e-967b-076e4ae83956"
+          }
+        },
+        "Initialize_AllLineItems_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "AllLineItems",
+                "type": "array",
+                "value": []
+              }
+            ]
+          },
+          "runAfter": {
+            "Add_a_new_Statement_row": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "5b0389c1-2686-430e-b11f-ac3cd8d2f3e9"
+          }
+        },
+        "Initialize_StatementStatus_variable_as_Generating": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "StatementStatus",
+                "type": "integer",
+                "value": 126840000
+              }
+            ]
+          },
+          "runAfter": {
+            "Add_a_new_Statement_row": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "e3ffb090-ce1e-4f16-862c-b625253e2e6f"
+          }
+        },
+        "Scope": {
+          "type": "Scope",
+          "actions": {
+            "Run_Comparison_to_Forecast_Child_Flow": {
+              "type": "Workflow",
+              "inputs": {
+                "host": {
+                  "workflowReferenceName": "2ea94e67-a8dd-ef11-a730-6045bd096814"
+                },
+                "body": {
+                  "date": "@outputs('Add_a_new_Statement_row')?['body/bs_serviceperiodstart']",
+                  "text": "@body('Parse_Contract_JSON')?['_bs_customersitefk_value@OData.Community.Display.V1.FormattedValue']",
+                  "date_1": "@outputs('Add_a_new_Statement_row')?['body/bs_serviceperiodend']",
+                  "text_1": "@string(variables('AllInvoiceGroupLineItems'))"
+                },
+                "retryPolicy": {
+                  "type": "fixed",
+                  "count": 2,
+                  "interval": "PT45S"
+                }
+              },
+              "metadata": {
+                "operationMetadataId": "fb596dbd-d169-4739-8fb7-011dce22da7c"
+              }
+            },
+            "Parse_JSON_Forecast_Data": {
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@body('Run_Comparison_to_Forecast_Child_Flow')?['forecast']",
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "forecastedRevenue": {
+                      "type": "number"
+                    },
+                    "postedRevenue": {
+                      "type": "number"
+                    },
+                    "invoicedRevenue": {
+                      "type": "number"
+                    },
+                    "totalActualRevenue": {
+                      "type": "number"
+                    },
+                    "forecastDeviationPercentage": {
+                      "type": "number"
+                    },
+                    "forecastDeviationAmount": {
+                      "type": "number"
+                    },
+                    "forecastLastUpdated": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Run_Comparison_to_Forecast_Child_Flow": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "896865c4-3210-4603-a6c9-7986bc44825a"
+              }
+            },
+            "Condition_is_invoice_outside_forecast_threshold": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "greater": [
+                      "@body('Parse_JSON_Forecast_Data')?['forecastDeviationPercentage']",
+                      "@body('Parse_Contract_JSON')?['bs_deviationpercentage']"
+                    ]
+                  },
+                  {
+                    "greater": [
+                      "@body('Parse_JSON_Forecast_Data')?['forecastDeviationAmount']",
+                      "@body('Parse_Contract_JSON')?['bs_deviationamount']"
+                    ]
+                  }
+                ]
+              },
+              "actions": {
+                "Update_a_statement_row_Add_Forecast_Data": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "entityName": "bs_billingstatements",
+                      "recordId": "@outputs('Add_a_new_Statement_row')?['body/bs_billingstatementid']",
+                      "item/bs_statementstatus": "@outputs('Compose_Statement_Status_Approval_Team_if_not_AR_Review')",
+                      "item/bs_forecastdata": "@body('Run_Comparison_to_Forecast_Child_Flow')?['forecast']",
+                      "item/bs_statementversionnumber": "@int(variables('BillingStatementVersion'))"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "operationId": "UpdateRecord",
+                      "connectionName": "shared_commondataserviceforapps-2"
+                    }
+                  },
+                  "runAfter": {
+                    "Compose_Statement_Status_Approval_Team_if_not_AR_Review": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "e56da97f-372b-476f-abbf-1634419ac28f"
+                  }
+                },
+                "Compose_Statement_Status_Approval_Team_if_not_AR_Review": {
+                  "type": "Compose",
+                  "inputs": "@if(equals(variables('StatementStatus'),126840004), variables('StatementStatus'), 126840005)",
+                  "metadata": {
+                    "operationMetadataId": "a3b1289a-1b83-466a-8e79-7990a5d4c31d"
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Update_a_statement_row_Add_Forecast_Data_2": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "parameters": {
+                        "entityName": "bs_billingstatements",
+                        "recordId": "@outputs('Add_a_new_Statement_row')?['body/bs_billingstatementid']",
+                        "item/bs_statementstatus": "@outputs('Compose_Statement_Status_Ready_To_Send_if_not_AR_Review')",
+                        "item/bs_forecastdata": "@body('Run_Comparison_to_Forecast_Child_Flow')?['forecast']",
+                        "item/bs_statementversionnumber": "@int(variables('BillingStatementVersion'))"
+                      },
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                        "operationId": "UpdateRecord",
+                        "connectionName": "shared_commondataserviceforapps-2"
+                      }
+                    },
+                    "runAfter": {
+                      "Compose_Statement_Status_Ready_To_Send_if_not_AR_Review": [
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "26baa850-6a2a-4239-b07e-8e5cbf9af707"
+                    }
+                  },
+                  "Compose_Statement_Status_Ready_To_Send_if_not_AR_Review": {
+                    "type": "Compose",
+                    "inputs": "@if(equals(variables('StatementStatus'),126840004), variables('StatementStatus'), 126840006)",
+                    "metadata": {
+                      "operationMetadataId": "661038d6-f666-4386-975d-a74932e12aef"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Parse_JSON_Forecast_Data": [
+                  "Succeeded"
+                ],
+                "Run_a_Child_Flow_Generate_All_Reports": [
+                  "Succeeded",
+                  "TimedOut",
+                  "Skipped",
+                  "Failed"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "fa7997f5-ce26-44b4-90eb-b69466030cbe"
+              }
+            },
+            "Run_a_Child_Flow_Generate_All_Reports": {
+              "type": "Workflow",
+              "inputs": {
+                "host": {
+                  "workflowReferenceName": "a2ddd2a6-43c9-ef11-b8e9-0022480a57ac"
+                },
+                "body": {
+                  "text": "@body('Parse_Contract_JSON')?['_bs_customersitefk_value@OData.Community.Display.V1.FormattedValue']",
+                  "date": "@outputs('Add_a_new_Statement_row')?['body/bs_serviceperiodstart']",
+                  "text_1": "@coalesce(body('Parse_Contract_JSON')?['bs_supportingreports'],'')",
+                  "text_2": "@body('Parse_Contract_JSON')?['bs_contracttype']"
+                },
+                "retryPolicy": {
+                  "type": "fixed",
+                  "count": 2,
+                  "interval": "PT45S"
+                }
+              },
+              "metadata": {
+                "operationMetadataId": "6e5786a8-2d54-4000-ba85-be761fc25d7a"
+              }
+            }
+          },
+          "runAfter": {
+            "Apply_to_each_Invoice_Group": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "f35d9192-2a18-4632-8b29-6905d6b2b387"
+          }
+        },
+        "Update_Process_status_when_failed-copy": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "bs_statementgenerationprocesses",
+              "recordId": "@triggerBody()?['bs_statementgenerationprocessid']",
+              "item/bs_status": 126840002
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "UpdateRecord",
+              "connectionName": "shared_commondataserviceforapps-2"
+            }
+          },
+          "runAfter": {
+            "Scope": [
+              "TimedOut",
+              "Skipped",
+              "Failed"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "09aa0269-627d-4b41-854c-bf07da329af8"
+          }
+        },
+        "Initialize_BillingStatementVersion": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "BillingStatementVersion",
+                "type": "string",
+                "value": "01"
+              }
+            ]
+          },
+          "runAfter": {
+            "Add_a_new_Statement_row": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "0b3b6c70-bcd8-4325-ac56-8a6aa3c9a751"
+          }
+        },
+        "Compose_Service_Period_Start": {
+          "type": "Compose",
+          "inputs": "@if(\r\n    equals(string(triggerOutputs()?['body/bs_serviceperiodstart']), ''),\r\n    if(\r\n        variables('IsAdvanced'),\r\n        addToTime(startOfMonth(utcNow()), 1, 'Month'),\r\n        subtractFromTime(startOfMonth(utcNow()), 1, 'Month')\r\n    ),\r\n    triggerOutputs()?['body/bs_serviceperiodstart']\r\n)\r\n",
+          "runAfter": {
+            "Initialize_IsAdvanced_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "46ac6a49-e7f5-4232-be19-ee4e4d6d89f2"
+          }
+        },
+        "Initialize_AdhocLineItems_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "AdhocLineItems",
+                "type": "array",
+                "value": []
+              }
+            ]
+          },
+          "runAfter": {
+            "Add_a_new_Statement_row": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "898104f1-8572-4ad7-84c7-e745feaeeac5"
+          }
+        },
+        "Update_Statement_row_when_Failed": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "bs_billingstatements",
+              "recordId": "@outputs('Add_a_new_Statement_row')?['body/bs_billingstatementid']",
+              "item/bs_statementstatus": 126840007
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "UpdateOnlyRecord",
+              "connectionName": "shared_commondataserviceforapps-2"
+            }
+          },
+          "runAfter": {
+            "Add_a_new_Statement_row": [
+              "Succeeded"
+            ],
+            "Apply_to_each_Invoice_Group": [
+              "TimedOut",
+              "Skipped",
+              "Failed"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "8a42b804-9e57-436e-afe4-fbddb71e6045"
+          }
+        },
+        "Update_Statement_row_when_Failed-copy": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "bs_billingstatements",
+              "recordId": "@outputs('Add_a_new_Statement_row')?['body/bs_billingstatementid']",
+              "item/bs_statementstatus": 126840007
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "UpdateOnlyRecord",
+              "connectionName": "shared_commondataserviceforapps-2"
+            }
+          },
+          "runAfter": {
+            "Scope": [
+              "TimedOut",
+              "Skipped",
+              "Failed"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "4d800b1c-bd68-48b6-905b-31f0b2df5b27"
+          }
+        },
+        "Initialize_AllInvoiceGroupLineItems_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "AllInvoiceGroupLineItems",
+                "type": "array",
+                "value": []
+              }
+            ]
+          },
+          "runAfter": {
+            "Add_a_new_Statement_row": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Add_a_new_Calculation_Generation_Status_row": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "bs_calculationgenerationsstatuses",
+              "item/bs_name": "@{outputs('Get_a_Contract_by_ID')?['body/_bs_customersitefk_value']}-@{utcNow()}",
+              "item/bs_startingperiod": "@formatDateTime(outputs('Compose_Service_Period_Start'),'yyyyMM')",
+              "item/bs_SiteNumber@odata.bind": "bs_customersites(@{outputs('Get_a_Contract_by_ID')?['body/_bs_customersitefk_value']})"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "CreateRecord",
+              "connectionName": "shared_commondataserviceforapps-2"
+            }
+          },
+          "runAfter": {
+            "Compose_Service_Period_Start": [
+              "SUCCEEDED"
+            ]
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

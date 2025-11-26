@@ -1,0 +1,29 @@
+{
+"FixedFee":
+{
+    "site_id":"1148",
+    "amount_site_id":"0451",
+    "site_id_for_other_validations" : "2469",
+    "deviation_percentage":0,
+    "deviation_amount":0,
+
+    "options":["General Revenue","Bell","Booth/Cashier","Concierge","Greeter","Parking Management","Patient Transport","Screener","Shuttle Services","Sitter","Special Events","Valet Services"],
+    
+    "total":"$14,000.00",
+
+    "General Revenue":2000,
+    "Bell":2000,
+    "Booth/Cashier":3000,
+    "Concierge":4000,
+    "Greeter":3000,
+    "Parking Management":6000,
+    "Patient Transport":2000,
+    "Screener":6000,
+    "Shuttle Services":1000,
+    "Sitter":2000,
+    "Special Events":3000,
+    "Valet Services":6000,
+
+    "amount":["$2,000.00","$2,000.00","$3,000.00","$4,000.00","$3,000.00","$6,000.00","$2,000.00","$6,000.00","$1,000.00","$2,000.00","$3,000.00","$6,000.00"]
+}
+}

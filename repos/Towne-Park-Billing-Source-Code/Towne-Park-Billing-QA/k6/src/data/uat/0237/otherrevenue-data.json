@@ -1,0 +1,119 @@
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "customerSiteId": "d4dac15f-1dee-ef11-be20-7c1e5259f653",
+  "siteNumber": "0237",
+  "name": "JW Marriott - Grande Lakes",
+  "billingPeriod": "2025-08",
+  "forecastData": [
+    {
+      "id": "33e0bf7a-8de7-454e-912d-09a2187a7e6d",
+      "monthYear": "2026-07",
+      "billableExpense": 1,
+      "credits": 0,
+      "gpoFees": 0,
+      "revenueValidation": 0,
+      "signingBonus": 0
+    },
+    {
+      "id": "edac8f8f-7d2e-48de-9958-0b67e9b59614",
+      "monthYear": "2026-02",
+      "billableExpense": 1,
+      "credits": 0,
+      "gpoFees": 0,
+      "revenueValidation": 0,
+      "signingBonus": 0
+    },
+    {
+      "id": "6e8db305-523d-4bc4-a0f4-26c45653e313",
+      "monthYear": "2026-03",
+      "billableExpense": 1,
+      "credits": 0,
+      "gpoFees": 0,
+      "revenueValidation": 0,
+      "signingBonus": 0
+    },
+    {
+      "id": "6175f52e-9a69-4148-8d43-31ed9b3460e7",
+      "monthYear": "2025-10",
+      "billableExpense": 1,
+      "credits": 0,
+      "gpoFees": 0,
+      "revenueValidation": 0,
+      "signingBonus": 0
+    },
+    {
+      "id": "e48aa837-cdb2-46b9-8efc-4bc756716952",
+      "monthYear": "2026-05",
+      "billableExpense": 1,
+      "credits": 0,
+      "gpoFees": 0,
+      "revenueValidation": 0,
+      "signingBonus": 0
+    },
+    {
+      "id": "810be922-11dc-449a-8f4e-78e8de7c2b6c",
+      "monthYear": "2025-11",
+      "billableExpense": 1,
+      "credits": 0,
+      "gpoFees": 0,
+      "revenueValidation": 0,
+      "signingBonus": 0
+    },
+    {
+      "id": "5aaeb5b0-9346-493e-a7cd-8666b8d6fb5f",
+      "monthYear": "2026-01",
+      "billableExpense": 1,
+      "credits": 0,
+      "gpoFees": 0,
+      "revenueValidation": 0,
+      "signingBonus": 0
+    },
+    {
+      "id": "ca818fe1-608f-463c-855e-baef3c6228a2",
+      "monthYear": "2026-04",
+      "billableExpense": 1,
+      "credits": 0,
+      "gpoFees": 0,
+      "revenueValidation": 0,
+      "signingBonus": 0
+    },
+    {
+      "id": "7a677873-d5e8-4efe-947f-c96fdc496bfa",
+      "monthYear": "2026-06",
+      "billableExpense": 1,
+      "credits": 0,
+      "gpoFees": 0,
+      "revenueValidation": 0,
+      "signingBonus": 0
+    },
+    {
+      "id": "a40f1c53-5afb-44c0-afa4-c98bb7dabfe6",
+      "monthYear": "2025-08",
+      "billableExpense": 1,
+      "credits": 0,
+      "gpoFees": 0,
+      "revenueValidation": 0,
+      "signingBonus": 1
+    },
+    {
+      "id": "4443e6cd-1d62-42c7-afb7-d291bdb712ba",
+      "monthYear": "2025-09",
+      "billableExpense": 1,
+      "credits": 0,
+      "gpoFees": 0,
+      "revenueValidation": 0,
+      "signingBonus": 0
+    },
+    {
+      "id": "83826402-eac4-4bb4-95d3-d4ea882e9171",
+      "monthYear": "2025-12",
+      "billableExpense": 1,
+      "credits": 0,
+      "gpoFees": 0,
+      "revenueValidation": 0,
+      "signingBonus": 0
+    }
+  ],
+  "budgetData": [],
+  "actualData": []
+}

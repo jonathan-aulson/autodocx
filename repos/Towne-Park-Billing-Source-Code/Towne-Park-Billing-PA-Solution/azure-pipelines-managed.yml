@@ -1,0 +1,72 @@
+trigger:
+- main
+
+variables:
+  OutputFolder: 'packed'
+  SourceFolder: '$(SolutionName)'  
+
+pool:
+  vmImage: 'windows-latest'
+
+steps:
+- task: PowerPlatformToolInstaller@2
+
+- task: CmdLine@2
+  displayName: 'CreateCustomZipFolder'
+  inputs:
+    script: |
+      echo Zipping contents of $(SolutionName)
+      cd "$(Build.SourcesDirectory)\$(SolutionName)"
+      "C:\Program Files\7-Zip\7z.exe" a -tzip "$(Build.ArtifactStagingDirectory)\$(SolutionName).zip" * -mx=9
+
+- task: PowerPlatformUnPackSolution@2
+  inputs:
+    SolutionInputFile: '$(Build.ArtifactStagingDirectory)/$(SolutionName).zip'
+    SolutionTargetFolder: '$(Build.ArtifactStagingDirectory)\solutions\$(SolutionName)'
+    
+- task: PowerPlatformPackSolution@2
+  inputs:
+    SolutionOutputFile: '$(Build.ArtifactStagingDirectory)/$(SolutionName)_unmanaged.zip'
+    SolutionSourceFolder: '$(Build.ArtifactStagingDirectory)/solutions/$(SolutionName)'
+    solutionType: 'Unmanaged'
+  
+- task: PowerPlatformImportSolution@2
+  inputs:
+    authenticationType: 'PowerPlatformSPN'
+    PowerPlatformSPN: 'STAGE'
+    SolutionInputFile: '$(Build.ArtifactStagingDirectory)/$(SolutionName)_unmanaged.zip'
+    AsyncOperation: true
+    MaxAsyncWaitTime: '60'
+    OverwriteUnmanagedCustomizations: true
+    
+- task: PowerPlatformExportSolution@2
+  inputs:
+    authenticationType: 'PowerPlatformSPN'
+    PowerPlatformSPN: 'STAGE'
+    SolutionName: '$(SolutionName)'
+    SolutionOutputFile: '$(Build.ArtifactStagingDirectory)/$(SolutionName)_managed.zip'
+    Managed: true
+    AsyncOperation: true
+    MaxAsyncWaitTime: '60'
+    
+- task: PowerPlatformImportSolution@2
+  inputs:
+    authenticationType: 'PowerPlatformSPN'
+    PowerPlatformSPN: '$(PowerPlatformEnvironment)'
+    SolutionInputFile: '$(Build.ArtifactStagingDirectory)/$(SolutionName)_managed.zip'
+    AsyncOperation: true
+    MaxAsyncWaitTime: '60'
+    OverwriteUnmanagedCustomizations: true
+    HoldingSolution: true 
+    PublishWorkflows: true
+
+- task: PowerPlatformApplySolutionUpgrade@2   
+  inputs:
+    authenticationType: 'PowerPlatformSPN'
+    PowerPlatformSPN: '$(PowerPlatformEnvironment)'
+    SolutionName: '$(SolutionName)'
+
+- task: PublishBuildArtifacts@1
+  displayName: 'PublishArtifacts'
+  inputs:
+    ArtifactName: 'Solution Files'

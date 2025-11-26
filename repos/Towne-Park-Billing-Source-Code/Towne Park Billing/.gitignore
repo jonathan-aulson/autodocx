@@ -1,0 +1,53 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+/.vs
+
+# Cline files
+
+
+.clineignore
+
+# cursor files
+.cursorrules/
+.cursorignore
+/.cursor/rules
+
+# Roo Code files
+.roo
+/.clinerules/azure-dev-ops-tasking-rules.md
+/CLAUDE.md
+/.claude
+/gemini.md
+/.clinerules/workflows/notion/start-task-workflow.md
+/.clinerules/workflows/notion/sync-azure-to-notion.md
+/sync-azure-to-notion.md
+/.cursor
+/.clinerules/workflows/notion
+/.cursorrules
+/api/.cursor
+/api/.serena
+*.cursorrules
+/.serena
+/api/src/.claude

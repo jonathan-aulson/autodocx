@@ -1,0 +1,1677 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps-2": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_7558e"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_azureblob": {
+        "api": {
+          "name": "shared_azureblob"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "bs_sharedazureblob_5fd39"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_bs-5fsendmailbyserviceprincipal-5f4c81ae98d9d3b3ec": {
+        "api": {
+          "name": "shared_bs-5fsendmailbyserviceprincipal-5f4f4d8f3ae476f46d",
+          "logicalName": "bs_5Fsendmailbyserviceprincipal"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "bs_sharedbs5fsendmailbyserviceprincipal5f4c81ae98d9d3b3ec_4c912"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "EnvironmentName (bs_environmentName)": {
+          "defaultValue": "DEV",
+          "type": "String",
+          "metadata": {
+            "schemaName": "bs_environmentName"
+          }
+        }
+      },
+      "triggers": {
+        "When_a_row_is_added_to_Email_Generation_Process_Table": {
+          "metadata": {
+            "operationMetadataId": "ea67d044-323b-4e62-a3db-028a6405b9e4"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "parameters": {
+              "subscriptionRequest/message": 1,
+              "subscriptionRequest/entityname": "bs_emailgenerationprocess",
+              "subscriptionRequest/scope": 2,
+              "subscriptionRequest/name": "c6969217-0904-f011-bae3-000d3a5ac294"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "SubscribeWebhookTrigger",
+              "connectionName": "shared_commondataserviceforapps-2"
+            }
+          }
+        }
+      },
+      "actions": {
+        "Update_a_row_Email_Generation_Process_\"Completed\"": {
+          "runAfter": {
+            "Condition_check_for_GP_SendAction": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "9239d6bf-19b7-44c4-bdf3-4244e9083cdc"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "bs_emailgenerationprocesses",
+              "recordId": "@triggerOutputs()?['body/bs_emailgenerationprocessid']",
+              "item/bs_status": 126840001
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "UpdateOnlyRecord",
+              "connectionName": "shared_commondataserviceforapps-2"
+            }
+          }
+        },
+        "Update_a_row_Statement_\"Sent\"": {
+          "runAfter": {
+            "Update_a_row_Email_Generation_Process_\"Completed\"": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "0f0d65a2-633a-4393-8533-70235e1ce357"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "bs_billingstatements",
+              "recordId": "@triggerOutputs()?['body/_bs_billingstatementfk_value']",
+              "item/bs_statementstatus": 126840003
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "UpdateOnlyRecord",
+              "connectionName": "shared_commondataserviceforapps-2"
+            }
+          }
+        },
+        "Update_a_row_Email_Generation_Process_\"Failed\"": {
+          "runAfter": {
+            "Condition_check_for_GP_SendAction": [
+              "Failed",
+              "TimedOut",
+              "Skipped"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "9b99d2bf-8e4d-42f8-b939-e5cec68cab01"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "bs_emailgenerationprocesses",
+              "recordId": "@triggerOutputs()?['body/bs_emailgenerationprocessid']",
+              "item/bs_status": 126840002
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "UpdateOnlyRecord",
+              "connectionName": "shared_commondataserviceforapps-2"
+            }
+          }
+        },
+        "Initialize_variable_Attachments_Files": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "732c4793-5ded-443e-a465-e2ce22c21c37"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Attachments array",
+                "type": "array",
+                "value": []
+              }
+            ]
+          }
+        },
+        "Scope_Construct_Email_Variables": {
+          "actions": {
+            "Compose_Statement_Version_Number": {
+              "runAfter": {
+                "Scope_get_statement_data": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "b4d405e8-c8f4-4e1e-b4bf-34a1a4b3b6ed"
+              },
+              "type": "Compose",
+              "inputs": "@coalesce(outputs('Get_a_row_by_ID_Statement')?['body/bs_statementversionnumber'],1) "
+            },
+            "Scope_compose_thumbnails_for_Email_Signature": {
+              "actions": {
+                "Get_blob_content_using_path_(V2)_thumbnail_TP_Logo": {
+                  "metadata": {
+                    "operationMetadataId": "4835ffe6-0101-42bd-a836-e209db6eb767"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "dataset": "AccountNameFromSettings",
+                      "path": "/assets/thumbnail_tplogo.jpg",
+                      "inferContentType": true
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                      "operationId": "GetFileContentByPath_V2",
+                      "connectionName": "shared_azureblob"
+                    }
+                  }
+                },
+                "Compose_thumbnail_TP_Logo": {
+                  "runAfter": {
+                    "Get_blob_content_using_path_(V2)_thumbnail_TP_Logo": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "ff5a7806-4126-4cae-8d4f-f94b8925cd28"
+                  },
+                  "type": "Compose",
+                  "inputs": "@dataUri(body('Get_blob_content_using_path_(V2)_thumbnail_TP_Logo'))"
+                },
+                "Compose_Thumbnail_TP_Logo_HTML": {
+                  "runAfter": {
+                    "Compose_thumbnail_TP_Logo": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "085a76ce-4230-494b-877b-b20e1fcec395"
+                  },
+                  "type": "Compose",
+                  "inputs": "@concat(\r\n    '<table><tr><td>',\r\n    '<img src=\"', outputs('Compose_thumbnail_TP_Logo'), '\" alt=\"Towne Park Logo\" width=\"157\" height=\"32\"/>',\r\n    '</td></tr></table>'\r\n)\r\n\r\n"
+                },
+                "Get_blob_content_using_path_(V2)_thumbnail_Linkedin_Logo": {
+                  "metadata": {
+                    "operationMetadataId": "4835ffe6-0101-42bd-a836-e209db6eb767"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "dataset": "AccountNameFromSettings",
+                      "path": "/assets/thumbnail_linkedin.png",
+                      "inferContentType": true
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                      "operationId": "GetFileContentByPath_V2",
+                      "connectionName": "shared_azureblob"
+                    }
+                  }
+                },
+                "Get_blob_content_using_path_(V2)_thumbnail_Facebook_Logo": {
+                  "metadata": {
+                    "operationMetadataId": "4835ffe6-0101-42bd-a836-e209db6eb767"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "dataset": "AccountNameFromSettings",
+                      "path": "/assets/thumbnail_facebook.png",
+                      "inferContentType": true
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                      "operationId": "GetFileContentByPath_V2",
+                      "connectionName": "shared_azureblob"
+                    }
+                  }
+                },
+                "Compose_thumbnail_LinkedIn_Logo": {
+                  "runAfter": {
+                    "Get_blob_content_using_path_(V2)_thumbnail_Linkedin_Logo": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "ff5a7806-4126-4cae-8d4f-f94b8925cd28"
+                  },
+                  "type": "Compose",
+                  "inputs": "@dataUri(body('Get_blob_content_using_path_(V2)_thumbnail_Linkedin_Logo'))"
+                },
+                "Compose_Thumbnail_LinkedIn_Logo_HTML": {
+                  "runAfter": {
+                    "Compose_thumbnail_LinkedIn_Logo": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "c4bf838a-e294-4fa2-9a96-0799af47d047"
+                  },
+                  "type": "Compose",
+                  "inputs": "@concat(\r\n    '<table><tr><td>',\r\n    '<img src=\"', outputs('Compose_thumbnail_LinkedIn_Logo'), '\" alt=\"Towne Park Logo\" width:\"29\" height=\"29\"/>',\r\n    '</td></tr></table>'\r\n)\r\n\r\n"
+                },
+                "Compose_thumbnail_Facebook_Logo": {
+                  "runAfter": {
+                    "Get_blob_content_using_path_(V2)_thumbnail_Facebook_Logo": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "ff5a7806-4126-4cae-8d4f-f94b8925cd28"
+                  },
+                  "type": "Compose",
+                  "inputs": "@dataUri(body('Get_blob_content_using_path_(V2)_thumbnail_Facebook_Logo'))"
+                },
+                "Compose_Thumbnail_Facebook_Logo_HTML": {
+                  "runAfter": {
+                    "Compose_thumbnail_Facebook_Logo": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "af285ba7-9d15-442f-8079-d2536534274e"
+                  },
+                  "type": "Compose",
+                  "inputs": "@concat(\r\n    '<table><tr><td>',\r\n    '<img src=\"', outputs('Compose_thumbnail_Facebook_Logo'), '\" alt=\"Towne Park Logo\" width:\"29\" height=\"29\"/>',\r\n    '</td></tr></table>'\r\n)\r\n\r\n"
+                },
+                "Get_blob_content_using_path_(V2)_TP_Logo": {
+                  "metadata": {
+                    "operationMetadataId": "4835ffe6-0101-42bd-a836-e209db6eb767"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "dataset": "AccountNameFromSettings",
+                      "path": "/assets/tp-logo.png",
+                      "inferContentType": true
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                      "operationId": "GetFileContentByPath_V2",
+                      "connectionName": "shared_azureblob"
+                    }
+                  }
+                },
+                "Compose_TP_Logo": {
+                  "runAfter": {
+                    "Get_blob_content_using_path_(V2)_TP_Logo": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "ff5a7806-4126-4cae-8d4f-f94b8925cd28"
+                  },
+                  "type": "Compose",
+                  "inputs": "@dataUri(body('Get_blob_content_using_path_(V2)_TP_Logo'))"
+                },
+                "Compose_TP_Logo_HTML": {
+                  "runAfter": {
+                    "Compose_TP_Logo": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "e5a5fe03-25ee-4f4e-9856-5e60bb8e9f4f"
+                  },
+                  "type": "Compose",
+                  "inputs": "@concat(\r\n    '<table><tr><td>',\r\n    '<img src=\"', outputs('Compose_TP_Logo'), '\" alt=\"Towne Park Logo\" width=\"250\" height=\"auto\" />',\r\n    '</td></tr></table>'\r\n)\r\n\r\n"
+                }
+              },
+              "runAfter": {
+                "Compose_Statement_Version_Number": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "98ca2c96-b89b-4166-b5f9-1a8aecaa40e6"
+              },
+              "type": "Scope"
+            },
+            "Scope_get_supporting_documents": {
+              "actions": {
+                "Lists_blobs_(V2)_supporting_documents": {
+                  "metadata": {
+                    "operationMetadataId": "fb8357a7-5504-4e13-b14c-2c5af9387f10"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "dataset": "AccountNameFromSettings",
+                      "id": "/reports/@{outputs('Compose_Period')}/@{variables('SiteID')}",
+                      "nextPageMarker": "",
+                      "useFlatListing": false
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                      "operationId": "ListFolder_V4",
+                      "connectionName": "shared_azureblob"
+                    }
+                  }
+                },
+                "For_each_supporting_document": {
+                  "foreach": "@outputs('Lists_blobs_(V2)_supporting_documents')?['body/value']",
+                  "actions": {
+                    "Get_blob_content_using_path_(V2)": {
+                      "metadata": {
+                        "operationMetadataId": "ce12b50f-2a57-4787-ac39-ff1714023738"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "parameters": {
+                          "dataset": "AccountNameFromSettings",
+                          "path": "@items('For_each_supporting_document')?['Path']",
+                          "inferContentType": true
+                        },
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureblob",
+                          "operationId": "GetFileContentByPath_V2",
+                          "connectionName": "shared_azureblob"
+                        }
+                      }
+                    },
+                    "Append_supporting_documents_to_SupportingDocuments_array_variable": {
+                      "runAfter": {
+                        "Get_blob_content_using_path_(V2)": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "d1bc2f57-041c-4aa3-9527-d5c2fd5fbec5"
+                      },
+                      "type": "AppendToArrayVariable",
+                      "inputs": {
+                        "name": "SupportingDocuments",
+                        "value": {
+                          "@@odata.type": "#microsoft.graph.fileAttachment",
+                          "name": "@{items('For_each_supporting_document')?['Name']}",
+                          "contentType": "application/pdf",
+                          "contentBytes": "@base64(body('Get_blob_content_using_path_(V2)'))"
+                        }
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Lists_blobs_(V2)_supporting_documents": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "84b67007-c8a7-4888-b1c6-346b528c9456"
+                  },
+                  "type": "Foreach"
+                },
+                "Compose": {
+                  "runAfter": {
+                    "For_each_supporting_document": [
+                      "Succeeded",
+                      "TimedOut",
+                      "Skipped",
+                      "Failed"
+                    ],
+                    "Lists_blobs_(V2)_supporting_documents": [
+                      "Succeeded",
+                      "TimedOut",
+                      "Skipped",
+                      "Failed"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "c3b895b5-c217-4bb7-9fcf-02d024f7a9a5"
+                  },
+                  "type": "Compose",
+                  "inputs": "Supporting Documents not found"
+                }
+              },
+              "runAfter": {
+                "Compose_Statement_Version_Number": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "690f2e03-bfcf-49a6-a813-c81b9880d2f7"
+              },
+              "type": "Scope"
+            },
+            "Run_a_Child_Flow_Get_EmailSaveToSentOverride": {
+              "runAfter": {
+                "Compose_Statement_Version_Number": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "936e19a3-69be-413e-b349-8443651efd3b"
+              },
+              "type": "Workflow",
+              "inputs": {
+                "host": {
+                  "workflowReferenceName": "70e1a7ea-0ddd-ef11-a730-6045bd096814"
+                },
+                "body": {
+                  "text": "EmailSaveToSentOverride"
+                }
+              }
+            },
+            "Scope_get_statement_data": {
+              "actions": {
+                "Compose_Statement_GUID": {
+                  "metadata": {
+                    "operationMetadataId": "8763d392-670a-4246-9977-22cafdba9672"
+                  },
+                  "type": "Compose",
+                  "inputs": "@triggerOutputs()?['body/_bs_billingstatementfk_value']"
+                },
+                "Get_a_row_by_ID_Statement": {
+                  "runAfter": {
+                    "Compose_Statement_GUID": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "580da4a4-b1ce-4b1e-bd9c-127c9bf254d2"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "entityName": "bs_billingstatements",
+                      "recordId": "@outputs('Compose_Statement_GUID')",
+                      "$expand": "bs_CustomerSiteFK($select=bs_customersiteid,bs_sitenumber,bs_sitename,bs_accountmanager,bs_accountmanagerid,bs_address,bs_billingcontactemail,bs_closedate,bs_district,bs_glstring,bs_invoicerecipient,bs_startdate),bs_Invoice_BillingStatement"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "operationId": "GetItem",
+                      "connectionName": "shared_commondataserviceforapps-2"
+                    }
+                  }
+                },
+                "Compose_Site_GUID": {
+                  "runAfter": {
+                    "Parse_BillingStatement_JSON": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "173b9328-905d-4714-985d-30f78eb1700b"
+                  },
+                  "type": "Compose",
+                  "inputs": "@outputs('Get_a_row_by_ID_Statement')?['body/_bs_customersitefk_value']"
+                },
+                "Get_a_row_by_ID_Customer_Site": {
+                  "runAfter": {
+                    "Compose_Site_GUID": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "da66153a-ac1b-4a94-be18-63b15e2ee503"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "entityName": "bs_customersites",
+                      "recordId": "@outputs('Compose_Site_GUID')"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "operationId": "GetItem",
+                      "connectionName": "shared_commondataserviceforapps-2"
+                    }
+                  }
+                },
+                "Set_variable_SiteID": {
+                  "runAfter": {
+                    "Get_a_row_by_ID_Customer_Site": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "2e3184e2-7032-498b-bedc-2beb68c77e6a"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "SiteID",
+                    "value": "@outputs('Get_a_row_by_ID_Customer_Site')?['body/bs_sitenumber']"
+                  }
+                },
+                "Compose_Period": {
+                  "runAfter": {
+                    "Set_variable_SiteID": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "fd02789d-b267-4837-88f2-4d95da768fb2"
+                  },
+                  "type": "Compose",
+                  "inputs": "@formatDateTime(outputs('Get_a_row_by_ID_Statement')?['body/bs_serviceperiodstart'], 'yyyyMM')"
+                },
+                "Scope_compose_invoice_group_data_array": {
+                  "actions": {
+                    "Parse_Invoice_JSON": {
+                      "metadata": {
+                        "operationMetadataId": "c6b6474a-415c-41da-b169-7a2e178e3449"
+                      },
+                      "type": "ParseJson",
+                      "inputs": {
+                        "content": "@body('Get_a_row_by_ID_Statement')?['bs_invoice_billingstatement']",
+                        "schema": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "bs_invoiceid": {
+                                "type": "string"
+                              },
+                              "bs_invoicenumber": {
+                                "type": "string"
+                              },
+                              "_bs_invoicegroupfk_value": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "Apply_to_each": {
+                      "foreach": "@body('Parse_Invoice_JSON')",
+                      "actions": {
+                        "Condition_has_group_invoice_num": {
+                          "actions": {
+                            "Get_invoice_group_row_by_ID": {
+                              "metadata": {
+                                "operationMetadataId": "da66153a-ac1b-4a94-be18-63b15e2ee503"
+                              },
+                              "type": "OpenApiConnection",
+                              "inputs": {
+                                "parameters": {
+                                  "entityName": "bs_invoicegroups",
+                                  "recordId": "@item()?['_bs_invoicegroupfk_value']",
+                                  "$select": "bs_title,bs_description,bs_groupnumber,bs_vendorid,bs_sitenumber,bs_customername,bs_billingcontactemails"
+                                },
+                                "host": {
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                                  "operationId": "GetItem",
+                                  "connectionName": "shared_commondataserviceforapps-2"
+                                }
+                              }
+                            },
+                            "Condition_is_billing_contact_email_not_in_invoice_data_array": {
+                              "actions": {
+                                "Append_custom_invoice_to_invoice_group_data_array_": {
+                                  "type": "AppendToArrayVariable",
+                                  "inputs": {
+                                    "name": "invoice group data array",
+                                    "value": {
+                                      "siteNumber": "@{coalesce(outputs('Get_invoice_group_row_by_ID')?['body/bs_sitenumber'], body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_sitenumber'])}",
+                                      "siteName": "@{coalesce(outputs('Get_invoice_group_row_by_ID')?['body/bs_customername'], body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_sitename'])}",
+                                      "billingContactEmails": "@{coalesce(outputs('Get_invoice_group_row_by_ID')?['body/bs_billingcontactemails'], body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_billingcontactemail'])}",
+                                      "invoiceNumber": "@{item()?['bs_invoicenumber']}",
+                                      "isCustom": "@{true}"
+                                    }
+                                  }
+                                }
+                              },
+                              "runAfter": {
+                                "Filter_invoice_group_data_array_by_billing_contact_emails": [
+                                  "Succeeded"
+                                ]
+                              },
+                              "else": {
+                                "actions": {
+                                  "Filter_invoice_group_data_array_remove_item_with_same_contact_email": {
+                                    "type": "Query",
+                                    "inputs": {
+                                      "from": "@variables('invoice group data array')",
+                                      "where": "@not(equals(item()?['billingContactEmails'],coalesce(outputs('Get_invoice_group_row_by_ID')?['body/bs_billingcontactemails'], body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_billingcontactemail'])))"
+                                    }
+                                  },
+                                  "Set_invoice_group_data_variable": {
+                                    "runAfter": {
+                                      "Filter_invoice_group_data_array_remove_item_with_same_contact_email": [
+                                        "Succeeded"
+                                      ]
+                                    },
+                                    "type": "SetVariable",
+                                    "inputs": {
+                                      "name": "invoice group data array",
+                                      "value": "@body('Filter_invoice_group_data_array_remove_item_with_same_contact_email')"
+                                    }
+                                  },
+                                  "Append_duplicate_invoice_to_invoice_group_data_array_variable": {
+                                    "runAfter": {
+                                      "Set_invoice_group_data_variable": [
+                                        "Succeeded"
+                                      ]
+                                    },
+                                    "type": "AppendToArrayVariable",
+                                    "inputs": {
+                                      "name": "invoice group data array",
+                                      "value": {
+                                        "siteNumber": "@{coalesce(outputs('Get_invoice_group_row_by_ID')?['body/bs_sitenumber'], body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_sitenumber'])}",
+                                        "siteName": "@{coalesce(outputs('Get_invoice_group_row_by_ID')?['body/bs_customername'], body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_sitename'])}",
+                                        "billingContactEmails": "@{coalesce(outputs('Get_invoice_group_row_by_ID')?['body/bs_billingcontactemails'], body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_billingcontactemail'])}",
+                                        "invoiceNumber": "@{concat(body('Filter_invoice_group_data_array_by_billing_contact_emails')[0]?['invoiceNumber'],',',item()?['bs_invoicenumber'])}",
+                                        "isCustom": "@{true}"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              "expression": {
+                                "and": [
+                                  {
+                                    "equals": [
+                                      "@length(body('Filter_invoice_group_data_array_by_billing_contact_emails'))",
+                                      0
+                                    ]
+                                  }
+                                ]
+                              },
+                              "type": "If"
+                            },
+                            "Filter_invoice_group_data_array_by_billing_contact_emails": {
+                              "runAfter": {
+                                "Get_invoice_group_row_by_ID": [
+                                  "Succeeded"
+                                ]
+                              },
+                              "type": "Query",
+                              "inputs": {
+                                "from": "@variables('invoice group data array')",
+                                "where": "@equals(item()?['billingContactEmails'],coalesce(outputs('Get_invoice_group_row_by_ID')?['body/bs_billingcontactemails'], body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_billingcontactemail']))"
+                              }
+                            }
+                          },
+                          "else": {
+                            "actions": {
+                              "Append_standard_invoice_to_invoice_group_data_array": {
+                                "type": "AppendToArrayVariable",
+                                "inputs": {
+                                  "name": "invoice group data array",
+                                  "value": {
+                                    "siteNumber": "@{body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_sitenumber']}",
+                                    "siteName": "@{body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_sitename']}",
+                                    "billingContactEmails": "@{body('Parse_BillingStatement_JSON')?['bs_CustomerSiteFK']?['bs_billingcontactemail']}",
+                                    "invoiceNumber": "@{item()?['bs_invoicenumber']}",
+                                    "isCustom": "@{false}"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "expression": {
+                            "and": [
+                              {
+                                "not": {
+                                  "equals": [
+                                    "@item()?['_bs_invoicegroupfk_value']",
+                                    "@null"
+                                  ]
+                                }
+                              }
+                            ]
+                          },
+                          "type": "If"
+                        }
+                      },
+                      "runAfter": {
+                        "Parse_Invoice_JSON": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "4e2caaa4-bc69-45d7-98d6-34612dec2660"
+                      },
+                      "type": "Foreach"
+                    }
+                  },
+                  "runAfter": {
+                    "Parse_BillingStatement_JSON": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "33b825b2-aeab-45aa-bbfa-db3134a7d93a"
+                  },
+                  "type": "Scope"
+                },
+                "Parse_BillingStatement_JSON": {
+                  "runAfter": {
+                    "Get_a_row_by_ID_Statement": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "ParseJson",
+                  "inputs": {
+                    "content": "@body('Get_a_row_by_ID_Statement')",
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "createdon": {
+                          "type": "string"
+                        },
+                        "bs_serviceperiodstart@OData.Community.Display.V1.FormattedValue": {
+                          "type": "string"
+                        },
+                        "bs_serviceperiodstart": {
+                          "type": "string"
+                        },
+                        "bs_serviceperiodend@OData.Community.Display.V1.FormattedValue": {
+                          "type": "string"
+                        },
+                        "bs_serviceperiodend": {
+                          "type": "string"
+                        },
+                        "bs_statementstatus@OData.Community.Display.V1.FormattedValue": {
+                          "type": "string"
+                        },
+                        "bs_statementstatus": {
+                          "type": [
+                            "integer",
+                            "number"
+                          ]
+                        },
+                        "bs_forecastdata": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "bs_billingstatementid": {
+                          "type": "string"
+                        },
+                        "bs_purchaseorder": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "bs_CustomerSiteFK": {
+                          "type": "object",
+                          "properties": {
+                            "bs_customersiteid": {
+                              "type": "string"
+                            },
+                            "bs_sitenumber": {
+                              "type": "string"
+                            },
+                            "bs_sitename": {
+                              "type": "string"
+                            },
+                            "bs_accountmanager": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "bs_accountmanagerid": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "bs_address": {
+                              "type": "string"
+                            },
+                            "bs_billingcontactemail": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "bs_district": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "bs_glstring": {
+                              "type": "string"
+                            },
+                            "bs_invoicerecipient": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "bs_startdate": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          }
+                        },
+                        "bs_Invoice_BillingStatement": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "bs_invoiceid": {
+                                "type": "string"
+                              },
+                              "bs_invoicenumber": {
+                                "type": "string"
+                              },
+                              "bs_amount": {
+                                "type": [
+                                  "integer",
+                                  "number"
+                                ]
+                              },
+                              "bs_description": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_invoicedate": {
+                                "type": "string"
+                              },
+                              "bs_paymentterms": {
+                                "type": "string"
+                              },
+                              "bs_title": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "_bs_invoicegroupfk_value": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "bs_invoicedata": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "type": "Scope"
+            }
+          },
+          "runAfter": {
+            "Update_a_row_Email_Generation_Process_\"InProgress\"": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "02cb76ed-5365-4844-8ab5-5a52c4f7d4ed"
+          },
+          "type": "Scope"
+        },
+        "Initialize_variable_Site_ID": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "e6bba28c-7a80-4d11-bac4-ed583e6db1bc"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "SiteID",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_Email_Body": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "65bc7a1a-b727-484f-969c-795fc05b663a"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Email Body",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_InvoiceCount": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "24f84bab-dbfd-4532-8e3c-f19c80994caf"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "InvoiceCount",
+                "type": "integer",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "Initialize_HighestInvoiceNumber_variable": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "31b3c827-67de-40f0-9288-d27ec460b309"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "HighestInvoiceNumber",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Condition_check_for_Email_SendAction": {
+          "actions": {
+            "Parse_invoice_group_data_array_JSON": {
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@variables('invoice group data array')",
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "siteNumber": {
+                        "type": "string"
+                      },
+                      "siteName": {
+                        "type": "string"
+                      },
+                      "billingContactEmails": {
+                        "type": "string"
+                      },
+                      "invoiceNumber": {
+                        "type": "string"
+                      },
+                      "isCustom": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "For_each_Invoice_Group_Item": {
+              "foreach": "@outputs('Parse_invoice_group_data_array_JSON')['body']",
+              "actions": {
+                "Scope_Email_Title": {
+                  "actions": {
+                    "Compose_Site_number": {
+                      "metadata": {
+                        "operationMetadataId": "5eb703ff-2e40-4f14-857a-787d71e2da1c"
+                      },
+                      "type": "Compose",
+                      "inputs": "@item()?['siteNumber']"
+                    },
+                    "Compose_Email_Title": {
+                      "runAfter": {
+                        "Compose_Site_number": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "9c965843-c8e2-4015-8b0b-b8efea38ae31"
+                      },
+                      "type": "Compose",
+                      "inputs": "@if(\r\n   greater(outputs('Compose_Statement_Version_Number'), 1), \r\n   if(\r\n      equals(parameters('EnvironmentName (bs_environmentName)'), 'PROD'),\r\n      concat(item()?['siteNumber'], ' Towne Park Invoice (Revised)'),\r\n      concat('[', parameters('EnvironmentName (bs_environmentName)'), '] - ', item()?['siteNumber'], ' Towne Park Invoice (Revised)')\r\n   ),\r\n   if(\r\n      equals(parameters('EnvironmentName (bs_environmentName)'), 'PROD'),\r\n      concat(item()?['siteNumber'], ' Towne Park Invoice'),\r\n      concat('[', parameters('EnvironmentName (bs_environmentName)'), '] - ', item()?['siteNumber'], ' Towne Park Invoice')\r\n   )\r\n)"
+                    }
+                  },
+                  "runAfter": {
+                    "Run_a_Child_Flow_generate_billing_statement_pdf": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "e3c415ba-cb41-43f6-920c-90d472c53284"
+                  },
+                  "type": "Scope"
+                },
+                "Scope_Email_Body": {
+                  "actions": {
+                    "Compose_Email_Body": {
+                      "runAfter": {
+                        "Condition_SPECIAL_Period_is_Active": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "2fbc00f8-29ca-4dab-8ca5-53c274110153"
+                      },
+                      "type": "Compose",
+                      "inputs": "@variables('Email Body')"
+                    },
+                    "Condition_SPECIAL_Period_is_Active": {
+                      "actions": {
+                        "Compose_Special_Body": {
+                          "runAfter": {
+                            "Run_a_Child_Flow_Get_EmailSpecialTextOverride": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "b827b4bc-d8cb-4538-85c4-a0530385777a"
+                          },
+                          "type": "Compose",
+                          "inputs": "@concat('<p>Dear Valued Customer,</p>\r\n\r\n<p>I hope this message finds you well. Beginning this month, Towne Park has migrated to a new billing system. You may notice some formatting and layout differences, but the billing terms remain the same. If you previously requested customizations to your monthly invoice packet, it’s possible we may no longer be able to accommodate those requests. This is a more streamlined system and less customizable. However, it should also allow for a more expedited delivery of your monthly invoice/statement.</p>\r\n\r\n<p>Should you have any questions regarding these modifications upon review of your January statement, please do not hesitate to contact us.</p>\r\n\r\n<p>Thank you,</p>')"
+                        },
+                        "Set_variable_Special_Email_Body": {
+                          "runAfter": {
+                            "Compose_Special_Body": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "c5833b30-663c-4037-9f22-65caeab4b14b"
+                          },
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "Email Body",
+                            "value": "@if(\r\n    equals(\r\n        body('Run_a_Child_Flow_Get_EmailSpecialTextOverride')?['value'],\r\n        ''\r\n    ),\r\n    outputs('Compose_Special_Body'),\r\n    body('Run_a_Child_Flow_Get_EmailSpecialTextOverride')?['value']\r\n)"
+                          }
+                        },
+                        "Run_a_Child_Flow_Get_EmailSpecialTextOverride": {
+                          "metadata": {
+                            "operationMetadataId": "161e961f-4929-4d79-b174-9623149dd9b3"
+                          },
+                          "type": "Workflow",
+                          "inputs": {
+                            "host": {
+                              "workflowReferenceName": "70e1a7ea-0ddd-ef11-a730-6045bd096814"
+                            },
+                            "body": {
+                              "text": "EmailSpecialTextOverride"
+                            }
+                          }
+                        }
+                      },
+                      "runAfter": {
+                        "Run_a_Child_Flow_Get_EmailSpecialPeriodOverride": [
+                          "Succeeded"
+                        ]
+                      },
+                      "else": {
+                        "actions": {
+                          "Compose_String_Current_Period": {
+                            "metadata": {
+                              "operationMetadataId": "8a4433a6-3173-4859-8d8b-2cb1a1aa9d30"
+                            },
+                            "type": "Compose",
+                            "inputs": "@formatDateTime(outputs('Get_a_row_by_ID_Statement')?['body/bs_serviceperiodstart'], 'yyyy-MM')"
+                          },
+                          "Condition_Statement_Version_Number_greater_than_1": {
+                            "actions": {
+                              "Compose_Revised_Statement_Body": {
+                                "metadata": {
+                                  "operationMetadataId": "5f8f9b4a-41b4-46db-89e4-dc7d4e8648c9"
+                                },
+                                "type": "Compose",
+                                "inputs": "@concat('<p>Attached, please find your ', outputs('Compose_String_Current_Period'), ' invoice, revised. Please disregard the original invoice received. If you have any questions or concerns, please reply back to this email and we will be in touch as soon as possible.</p>\r\n\r\n<p>Thank you,</p>')"
+                              },
+                              "Set_variable_Revised_Statement_Email_Body": {
+                                "runAfter": {
+                                  "Compose_Revised_Statement_Body": [
+                                    "Succeeded"
+                                  ]
+                                },
+                                "metadata": {
+                                  "operationMetadataId": "e750d7b9-6eab-4559-8989-73ede3da6232"
+                                },
+                                "type": "SetVariable",
+                                "inputs": {
+                                  "name": "Email Body",
+                                  "value": "@outputs('Compose_Revised_Statement_Body')"
+                                }
+                              }
+                            },
+                            "runAfter": {
+                              "Compose_String_Current_Period": [
+                                "Succeeded"
+                              ]
+                            },
+                            "else": {
+                              "actions": {
+                                "Compose_New_Statement_Body": {
+                                  "metadata": {
+                                    "operationMetadataId": "05871657-bb11-487f-9455-596f5e9d4805"
+                                  },
+                                  "type": "Compose",
+                                  "inputs": "@concat('<p>Attached, please find your ', outputs('Compose_String_Current_Period'), ' invoice. If you have any questions or concerns, please reply back to this email and we will be in touch as soon as possible.</p>\r\n\r\n<p>Thank you,</p>')"
+                                },
+                                "Set_variable_New_Statement_Email_Body": {
+                                  "runAfter": {
+                                    "Compose_New_Statement_Body": [
+                                      "Succeeded"
+                                    ]
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "93c7cbe0-f513-4d70-b6ba-4699824c6ebf"
+                                  },
+                                  "type": "SetVariable",
+                                  "inputs": {
+                                    "name": "Email Body",
+                                    "value": "@outputs('Compose_New_Statement_Body')"
+                                  }
+                                }
+                              }
+                            },
+                            "expression": {
+                              "and": [
+                                {
+                                  "greater": [
+                                    "@coalesce(outputs('Compose_Statement_Version_Number'),1)",
+                                    1
+                                  ]
+                                }
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "9dd0c3d0-193e-4699-a9ab-df01c6ba1a2d"
+                            },
+                            "type": "If"
+                          }
+                        }
+                      },
+                      "expression": {
+                        "and": [
+                          {
+                            "equals": [
+                              "@formatDateTime(utcNow(), 'yyyy-MM')",
+                              "@if(\r\n    equals(\r\n        body('Run_a_Child_Flow_Get_EmailSpecialPeriodOverride')?['value'],\r\n        ''\r\n    ),\r\n    '2024-02',\r\n    body('Run_a_Child_Flow_Get_EmailSpecialPeriodOverride')?['value']\r\n)"
+                            ]
+                          },
+                          {
+                            "lessOrEquals": [
+                              "@coalesce(outputs('Compose_Statement_Version_Number'),1)",
+                              1
+                            ]
+                          }
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "8a6df756-9373-4d72-8ae7-f6468ed71bb5"
+                      },
+                      "type": "If"
+                    },
+                    "Run_a_Child_Flow_Get_EmailSpecialPeriodOverride": {
+                      "metadata": {
+                        "operationMetadataId": "cc9d7504-53e4-48f9-a76e-204d890e64b5"
+                      },
+                      "type": "Workflow",
+                      "inputs": {
+                        "host": {
+                          "workflowReferenceName": "70e1a7ea-0ddd-ef11-a730-6045bd096814"
+                        },
+                        "body": {
+                          "text": "EmailSpecialPeriodOverride"
+                        }
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Run_a_Child_Flow_generate_billing_statement_pdf": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "b1b04e04-0158-4096-90a7-631a5871e4cb"
+                  },
+                  "type": "Scope"
+                },
+                "Scope_compose_recipients": {
+                  "actions": {
+                    "Compose_recipients_-_test": {
+                      "runAfter": {
+                        "Select_emails_into_json_array": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "efa9b7a0-9609-40d8-b409-131461d9ef3a"
+                      },
+                      "type": "Compose",
+                      "inputs": "@split(\r\n        item()?['billingContactEmails'],\r\n        ';'\r\n    )"
+                    },
+                    "Compose_list_emails": {
+                      "runAfter": {
+                        "Run_a_Child_Flow_Get_EmailRecipientsOverride_value": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "a6a827b3-a58c-430e-b8d7-44d8dc303d77"
+                      },
+                      "type": "Compose",
+                      "inputs": "@if(\r\n    equals(\r\n        outputs('Run_a_Child_Flow_Get_EmailRecipientsOverride_value')?['body/value'],\r\n        ''\r\n    ),\r\n    split(\r\n        item()?['billingContactEmails'],\r\n        ';'\r\n    ),\r\n    split(\r\n        outputs('Run_a_Child_Flow_Get_EmailRecipientsOverride_value')?['body/value'],\r\n        ';'\r\n    )\r\n)"
+                    },
+                    "Select_emails_into_json_array": {
+                      "runAfter": {
+                        "Filter_array_Remove_invalid_emails": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "37a70de2-95f3-4ff8-ad3d-9e33c7be72a8"
+                      },
+                      "type": "Select",
+                      "inputs": {
+                        "from": "@body('Filter_array_Remove_invalid_emails')",
+                        "select": {
+                          "emailAddress": {
+                            "address": "@{trim(item())}"
+                          }
+                        }
+                      }
+                    },
+                    "Run_a_Child_Flow_Get_EmailRecipientsOverride_value": {
+                      "metadata": {
+                        "operationMetadataId": "79d896d0-082d-4647-8616-b54a5e579b91"
+                      },
+                      "type": "Workflow",
+                      "inputs": {
+                        "host": {
+                          "workflowReferenceName": "70e1a7ea-0ddd-ef11-a730-6045bd096814"
+                        },
+                        "body": {
+                          "text": "EmailRecipientsOverride"
+                        }
+                      }
+                    },
+                    "Filter_array_Remove_invalid_emails": {
+                      "runAfter": {
+                        "Compose_list_emails": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "24d04c62-6b9c-4ac9-a312-51a7c8373615"
+                      },
+                      "type": "Query",
+                      "inputs": {
+                        "from": "@outputs('Compose_list_emails')",
+                        "where": "@and(\r\n    contains(item(), '@'),\r\n    contains(item(), '.'),\r\n    not(equals(item(), ''))\r\n)"
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Run_a_Child_Flow_generate_billing_statement_pdf": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "5a8c19fb-0615-4acf-92c7-541f20d7ff05"
+                  },
+                  "type": "Scope"
+                },
+                "SendMail": {
+                  "runAfter": {
+                    "Set_Attachments_array_variable": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "3fa2cf17-f9da-4b63-a13a-0a675a929fe3"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "Content-Type": "application/json",
+                      "body/message/subject": "@outputs('Compose_Email_Title')",
+                      "body/message/body/contentType": "html",
+                      "body/message/body/content": "<!-- Wrapper -->\n<table width=\"900\" align=\"center\" bgcolor=\"#FFFFFF\" style=\"border-radius: 8px; border-collapse: collapse; margin: 0 auto;\">\n  <tr>\n    <td>\n\n      <!-- Header Section -->\n      <table width=\"100%\" bgcolor=\"#F9F9F9\" style=\"padding: 20px;\">\n        <tr>\n          <td align=\"left\">\n            @{outputs('Compose_TP_Logo_HTML')} <!-- Blob storage Logo Here -->\n          </td>\n        </tr>\n      </table>\n\n      <!-- Body Section -->\n      <table width=\"100%\" style=\"font-size: 18px; padding: 40px; font-family: Arial, sans-serif; color: #333;\">\n        <tr>\n          <td>\n            @{outputs('Compose_Email_Body')} <!-- Email Body Here -->\n          </td>\n        </tr>\n      </table>\n\n      <!-- Signature Section -->\n      <table width=\"100%\" style=\"border-top: 1px solid #DDD; font-family: Arial, sans-serif; font-size: 14px; color: #002060;\">\n        <tr>\n          <td width=\"30%\" align=\"center\" style=\"padding: 10px;\">\n            <p style=\"font-size: 16px; margin: 0;\">Accounts Receivable</p>\n            <img src=\"@{outputs('Compose_thumbnail_TP_Logo')}\" alt=\"Towne Park Logo\" width=\"157\" height=\"32\" style=\"display: block; border: none;\">\n          </td>\n          <td width=\"70%\" style=\"padding: 10px;\">\n            <table width=\"100%\">\n              <tr>\n                <td width=\"5%\" style=\"color: #00b0f0; font-size: 12px;\">e</td>\n                <td width=\"95%\">\n                  <a href=\"mailto:accountsreceivable@townepark.com\" style=\"color: #002060; text-decoration: none;\">accountsreceivable@townepark.com</a>\n                </td>\n              </tr>\n              <tr>\n                <td style=\"color: #00b0f0; font-size: 12px;\">w</td>\n                <td>\n                  <a href=\"http://www.townepark.com/\" style=\"color: #002060; text-decoration: none;\">www.townepark.com</a>\n                </td>\n              </tr>\n              <tr>\n                <td colspan=\"2\" style=\"padding-top: 10px;\">\n                  <a href=\"https://www.linkedin.com/company/towne-park?trk=biz-companies-cym\">\n                    <img src=\"@{outputs('Compose_thumbnail_LinkedIn_Logo')}\" alt=\"LinkedIn Logo\" width=\"29\" height=\"29\" style=\"border: none;\">\n                  </a>\n                  <a href=\"https://www.facebook.com/townepark/\">\n                    <img src=\"@{outputs('Compose_thumbnail_Facebook_Logo')}\" alt=\"Facebook Logo\" width=\"29\" height=\"29\" style=\"border: none;\">\n                  </a>\n                </td>\n              </tr>\n              <tr>\n                <td colspan=\"2\" style=\"font-size: 10px; color: #aeaaaa; padding-top: 10px;\">\n                  Notice of Confidentiality: This message and any attachments may contain confidential and privileged information. If sent to you in error, please reply to advise the sender of the error and then immediately delete this message.\n                </td>\n              </tr>\n            </table>\n          </td>\n        </tr>\n      </table>\n\n      <!-- Mega Menu Section -->\n      <table width=\"100%\" bgcolor=\"#F9F9F9\" style=\"border-top: 1px solid #DDD; padding: 30px;\">\n        <tr>\n          <td>\n            <table width=\"100%\">\n              <tr>\n                <td width=\"33%\" valign=\"top\">\n                  <h3 style=\"color: #333;\">About Us</h3>\n                  <ul style=\"list-style: none; padding: 0;\">\n                    <li><a href=\"https://www.townepark.com/about/\" style=\"color: #4682B4; text-decoration: none;\">About</a></li>\n                    <li><a href=\"https://www.townepark.com/about/history/\" style=\"color: #4682B4; text-decoration: none;\">History</a></li>\n                    <li><a href=\"https://www.townepark.com/about/culture/\" style=\"color: #4682B4; text-decoration: none;\">Culture</a></li>\n                    <li><a href=\"https://www.townepark.com/about/industry-partnership/\" style=\"color: #4682B4; text-decoration: none;\">Partners &amp; Recognition</a></li>\n                    <li><a href=\"https://www.townepark.com/community-impact/\" style=\"color: #4682B4; text-decoration: none;\">Community Impact</a></li>\n                    <li><a href=\"https://www.townepark.com/about/leadership/\" style=\"color: #4682B4; text-decoration: none;\">Leadership</a></li>\n                  </ul>\n                </td>\n                <td width=\"33%\" valign=\"top\">\n                  <h3 style=\"color: #333;\">Our Solutions</h3>\n                  <ul style=\"list-style: none; padding: 0;\">\n                    <li><a href=\"https://www.townepark.com/parking-solutions/\" style=\"color: #4682B4; text-decoration: none;\">Solutions</a></li>\n                    <li><a href=\"https://www.townepark.com/parking-solutions/healthcare/\" style=\"color: #4682B4; text-decoration: none;\">Healthcare</a></li>\n                    <li><a href=\"https://www.townepark.com/parking-solutions/hospitality/\" style=\"color: #4682B4; text-decoration: none;\">Hospitality</a></li>\n                    <li><a href=\"https://townepark.com/t-park/\" style=\"color: #4682B4; text-decoration: none;\">T-Park®</a></li>\n                    <li><a href=\"https://www.townepark.com/parking-solutions/commercial/\" style=\"color: #4682B4; text-decoration: none;\">Commercial</a></li>\n                    <li><a href=\"https://www.townepark.com/parking-solutions/residential/\" style=\"color: #4682B4; text-decoration: none;\">Residential</a></li>\n                    <li><a href=\"https://www.townepark.com/parking-solutions/special-events/\" style=\"color: #4682B4; text-decoration: none;\">Special Events</a></li>\n                    <li><a href=\"https://www.townepark.com/parking-solutions/monthly-parking/\" style=\"color: #4682B4; text-decoration: none;\">Monthly Parking</a></li>\n                  </ul>\n                </td>\n                <td width=\"33%\" valign=\"top\">\n                  <h3 style=\"color: #333;\">Careers</h3>\n                  <ul style=\"list-style: none; padding: 0;\">\n                    <li><a href=\"https://www.townepark.com/careers/\" style=\"color: #4682B4; text-decoration: none;\">Careers</a></li>\n                    <li><a href=\"https://www.townepark.com/careers/notices-employment/\" style=\"color: #4682B4; text-decoration: none;\">Notices</a></li>\n                    <li><a href=\"https://www.linkedin.com/company/towne-park/\" style=\"color: #4682B4; text-decoration: none;\">LinkedIn</a></li>\n                  </ul>\n                </td>\n              </tr>\n            </table>\n          </td>\n        </tr>\n      </table>\n\n      <!-- Footer Section -->\n      <table width=\"100%\" bgcolor=\"#F9F9F9\" style=\"border-top: 1px solid #DDD; padding: 20px; text-align: center;\">\n        <tr>\n          <td>\n            <img src=\"https://www.townepark.com/wp-content/uploads/2020/05/tp-logo.png\" alt=\"Towne Park Logo\" style=\"display: block; margin: 0 auto;\">\n            <p style=\"font-size: 16px; color: #555; margin: 10px 0 0 0;\">\n              © Copyright 2025 Towne Park, LLC. |\n              <a href=\"https://www.townepark.com/careers/online-privacy-policy/\" style=\"color: #4682B4; text-decoration: none;\">Privacy Policy</a> |\n              <a href=\"https://www.townepark.com/terms-of-use/\" style=\"color: #4682B4; text-decoration: none;\">Terms of Use</a>\n            </p>\n          </td>\n        </tr>\n      </table>\n\n    </td>\n  </tr>\n</table>\n",
+                      "body/message/toRecipients": "@body('Select_emails_into_json_array')",
+                      "body/message/attachments": "@variables('Attachments array')",
+                      "body/saveToSentItems": "@if(\r\n    equals(\r\n        body('Run_a_Child_Flow_Get_EmailSaveToSentOverride')?['value'],\r\n        ''\r\n    ),\r\n    'true',\r\n    body('Run_a_Child_Flow_Get_EmailSaveToSentOverride')?['value']\r\n)"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_bs-5fsendmailbyserviceprincipal-5f4f4d8f3ae476f46d",
+                      "operationId": "SendMail",
+                      "connectionName": "shared_bs-5fsendmailbyserviceprincipal-5f4c81ae98d9d3b3ec"
+                    }
+                  }
+                },
+                "Run_a_Child_Flow_generate_billing_statement_pdf": {
+                  "type": "Workflow",
+                  "inputs": {
+                    "host": {
+                      "workflowReferenceName": "be2cb400-7a03-f011-bae3-000d3a5ac294"
+                    },
+                    "body": {
+                      "text": "@triggerOutputs()?['body/_bs_billingstatementfk_value']",
+                      "text_1": "@item()?['invoiceNumber']"
+                    }
+                  }
+                },
+                "Set_Attachments_array_variable": {
+                  "runAfter": {
+                    "Scope_compose_recipients": [
+                      "Succeeded"
+                    ],
+                    "Scope_Email_Body": [
+                      "Succeeded"
+                    ],
+                    "Scope_Email_Title": [
+                      "Succeeded"
+                    ],
+                    "Compose_invoice_statement_pdf_as_attachment": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "Attachments array",
+                    "value": "@if(\r\n    equals(\r\n        item()?['billingContactEmails'], \r\n        outputs('Get_a_row_by_ID_Statement')?['body/bs_customersitefk/bs_billingcontactemail']\r\n    ), \r\n    union(\r\n        variables('SupportingDocuments'),\r\n        outputs('Compose_invoice_statement_pdf_as_attachment')\r\n    ), \r\n    outputs('Compose_invoice_statement_pdf_as_attachment')\r\n)"
+                  }
+                },
+                "Scope_get_highest_Invoice_Number": {
+                  "actions": {
+                    "Compose_split_invoice_numbers": {
+                      "type": "Compose",
+                      "inputs": "@split(item()?['invoiceNumber'],',')"
+                    },
+                    "Apply_to_each_invoice_number": {
+                      "foreach": "@outputs('Compose_split_invoice_numbers')",
+                      "actions": {
+                        "Compose_Invoice_Group_Number": {
+                          "type": "Compose",
+                          "inputs": "@int(split(item(),'-')[2])"
+                        },
+                        "Condition_Is_current_invoice_group_greater": {
+                          "actions": {
+                            "Set_Invoice_Count_variable": {
+                              "type": "SetVariable",
+                              "inputs": {
+                                "name": "InvoiceCount",
+                                "value": "@outputs('Compose_Invoice_Group_Number')"
+                              }
+                            },
+                            "Set_HighestInvoiceNumber_variable": {
+                              "runAfter": {
+                                "Set_Invoice_Count_variable": [
+                                  "Succeeded"
+                                ]
+                              },
+                              "type": "SetVariable",
+                              "inputs": {
+                                "name": "HighestInvoiceNumber",
+                                "value": "@item()"
+                              }
+                            }
+                          },
+                          "runAfter": {
+                            "Compose_Invoice_Group_Number": [
+                              "Succeeded"
+                            ]
+                          },
+                          "else": {
+                            "actions": {}
+                          },
+                          "expression": {
+                            "and": [
+                              {
+                                "greater": [
+                                  "@outputs('Compose_Invoice_Group_Number')",
+                                  "@variables('InvoiceCount')"
+                                ]
+                              }
+                            ]
+                          },
+                          "type": "If"
+                        }
+                      },
+                      "runAfter": {
+                        "ReSet_Invoice_Count_variable": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "Foreach"
+                    },
+                    "ReSet_Invoice_Count_variable": {
+                      "runAfter": {
+                        "Compose_split_invoice_numbers": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "InvoiceCount",
+                        "value": 0
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Run_a_Child_Flow_generate_billing_statement_pdf": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Scope"
+                },
+                "Compose_invoice_statement_pdf_as_attachment": {
+                  "runAfter": {
+                    "Scope_get_highest_Invoice_Number": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Compose",
+                  "inputs": [
+                    {
+                      "@@odata.type": "#microsoft.graph.fileAttachment",
+                      "name": "@{variables('HighestInvoiceNumber')}_Invoice.pdf",
+                      "contentType": "application/pdf",
+                      "contentBytes": "@body('Run_a_Child_Flow_generate_billing_statement_pdf')?['$content']"
+                    }
+                  ]
+                }
+              },
+              "runAfter": {
+                "Parse_invoice_group_data_array_JSON": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Foreach"
+            }
+          },
+          "runAfter": {
+            "Scope_Construct_Email_Variables": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {}
+          },
+          "expression": {
+            "or": [
+              {
+                "equals": [
+                  "@variables('SendAction')",
+                  126840001
+                ]
+              },
+              {
+                "equals": [
+                  "@variables('SendAction')",
+                  126840002
+                ]
+              }
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "d7d3d49c-5f32-4031-acc9-6f2b93a5b9c9"
+          },
+          "type": "If"
+        },
+        "Initialize_variable_SendAction": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "6e619806-43da-48dd-a3b1-bc5c2649320b"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "SendAction",
+                "type": "integer",
+                "value": "@triggerOutputs()?['body/bs_sendaction']"
+              }
+            ]
+          }
+        },
+        "Condition_check_for_GP_SendAction": {
+          "actions": {
+            "Run_a_Child_Flow_Great_Plains_Data_Transfer": {
+              "metadata": {
+                "operationMetadataId": "81405ab0-58be-432d-91f3-a0bc779337ea"
+              },
+              "type": "Workflow",
+              "inputs": {
+                "host": {
+                  "workflowReferenceName": "76512a1a-6906-f011-bae2-000d3a5ac294"
+                },
+                "body": {
+                  "text": "@outputs('Compose_Statement_GUID')"
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Condition_check_for_Email_SendAction": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {}
+          },
+          "expression": {
+            "or": [
+              {
+                "equals": [
+                  "@variables('SendAction')",
+                  126840000
+                ]
+              },
+              {
+                "equals": [
+                  "@variables('SendAction')",
+                  126840002
+                ]
+              }
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "56424f57-bbc6-48ea-ba77-3f1cb0a99cae"
+          },
+          "type": "If"
+        },
+        "Initialize_invoice_group_data_array_": {
+          "runAfter": {},
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "invoice group data array",
+                "type": "array",
+                "value": []
+              }
+            ]
+          }
+        },
+        "Update_a_row_Email_Generation_Process_\"InProgress\"": {
+          "runAfter": {
+            "Initialize_variable_Attachments_Files": [
+              "Succeeded"
+            ],
+            "Initialize_variable_Site_ID": [
+              "Succeeded"
+            ],
+            "Initialize_variable_Email_Body": [
+              "Succeeded"
+            ],
+            "Initialize_HighestInvoiceNumber_variable": [
+              "Succeeded"
+            ],
+            "Initialize_InvoiceCount": [
+              "Succeeded"
+            ],
+            "Initialize_variable_SendAction": [
+              "Succeeded"
+            ],
+            "Initialize_invoice_group_data_array_": [
+              "Succeeded"
+            ],
+            "Initialize_SupportingDocuments_array_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "9239d6bf-19b7-44c4-bdf3-4244e9083cdc"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "bs_emailgenerationprocesses",
+              "recordId": "@triggerOutputs()?['body/bs_emailgenerationprocessid']",
+              "item/bs_status": 126840000
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "UpdateOnlyRecord",
+              "connectionName": "shared_commondataserviceforapps-2"
+            }
+          }
+        },
+        "Initialize_SupportingDocuments_array_variable": {
+          "runAfter": {},
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "SupportingDocuments",
+                "type": "array",
+                "value": []
+              }
+            ]
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

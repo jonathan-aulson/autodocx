@@ -1,0 +1,105 @@
+trigger: none # Only run manually
+pr: none
+
+parameters:
+  - name: BASE_URL
+    displayName: Base URL
+    type: string
+    default: "https://ambitious-grass-00554670f-develop.eastus2.5.azurestaticapps.net"
+  - name: SCENARIO
+    displayName: Scenario
+    type: string
+    default: "stress"
+  - name: TEST_TYPE
+    displayName: Test Type
+    type: string
+    default: "stress"
+  - name: LOAD_LEVEL
+    displayName: Load Level
+    type: string
+    default: "very-low"
+  - name: MAX_USERS
+    displayName: Max Users
+    type: string
+    default: "10"
+  - name: DURATION
+    displayName: Duration
+    type: string
+    default: "5m"
+  - name: RAMP_UP_TIME
+    displayName: Ramp Up Time
+    type: string
+    default: "1m"
+  - name: DETAILED_LOGS
+    displayName: Detailed Logs
+    type: string
+    default: "true"
+  - name: K6_WEB_DASHBOARD_EXPORT
+    displayName: K6 Web Dashboard Export Path
+    type: string
+    default: "reports/test-report.html"
+
+pool:
+  vmImage: "ubuntu-latest"
+
+steps:
+  - checkout: self
+
+  - task: NodeTool@0
+    inputs:
+      versionSpec: "18.x"
+    displayName: "Install Node.js"
+
+  - task: Cache@2
+    inputs:
+      key: 'npm | "$(Agent.OS)" | package-lock.json'
+      restoreKeys: |
+        npm | "$(Agent.OS)"
+      path: $(Pipeline.Workspace)/.npm
+    displayName: "Cache NPM dependencies"
+
+  - script: |
+      npm config set cache $(Pipeline.Workspace)/.npm --global
+      npm install
+    displayName: "Install dependencies (with cache)"
+
+  - script: |
+      sudo apt update
+      sudo gpg -k
+      sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+      echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+      sudo apt-get update
+      sudo apt-get install k6
+    displayName: "Install k6"
+
+  - script: |
+      cd k6
+      npx ts-node src/scripts/authenticate.ts
+    displayName: "Authenticate"
+    env:
+      BASE_URL: ${{ parameters.BASE_URL }}
+      LOGIN_EMAIL: $(LOGIN_EMAIL)
+      LOGIN_PASSWORD: $(LOGIN_PASSWORD)
+
+  - script: |
+      npm run k6:dev:forecast:dashboard
+    displayName: "Run K6 Test"
+    continueOnError: true
+    env:
+      BASE_URL: ${{ parameters.BASE_URL }}
+      SCENARIO: ${{ parameters.SCENARIO }}
+      TEST_TYPE: ${{ parameters.TEST_TYPE }}
+      LOAD_LEVEL: ${{ parameters.LOAD_LEVEL }}
+      MAX_USERS: ${{ parameters.MAX_USERS }}
+      DURATION: ${{ parameters.DURATION }}
+      RAMP_UP_TIME: ${{ parameters.RAMP_UP_TIME }}
+      DETAILED_LOGS: ${{ parameters.DETAILED_LOGS }}
+      K6_WEB_DASHBOARD_EXPORT: ${{ parameters.K6_WEB_DASHBOARD_EXPORT }}
+
+  - task: PublishBuildArtifacts@1
+    condition: always()
+    displayName: "Publish K6 Reports"
+    inputs:
+      PathtoPublish: "k6/reports"
+      ArtifactName: "k6-reports"
+      publishLocation: "Container"

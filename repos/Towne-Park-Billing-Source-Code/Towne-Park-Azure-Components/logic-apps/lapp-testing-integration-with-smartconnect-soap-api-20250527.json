@@ -1,0 +1,215 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "contentVersion": "1.0.0.0",
+        "triggers": {
+            "When_a_HTTP_request_is_received": {
+                "type": "Request",
+                "kind": "Http",
+                "runtimeConfiguration": {
+                    "concurrency": {
+                        "runs": 1,
+                        "maximumWaitingRuns": 100
+                    }
+                }
+            }
+        },
+        "actions": {
+            "Initialize_variable": {
+                "runAfter": {},
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "Soap Envelope",
+                            "type": "string",
+                            "value": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:tem=\"http://tempuri.org/\">\n  <soap:Header/>\n  <soap:Body>\n    <tem:RunMapDataTable>\n      <tem:mapID>SampleMapID</tem:mapID>\n      <tem:interID>SampleInterID</tem:interID>\n      <tem:xml>\n        <![CDATA[\n        <ARInvoices>\n          <ARInvoice>\n            <Comp>Comp1</Comp>\n            <BatchId>Batch123</BatchId>\n            <Origin>OriginX</Origin>\n            <Comment>Sample Comment</Comment>\n            <PostingDate>2023-10-25</PostingDate>\n            <DocumentType>1</DocumentType>\n            <DocumentNumber>Doc001</DocumentNumber>\n            <DocumentDate>2023-10-20</DocumentDate>\n            <Description>Sample Description</Description>\n            <CustomerId>Cust123</CustomerId>\n            <Sales>1000.00</Sales>\n            <AccountNumber>Acc123</AccountNumber>\n            <Debit>500.00</Debit>\n            <Credit>0.00</Credit>\n            <DistributionReference>DistRef</DistributionReference>\n            <DeferredAccount>DeferredAcc</DeferredAccount>\n          </ARInvoice>\n        </ARInvoices>\n        ]]>\n      </tem:xml>\n    </tem:RunMapDataTable>\n  </soap:Body>\n</soap:Envelope>"
+                        }
+                    ]
+                }
+            },
+            "SoapPassThrough": {
+                "runAfter": {
+                    "Initialize_variable": [
+                        "Succeeded"
+                    ],
+                    "Compose_xml": [
+                        "Succeeded"
+                    ],
+                    "Compose_with_test_data": [
+                        "Succeeded"
+                    ],
+                    "Compose_with_data_from_logs": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection",
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['logicappcustomconnectortestingcapabilities']['connectionId']"
+                        }
+                    },
+                    "method": "post",
+                    "body": "@outputs('Compose_xml')",
+                    "headers": {
+                        "Content-Type": "text/xml; charset=utf-8",
+                        "SOAPAction": "http://tempuri.org/RunMapDataTable"
+                    },
+                    "path": "/SmartConnect.asmx"
+                }
+            },
+            "Compose_soap_response_body": {
+                "runAfter": {
+                    "SoapPassThrough": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Compose",
+                "inputs": "@body('SoapPassThrough')"
+            },
+            "Condition_response_contains_success": {
+                "actions": {
+                    "Response_Success": {
+                        "type": "Response",
+                        "kind": "Http",
+                        "inputs": {
+                            "statusCode": 200,
+                            "body": "@body('SoapPassThrough')"
+                        },
+                        "operationOptions": "Asynchronous"
+                    }
+                },
+                "runAfter": {
+                    "Compose_soap_response_body": [
+                        "Succeeded"
+                    ]
+                },
+                "else": {
+                    "actions": {
+                        "Terminate": {
+                            "runAfter": {
+                                "Condition_response_contains_SmartConnect_could_not_be_loaded": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Terminate",
+                            "inputs": {
+                                "runStatus": "Failed"
+                            }
+                        },
+                        "Condition_response_contains_SmartConnect_could_not_be_loaded": {
+                            "actions": {
+                                "Response_failure_500": {
+                                    "type": "Response",
+                                    "kind": "Http",
+                                    "inputs": {
+                                        "statusCode": 500,
+                                        "body": "@body('SoapPassThrough')"
+                                    },
+                                    "operationOptions": "Asynchronous"
+                                }
+                            },
+                            "else": {
+                                "actions": {
+                                    "Response_failure_200": {
+                                        "type": "Response",
+                                        "kind": "Http",
+                                        "inputs": {
+                                            "statusCode": 200,
+                                            "body": "@body('SoapPassThrough')"
+                                        },
+                                        "operationOptions": "Asynchronous"
+                                    }
+                                }
+                            },
+                            "expression": {
+                                "and": [
+                                    {
+                                        "contains": [
+                                            "@body('SoapPassThrough')",
+                                            "SmartConnect could not be loaded"
+                                        ]
+                                    }
+                                ]
+                            },
+                            "type": "If"
+                        }
+                    }
+                },
+                "expression": {
+                    "and": [
+                        {
+                            "contains": [
+                                "@body('SoapPassThrough')",
+                                "success"
+                            ]
+                        }
+                    ]
+                },
+                "type": "If"
+            },
+            "Compose_xml": {
+                "runAfter": {},
+                "type": "Compose",
+                "inputs": "@triggerBody()"
+            },
+            "Compose_with_test_data": {
+                "runAfter": {},
+                "type": "Compose",
+                "inputs": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:tem=\"http://tempuri.org/\">\n  <soap:Header/>\n  <soap:Body>\n    <tem:RunMapDataTable>\n      <tem:mapID>RMIMPV2</tem:mapID>\n      <tem:interID>TEST</tem:interID>\n      <tem:xml>\n        <![CDATA[\n        <DataSet>\n           <Table>\n            <Comp>TEST</Comp>\n            <BatchId>RMIMPV2</BatchId>\n            <Origin>Transaction Entry</Origin>\n            <Comment>2024122410POWERBILL</Comment>\n            <PostingDate>12/31/2024</PostingDate>\n            <DocumentType>1</DocumentType>\n            <DocumentNumber>2410-202412-01-01</DocumentNumber>\n            <DocumentDate>12/31/2024</DocumentDate>\n            <Description>2024122410POWERBILL</Description>\n            <CustomerId>2410</CustomerId>\n            <Sales>16706.27</Sales>\n            <AccountNumber>02-03-3604-4720-2410</AccountNumber>\n            <Debit>10004.00</Debit>\n            <Credit>0.00</Credit>\n            <DistributionReference>2024122410POWERBILL</DistributionReference>\n            <DeferredAccount>02-03-3604-4720-2410</DeferredAccount>\n          </Table>\n        </DataSet>\n        ]]>\n      </tem:xml>\n    </RunMapDataTable>\n  </soap:Body>\n</soap:Envelope>"
+            },
+            "Compose_with_data_from_logs": {
+                "runAfter": {},
+                "type": "Compose",
+                "inputs": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:tem=\"http://tempuri.org\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <tem:RunMapDataTable>\n         <tem:mapID>RMIMPV2</tem:mapID>\n         <tem:interID>TOWNE</tem:interID>\n         <tem:xml>\n            <![CDATA[\n            <DataSet>\n  <Table>\n    <COMP>TEST</COMP>\n    <BatchID>123456789</BatchID>\n    <Origin>Transaction Entry</Origin>\n    <Comment>2024122410POWERBILL</Comment>\n    <PostingDate>12/31/2024</PostingDate>\n    <DocumentType>1</DocumentType>\n    <DocumentNumber>2410-202412-01-01</DocumentNumber>\n    <DocumentDate>12/31/2024</DocumentDate>\n    <Description>2024122410POWERBILL</Description>\n    <CustomerID>0230</CustomerID>\n    <Sales>50,000.00</Sales>\n    <AccountNumber>02-00-0000-1200-0000</AccountNumber>\n    <Debit>50,000.00</Debit>\n    <Credit>0.00</Credit>\n    <DistributionReference>2024122410POWERBILL</DistributionReference>\n    <DeferredAccount></DeferredAccount>\n  </Table>\n  <Table>\n    <COMP>TEST</COMP>\n    <BatchID>123456789</BatchID>\n    <Origin>Transaction Entry</Origin>\n    <Comment>2024122410POWERBILL</Comment>\n    <PostingDate>12/31/2024</PostingDate>\n    <DocumentType>1</DocumentType>\n    <DocumentNumber>2410-202412-01-01</DocumentNumber>\n    <DocumentDate>12/31/2024</DocumentDate>\n    <Description>2024122410POWERBILL</Description>\n    <CustomerID>0230</CustomerID>\n    <Sales>50,000.00</Sales>\n    <AccountNumber>02-03-3901-4790-0230</AccountNumber>\n    <Debit>0.00</Debit>\n    <Credit>20,000.00</Credit>\n    <DistributionReference>2024122410POWERBILL</DistributionReference>\n    <DeferredAccount></DeferredAccount>\n  </Table>\n  <Table>\n    <COMP>TEST</COMP>\n    <BatchID>123456789</BatchID>\n    <Origin>Transaction Entry</Origin>\n    <Comment>2024122410POWERBILL</Comment>\n    <PostingDate>12/31/2024</PostingDate>\n    <DocumentType>1</DocumentType>\n    <DocumentNumber>2410-202412-01-01</DocumentNumber>\n    <DocumentDate>12/31/2024</DocumentDate>\n    <Description>2024122410POWERBILL</Description>\n    <CustomerID>0230</CustomerID>\n    <Sales>50,000.00</Sales>\n    <AccountNumber>02-03-3901-4791-0230</AccountNumber>\n    <Debit>0.00</Debit>\n    <Credit>30,000.00</Credit>\n    <DistributionReference>2024122410POWERBILL</DistributionReference>\n    <DeferredAccount></DeferredAccount>\n  </Table>\n</DataSet>\n            ]]>\n         </tem:xml>\n      </tem:RunMapDataTable>\n   </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "Response_Request_Failed": {
+                "runAfter": {
+                    "SoapPassThrough": [
+                        "TimedOut",
+                        "Skipped",
+                        "Failed"
+                    ]
+                },
+                "type": "Response",
+                "kind": "Http",
+                "inputs": {
+                    "statusCode": 200,
+                    "body": "@body('SoapPassThrough')"
+                },
+                "operationOptions": "Asynchronous"
+            },
+            "Terminate_1": {
+                "runAfter": {
+                    "Response_Request_Failed": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Terminate",
+                "inputs": {
+                    "runStatus": "Failed"
+                }
+            }
+        },
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "type": "Object",
+                "defaultValue": {}
+            }
+        }
+    },
+    "parameters": {
+        "$connections": {
+            "type": "Object",
+            "value": {
+                "logicappcustomconnectortestingcapabilities": {
+                    "id": "/subscriptions/72bb1233-bb68-442b-85f3-ef6bf21a6216/resourceGroups/stapp-billing-dev-e2-01/providers/Microsoft.Web/customApis/logicappcustomconnectortestingcapabilities",
+                    "connectionId": "/subscriptions/72bb1233-bb68-442b-85f3-ef6bf21a6216/resourceGroups/stapp-billing-dev-e2-01/providers/Microsoft.Web/connections/logicappcustomconnectortestingcapabilities-1",
+                    "connectionName": "logicappcustomconnectortestingcapabilities-1"
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,28 @@
+# Template for reusing the tasks that run Frontend and Backend tests.
+jobs:
+- job: TestsCompletion
+  steps:
+
+  - task: UseNode@1
+    inputs:
+      version: '18.x'
+
+  - script: |
+      npm install
+      npm run test
+    displayName: 'Install frontend dependencies and run tests'
+
+  - task: UseDotNet@2
+    displayName: 'Install .NET Core SDK'
+    inputs:
+      packageType: 'sdk'
+      version: '8.x'
+
+  - task: DotNetCoreCLI@2
+    displayName: 'Run Backend .NET Unit Tests'
+    inputs:
+      command: 'test'
+      projects: 'api/tests/*.csproj'
+
+  - script: echo "Tests tasks completed."
+    displayName: 'Tests Completion Marker'

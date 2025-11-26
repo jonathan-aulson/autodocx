@@ -1,0 +1,256 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sql-1": {
+        "api": {
+          "name": "shared_sql"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "bs_TowneParkEDW"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_commondataserviceforapps": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_7558e"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Http",
+          "inputs": {
+            "triggerAuthenticationType": "Tenant"
+          },
+          "metadata": {
+            "operationMetadataId": "8ff6f194-2b40-4533-b202-9f445e82f6c2"
+          }
+        }
+      },
+      "actions": {
+        "Parse_JSON_request_body": {
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@triggerBody()",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "customerSite": {
+                  "type": "string"
+                },
+                "period": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "runAfter": {}
+        },
+        "Response": {
+          "type": "Response",
+          "kind": "Http",
+          "inputs": {
+            "statusCode": 200,
+            "body": "@body('Select_Map_budget_detail_for_DTO')"
+          },
+          "runAfter": {
+            "Select_Map_budget_detail_for_DTO": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Execute_stored_procedure_(V2)_spBUDGET_DAILY_DETAIL": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "server": "default",
+              "database": "default",
+              "procedure": "[dbo].[spBUDGET_DAILY_DETAIL]",
+              "parameters/PERIOD": "@replace(body('Parse_JSON_request_body')?['period'],'-','')",
+              "parameters/COST_CENTER": "@outputs('Get_a_Customer_Site_row_by_ID')?['body/bs_sitenumber']"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+              "operationId": "ExecuteProcedure_V2",
+              "connectionName": "shared_sql-1"
+            },
+            "retryPolicy": {
+              "type": "fixed",
+              "count": 3,
+              "interval": "PT30S"
+            }
+          },
+          "runAfter": {
+            "Get_a_Customer_Site_row_by_ID": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Parse_JSON_spBUDGET_DAILY_DETAIL_results": {
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@outputs('Execute_stored_procedure_(V2)_spBUDGET_DAILY_DETAIL')?['body/resultsets']?['Table1']",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "Date": {
+                    "type": "string"
+                  },
+                  "External Revenue": {
+                    "type": "number"
+                  },
+                  "Occupied Rooms": {
+                    "type": "number"
+                  },
+                  "Valet Daily": {
+                    "type": "number"
+                  },
+                  "Valet Overnight": {
+                    "type": "number"
+                  },
+                  "Valet Monthly": {
+                    "type": "number"
+                  },
+                  "Valet Comps": {
+                    "type": "number"
+                  },
+                  "Self Daily": {
+                    "type": "number"
+                  },
+                  "Self Overnight": {
+                    "type": "number"
+                  },
+                  "Self Monthly": {
+                    "type": "number"
+                  },
+                  "Self Comps": {
+                    "type": "number"
+                  },
+                  "Valet - Daily Revenue": {
+                    "type": "number"
+                  },
+                  "Valet - Overnight Revenue": {
+                    "type": "number"
+                  },
+                  "Valet - Monthly Revenue": {
+                    "type": "number"
+                  },
+                  "Self - Daily Revenue": {
+                    "type": "number"
+                  },
+                  "Self - Overnight Revenue": {
+                    "type": "number"
+                  },
+                  "Self - Monthly Revenue": {
+                    "type": "number"
+                  },
+                  "Valet - Daily Rate": {
+                    "type": "number"
+                  },
+                  "Valet - Overnight Rate": {
+                    "type": "number"
+                  },
+                  "Valet - Monthly Rate": {
+                    "type": "number"
+                  },
+                  "Self - Daily Rate": {
+                    "type": "number"
+                  },
+                  "Self - Overnight Rate": {
+                    "type": "number"
+                  },
+                  "Self - Monthly Rate": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Execute_stored_procedure_(V2)_spBUDGET_DAILY_DETAIL": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Select_Map_budget_detail_for_DTO": {
+          "type": "Select",
+          "inputs": {
+            "from": "@body('Parse_JSON_spBUDGET_DAILY_DETAIL_results')",
+            "select": {
+              "siteStatisticDetailId": "@null",
+              "type": "Budget",
+              "date": "@formatDateTime(item()?['Date'],'yyyy-MM-dd')",
+              "dailyValetRate": "@item()?['Valet - Daily Rate']",
+              "monthlyValetRate": "@item()?['Valet - Monthly Rate']",
+              "dailySelfRate": "@item()?['Self - Daily Rate']",
+              "monthlySelfRate": "@item()?['Self - Monthly Rate']",
+              "baseRevenue": 0,
+              "occupiedRooms": "@int(formatNumber(item()?['Occupied Rooms'],'0'))",
+              "occupancy": 0,
+              "selfOvernight": "@item()?['Self Overnight']",
+              "valetOvernight": "@item()?['Valet Overnight']",
+              "dailyValet": "@item()?['Valet Daily']",
+              "monthlyValet": "@item()?['Valet Monthly']",
+              "dailySelf": "@item()?['Self Daily']",
+              "monthlySelf": "@item()?['Self Monthly']",
+              "compsValet": "@item()?['Valet Comps']",
+              "compsSelf": "@item()?['Self Comps']",
+              "driveInRatio": 0,
+              "captureRatio": 0,
+              "selfAggregator": 0,
+              "valetAggregator": 0,
+              "externalRevenue": "@item()?['External Revenue']"
+            }
+          },
+          "runAfter": {
+            "Parse_JSON_spBUDGET_DAILY_DETAIL_results": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Get_a_Customer_Site_row_by_ID": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "bs_customersites",
+              "recordId": "@body('Parse_JSON_request_body')?['customerSite']",
+              "$select": "bs_sitenumber"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "GetItem",
+              "connectionName": "shared_commondataserviceforapps"
+            }
+          },
+          "runAfter": {
+            "Parse_JSON_request_body": [
+              "Succeeded"
+            ]
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

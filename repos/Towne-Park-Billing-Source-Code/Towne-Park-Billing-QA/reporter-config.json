@@ -1,0 +1,8 @@
+{
+    "reporterEnabled": "mocha-junit-reporter, spec",
+    "mochaJunitReporterReporterOptions": {
+      "mochaFile": "cypress/results/junit-[hash].xml",
+      "toConsole": true
+    }
+  }
+  

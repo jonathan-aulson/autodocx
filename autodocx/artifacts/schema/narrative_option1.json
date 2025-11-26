@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["name", "artifact_type", "primary_journeys", "experience_pack"],
+    "properties": {
+      "name": {"type": "string"},
+      "artifact_type": {"type": "string"},
+      "primary_journeys": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "story": {"type": "string"},
+            "evidence": {"type": "string"}
+          },
+          "required": ["story"]
+        }
+      },
+      "personas": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {"type": "string"},
+            "goals": {"type": "string"},
+            "evidence": {"type": "string"}
+          }
+        }
+      },
+      "screenshots": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "path": {"type": "string"},
+            "caption": {"type": "string"}
+          },
+          "required": ["path"]
+        }
+      },
+      "experience_pack": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "component": {"type": "string"},
+          "kind": {"type": "string"},
+          "summary": {"type": "string"}
+        }
+      },
+      "data_examples": {
+        "type": "array",
+        "items": {"type": "object"}
+      }
+    }
+  }
+}

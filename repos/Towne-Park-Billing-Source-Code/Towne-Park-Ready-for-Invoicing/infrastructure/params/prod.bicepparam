@@ -1,0 +1,20 @@
+using '../main.bicep'
+
+var subscriptionid = '72bb1233-bb68-442b-85f3-ef6bf21a6216'
+var resourcegroup = 'RSS-PROD'
+param connections_sql_1_name = 'sql-1'
+param townepark_rss_subscriptionid = subscriptionid
+param rss_resource_group = resourcegroup
+param connections_sharepointonline_name = 'sharepointonline'
+param connections_commondataservice_1_name = 'commondataservice-1'
+param connections_excelonlinebusiness_name = 'excelonlinebusiness'
+param connections_office365_name = 'office365'
+param location = 'eastus2'
+param workflows_lapp_ready_for_invoicing_eastus2_01_name  = 'lapp-ready-for-invoicing-prod-eastus2-01'
+param connections_sharepointonline_externalid  = '/subscriptions/${subscriptionid}/resourceGroups/${resourcegroup}/providers/Microsoft.Web/connections/sharepointonline'
+param connections_commondataservice_1_externalid  = '/subscriptions/${subscriptionid}/resourceGroups/${resourcegroup}/providers/Microsoft.Web/connections/commondataservice-1'
+param connections_office365_externalid  = '/subscriptions/${subscriptionid}/resourceGroups/${resourcegroup}/providers/Microsoft.Web/connections/office365'
+param connections_sql_1_externalid = '/subscriptions/${subscriptionid}/resourceGroups/${resourcegroup}/providers/Microsoft.Web/connections/sql-1'
+param connections_excelonlinebusiness_externalid  = '/subscriptions/${subscriptionid}/resourceGroups/${resourcegroup}/providers/Microsoft.Web/connections/excelonlinebusiness'
+param connections_dataverse_url = 'https://orgd2bcd412.crm.dynamics.com'
+param email_recipient = 'pratik.bedekar@townepark.com'

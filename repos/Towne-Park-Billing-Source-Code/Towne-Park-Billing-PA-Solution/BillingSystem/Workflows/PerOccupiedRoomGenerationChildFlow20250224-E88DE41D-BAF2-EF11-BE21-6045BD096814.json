@@ -1,0 +1,427 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sql-1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "bs_TowneParkEDW"
+        },
+        "api": {
+          "name": "shared_sql"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "undefined",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "959ea55d-fe72-48f6-83f5-833242f4b6b2"
+          },
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "number": {
+                  "description": "Per Occupied Room rate",
+                  "title": "RoomRate",
+                  "type": "number",
+                  "x-ms-content-hint": "NUMBER",
+                  "x-ms-dynamically-added": true
+                },
+                "number_1": {
+                  "description": "Target invoice group",
+                  "title": "InvoiceGroup",
+                  "type": "number",
+                  "x-ms-content-hint": "NUMBER",
+                  "x-ms-dynamically-added": true
+                },
+                "text": {
+                  "description": "Comma separated string of Contract Types integer values",
+                  "title": "ContractType",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "text_1": {
+                  "description": "Customer Site number (i.e. \"0452\")",
+                  "title": "SiteNumber",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "number_2": {
+                  "description": "Invoice Group of the occupied room line item",
+                  "title": "OccupiedRoomInvoiceGroup",
+                  "type": "number",
+                  "x-ms-content-hint": "NUMBER",
+                  "x-ms-dynamically-added": true
+                },
+                "text_2": {
+                  "description": "GL Code for occupied room line item",
+                  "title": "Code",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "date": {
+                  "description": "Start date for service period",
+                  "format": "date",
+                  "title": "ServicePeriodStart",
+                  "type": "string",
+                  "x-ms-content-hint": "DATE",
+                  "x-ms-dynamically-added": true
+                }
+              },
+              "required": [
+                "number_1",
+                "text",
+                "text_1",
+                "text_2",
+                "date"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Are_Input_Parameters_Valid_Condition": {
+          "actions": {
+            "Respond_Empty_To_Parent": {
+              "metadata": {
+                "operationMetadataId": "e0b08fdf-a240-4c96-9c38-cbb5f372de4b"
+              },
+              "type": "Response",
+              "kind": "PowerApp",
+              "inputs": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "invoicesubtotal": {
+                      "title": "InvoiceSubTotal",
+                      "x-ms-dynamically-added": true,
+                      "type": "number"
+                    },
+                    "lineitems": {
+                      "title": "LineItems",
+                      "type": "string",
+                      "x-ms-content-hint": "TEXT",
+                      "x-ms-dynamically-added": true
+                    }
+                  },
+                  "additionalProperties": {}
+                },
+                "statusCode": 200,
+                "body": {
+                  "invoicesubtotal": "@variables('NumberOfRooms')",
+                  "lineitems": "@outputs('Compose_Empty_LineItems')"
+                }
+              }
+            },
+            "Terminate": {
+              "runAfter": {
+                "Respond_Empty_To_Parent": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "1ed66e53-12f7-4798-8e1d-a68a30234301"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Succeeded"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_NumberOfRooms_variable": [
+              "Succeeded"
+            ],
+            "Compose_Empty_LineItems": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {}
+          },
+          "expression": {
+            "or": [
+              {
+                "equals": [
+                  "@triggerBody()?['number_1']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['text']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@empty(triggerBody()?['text'])",
+                  "@true"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['number']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['text_1']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@empty(triggerBody()?['text_1'])",
+                  "@true"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['number_2']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['text_2']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['date']",
+                  "@null"
+                ]
+              }
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b250553c-305d-444d-b4dc-abd948b78504"
+          },
+          "type": "If"
+        },
+        "Initialize_NumberOfRooms_variable": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "38dfa42f-64be-475c-bd99-b3edfdb246c0"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "NumberOfRooms",
+                "type": "float",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "Is_PerOccupiedRoom_Enabled_And_Group_Matches_Condition": {
+          "actions": {
+            "Terminate_2": {
+              "runAfter": {
+                "Respond_Empty_To_Parent_2": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "cc604113-17d5-4e34-bfbb-2e90128db65b"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Succeeded"
+              }
+            },
+            "Respond_Empty_To_Parent_2": {
+              "metadata": {
+                "operationMetadataId": "e0b08fdf-a240-4c96-9c38-cbb5f372de4b"
+              },
+              "type": "Response",
+              "kind": "PowerApp",
+              "inputs": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "invoicesubtotal": {
+                      "title": "InvoiceSubTotal",
+                      "x-ms-dynamically-added": true,
+                      "type": "number"
+                    },
+                    "lineitems": {
+                      "title": "LineItems",
+                      "type": "string",
+                      "x-ms-content-hint": "TEXT",
+                      "x-ms-dynamically-added": true
+                    }
+                  },
+                  "additionalProperties": {}
+                },
+                "statusCode": 200,
+                "body": {
+                  "invoicesubtotal": "@variables('NumberOfRooms')",
+                  "lineitems": "@outputs('Compose_Empty_LineItems')"
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Are_Input_Parameters_Valid_Condition": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {}
+          },
+          "expression": {
+            "or": [
+              {
+                "equals": [
+                  "@contains(triggerBody()?['text'], '126840002')",
+                  "@false"
+                ]
+              },
+              {
+                "not": {
+                  "equals": [
+                    "@coalesce(triggerBody()?['number_2'], 1)",
+                    "@triggerBody()?['number_1']"
+                  ]
+                }
+              }
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "8f9d3e8a-0166-46f9-a402-6784abc7190c"
+          },
+          "type": "If"
+        },
+        "Respond_To_Parent": {
+          "runAfter": {
+            "Compose_Line_Items": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "e0b08fdf-a240-4c96-9c38-cbb5f372de4b"
+          },
+          "type": "Response",
+          "kind": "PowerApp",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "invoicesubtotal": {
+                  "title": "InvoiceSubTotal",
+                  "x-ms-dynamically-added": true,
+                  "type": "number"
+                },
+                "lineitems": {
+                  "title": "LineItems",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                }
+              },
+              "additionalProperties": {}
+            },
+            "statusCode": 200,
+            "body": {
+              "invoicesubtotal": "@outputs('Compose_SubTotal_Amount')",
+              "lineitems": "@outputs('Compose_Line_Items')"
+            }
+          }
+        },
+        "Compose_Line_Items": {
+          "runAfter": {
+            "Compose_SubTotal_Amount": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "[\n  {\n    \"title\": \"Occupied Rooms\",\n  \"description\": \"Total Occupied Rooms: @{formatNumber(variables('NumberOfRooms'), 'N0')\r\n}.\nTowne Park Service Fee at $@{triggerBody()?['number']} Per Occupied Room\",\n    \"code\": \"@{triggerBody()?['text_2']}\",\n    \"amount\": @{outputs('Compose_SubTotal_Amount')}\n  }\n]"
+        },
+        "Compose_SubTotal_Amount": {
+          "runAfter": {
+            "Set_variable": [
+              "Succeeded",
+              "TimedOut",
+              "Skipped",
+              "Failed"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@mul(variables('NumberOfRooms'),triggerBody()?['number'])"
+        },
+        "Compose_Empty_LineItems": {
+          "runAfter": {},
+          "type": "Compose",
+          "inputs": "[]"
+        },
+        "Get_NumberOfRooms": {
+          "runAfter": {
+            "Is_PerOccupiedRoom_Enabled_And_Group_Matches_Condition": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "1745caa4-4f71-41ec-be7b-fff8e3d0d11d"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "server": "default",
+              "database": "default",
+              "table": "[dbo].[REVENUE_DATAMART_DAILY_INVOICE]",
+              "$apply": "filter(REVENUE_CATEGORY eq 'Occupied Rooms' AND SITE eq '@{triggerBody()?['text_1']}' AND startswith(DATE,'@{formatDateTime(triggerBody()?['date'], 'yyyy-MM')}'))/aggregate(VALUE with sum as SUM_VALUE)",
+              "$select": "SUM_VALUE"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+              "operationId": "GetItems_V2",
+              "connectionName": "shared_sql-1"
+            },
+            "retryPolicy": {
+              "type": "fixed",
+              "count": 3,
+              "interval": "PT30S"
+            }
+          }
+        },
+        "Set_variable": {
+          "runAfter": {
+            "Get_NumberOfRooms": [
+              "Succeeded"
+            ]
+          },
+          "type": "SetVariable",
+          "inputs": {
+            "name": "NumberOfRooms",
+            "value": "@first(outputs('Get_NumberOfRooms')?['body/value'])?['SUM_VALUE']"
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

@@ -1,0 +1,41 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  packageDirectory: '$(Build.ArtifactStagingDirectory)'
+
+steps:
+  - task: UseDotNet@2
+    displayName: 'Install .NET 8 SDK'
+    inputs:
+      packageType: 'sdk'
+      version: '8.0.x'
+
+  - task: DotNetCoreCLI@2
+    displayName: 'Build Azure Function'
+    inputs:
+      command: 'build'
+      projects: 'src/TownePark.Billing.Api.csproj' 
+
+  - task: DotNetCoreCLI@2
+    displayName: 'Publish Azure Function'
+    inputs:
+      command: 'publish'
+      publishWebProjects: false
+      projects: 'src/TownePark.Billing.Api.csproj'
+      arguments: '--configuration Release --output $(packageDirectory)'
+      zipAfterPublish: true
+
+  - task: AzureCLI@2
+    displayName: 'Deploy Azure Function to PROD'
+    inputs:
+      azureSubscription: '$(azureSubscription)'
+      scriptType: "pscore"
+      scriptLocation: "inlineScript"
+      inlineScript: |
+        az functionapp deployment source config-zip --src "$(packageDirectory)/src.zip" --name "$(functionAppName)" --resource-group "$(resourceGroup)"

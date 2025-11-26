@@ -1,0 +1,1221 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sql": {
+        "api": {
+          "name": "shared_sql"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "bs_TowneParkEDW"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_commondataserviceforapps-1": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_7558e"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "undefined",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "description": "Site Number",
+                  "title": "Site",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "number": {
+                  "description": "Invoice Group Number",
+                  "title": "Invoice",
+                  "type": "number",
+                  "x-ms-content-hint": "NUMBER",
+                  "x-ms-dynamically-added": true
+                },
+                "text_1": {
+                  "description": "Please enter your input",
+                  "title": "Configuration Object",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "text_2": {
+                  "description": "Please enter your input",
+                  "title": "Revenue Distribution Object",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "date": {
+                  "description": "Please enter or select a date (YYYY-MM-DD)",
+                  "format": "date",
+                  "title": "Start Date",
+                  "type": "string",
+                  "x-ms-content-hint": "DATE",
+                  "x-ms-dynamically-added": true
+                },
+                "date_1": {
+                  "description": "Please enter or select a date (YYYY-MM-DD)",
+                  "format": "date",
+                  "title": "End Date",
+                  "type": "string",
+                  "x-ms-content-hint": "DATE",
+                  "x-ms-dynamically-added": true
+                }
+              },
+              "required": [
+                "text",
+                "number",
+                "text_1",
+                "text_2",
+                "date",
+                "date_1"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Are_Input_Parameters_Valid_Condition": {
+          "type": "If",
+          "expression": {
+            "or": [
+              {
+                "equals": [
+                  "@triggerBody()?['text']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@empty(triggerBody()?['text'])",
+                  "@true"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['number']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['text_1']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@empty(triggerBody()?['text_1'])",
+                  "@true"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['text_2']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@empty(triggerBody()?['text_2'])",
+                  "@true"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['date']",
+                  "@null"
+                ]
+              },
+              {
+                "equals": [
+                  "@triggerBody()?['date_1']",
+                  "@null"
+                ]
+              }
+            ]
+          },
+          "actions": {
+            "Terminate": {
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Succeeded"
+              },
+              "runAfter": {
+                "Respond_empty_to_parent": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Respond_empty_to_parent": {
+              "type": "Response",
+              "kind": "PowerApp",
+              "inputs": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "lineitems": {
+                      "title": "LineItems",
+                      "type": "string",
+                      "x-ms-content-hint": "TEXT",
+                      "x-ms-dynamically-added": true
+                    },
+                    "invoicesubtotal": {
+                      "title": "InvoiceSubTotal",
+                      "type": "number",
+                      "x-ms-content-hint": "NUMBER",
+                      "x-ms-dynamically-added": true
+                    }
+                  },
+                  "additionalProperties": {}
+                },
+                "statusCode": 200,
+                "body": {
+                  "lineitems": "[]",
+                  "invoicesubtotal": 0
+                }
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "Initialize_variable_-_Line_Items_-_Array": [
+              "Succeeded"
+            ],
+            "Initialize_variable_-_Total_Amount_Due": [
+              "Succeeded"
+            ],
+            "Initialize_variable_-_Total_Monthly_Revenue": [
+              "Succeeded"
+            ],
+            "Initialize_variable_-_Amount_Over_Threshold": [
+              "Succeeded"
+            ],
+            "Initialize_Tier_One_Revenue_variable": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Initialize_variable_-_Line_Items_-_Array": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Line Items",
+                "type": "array",
+                "value": []
+              }
+            ]
+          },
+          "runAfter": {}
+        },
+        "Initialize_variable_-_Total_Amount_Due": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Total Amount Due",
+                "type": "float",
+                "value": 0
+              }
+            ]
+          },
+          "runAfter": {}
+        },
+        "Get_rows_(V2)_-_Get_Monthly_Validation_Revenue": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "server": "default",
+              "database": "default",
+              "table": "[dbo].[vwREVENUE_DAILY_DETAIL_INVOICE]",
+              "$apply": "filter(SITE eq '@{triggerBody()?['text']}' and year(DATE) eq @{formatDateTime(triggerBody()?['date'],'yyyy')} and month(DATE) eq @{formatDateTime(triggerBody()?['date'],'MM')} and DEPOSIT_FLAG eq 'V')/aggregate(BILLABLE_NET_VALIDATION with sum as TotalExternalRevenue)",
+              "$select": "TotalExternalRevenue"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+              "operationId": "GetItems_V2",
+              "connectionName": "shared_sql"
+            },
+            "retryPolicy": {
+              "type": "fixed",
+              "count": 3,
+              "interval": "PT30S"
+            }
+          },
+          "runAfter": {
+            "Condition_-_is_validation_type_null": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Switch_-_Validation_Type": {
+          "type": "Switch",
+          "expression": "@outputs('Compose_Validation_Type')",
+          "default": {
+            "actions": {
+              "Respond_empty_to_parent_-_4": {
+                "type": "Response",
+                "kind": "PowerApp",
+                "inputs": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "lineitems": {
+                        "title": "LineItems",
+                        "type": "string",
+                        "x-ms-content-hint": "TEXT",
+                        "x-ms-dynamically-added": true
+                      },
+                      "invoicesubtotal": {
+                        "title": "InvoiceSubTotal",
+                        "type": "number",
+                        "x-ms-content-hint": "NUMBER",
+                        "x-ms-dynamically-added": true
+                      }
+                    },
+                    "additionalProperties": {}
+                  },
+                  "statusCode": 200,
+                  "body": {
+                    "lineitems": "[]",
+                    "invoicesubtotal": 0
+                  }
+                }
+              },
+              "Terminate-copy_4": {
+                "type": "Terminate",
+                "inputs": {
+                  "runStatus": "Succeeded"
+                },
+                "runAfter": {
+                  "Respond_empty_to_parent_-_4": [
+                    "Succeeded"
+                  ]
+                }
+              }
+            }
+          },
+          "cases": {
+            "Case_-_Monthly": {
+              "actions": {
+                "Condition_-_Is_Revenue_Greater_than_0": {
+                  "type": "If",
+                  "expression": {
+                    "and": [
+                      {
+                        "greater": [
+                          "@outputs('Compose_-_Validation_External_Revenue')",
+                          0
+                        ]
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "Set_variable_-_Amount_Over_Threshold_by_Count": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "Amount Over Threshold",
+                        "value": "@outputs('Compose_-_Validation_External_Revenue')"
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "Respond_empty_to_parent_-_1": {
+                        "type": "Response",
+                        "kind": "PowerApp",
+                        "inputs": {
+                          "schema": {
+                            "type": "object",
+                            "properties": {
+                              "lineitems": {
+                                "title": "LineItems",
+                                "type": "string",
+                                "x-ms-content-hint": "TEXT",
+                                "x-ms-dynamically-added": true
+                              },
+                              "invoicesubtotal": {
+                                "title": "InvoiceSubTotal",
+                                "type": "number",
+                                "x-ms-content-hint": "NUMBER",
+                                "x-ms-dynamically-added": true
+                              }
+                            },
+                            "additionalProperties": {}
+                          },
+                          "statusCode": 200,
+                          "body": {
+                            "lineitems": "[]",
+                            "invoicesubtotal": 0
+                          }
+                        },
+                        "runAfter": {
+                          "For_each_existing_validation_by_percent_row_for_vehicle": [
+                            "SUCCEEDED"
+                          ]
+                        }
+                      },
+                      "Terminate-copy_2": {
+                        "type": "Terminate",
+                        "inputs": {
+                          "runStatus": "Succeeded"
+                        },
+                        "runAfter": {
+                          "Respond_empty_to_parent_-_1": [
+                            "Succeeded"
+                          ]
+                        }
+                      },
+                      "List_existing_validation_by_percent_rows_for_site_for_vehicle_type": {
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "parameters": {
+                            "entityName": "bs_validationbypercents",
+                            "$filter": "bs_site eq '@{triggerBody()?['text']}' and bs_month eq '@{formatDateTime(triggerBody()?['date'],'MM')}' and bs_year eq '@{formatDateTime(triggerBody()?['date'],'yyyy')}'"
+                          },
+                          "host": {
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                            "operationId": "ListRecords",
+                            "connectionName": "shared_commondataserviceforapps-1"
+                          }
+                        }
+                      },
+                      "For_each_existing_validation_by_percent_row_for_vehicle": {
+                        "type": "Foreach",
+                        "foreach": "@outputs('List_existing_validation_by_percent_rows_for_site_for_vehicle_type')?['body/value']",
+                        "actions": {
+                          "Delete_existing_validation_row_for_vehicle": {
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "parameters": {
+                                "entityName": "bs_validationbypercents",
+                                "recordId": "@items('For_each_existing_validation_by_percent_row_for_vehicle')?['bs_validationbypercentid']"
+                              },
+                              "host": {
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                                "operationId": "DeleteRecord",
+                                "connectionName": "shared_commondataserviceforapps-1"
+                              }
+                            }
+                          }
+                        },
+                        "runAfter": {
+                          "List_existing_validation_by_percent_rows_for_site_for_vehicle_type": [
+                            "SUCCEEDED"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "case": 126840000
+            },
+            "Case_-_Revenue_Percentage": {
+              "actions": {
+                "Condition_-_Is_Revenue_Greater_Than_Percent": {
+                  "type": "If",
+                  "expression": {
+                    "and": [
+                      {
+                        "greater": [
+                          "@outputs('Compose_-_Validation_External_Revenue')",
+                          "@outputs('Compose_-_Get_Validation_Threshold_Percent_Amount')"
+                        ]
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "Compose_Amount_over_threshold_1": {
+                      "type": "Compose",
+                      "inputs": "@sub(\r\n            outputs('Compose_-_Validation_External_Revenue'),\r\n            outputs('Compose_-_Get_Validation_Threshold_Percent_Amount')\r\n        )"
+                    },
+                    "Set_variable_-_Amount_Over_Threshold_by_Percent": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "Amount Over Threshold",
+                        "value": "@outputs('Compose_Amount_over_threshold_1')"
+                      },
+                      "runAfter": {
+                        "Compose_Amount_over_threshold_1": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "Respond_empty_to_parent_-_2": {
+                        "type": "Response",
+                        "kind": "PowerApp",
+                        "inputs": {
+                          "schema": {
+                            "type": "object",
+                            "properties": {
+                              "lineitems": {
+                                "title": "LineItems",
+                                "type": "string",
+                                "x-ms-content-hint": "TEXT",
+                                "x-ms-dynamically-added": true
+                              },
+                              "invoicesubtotal": {
+                                "title": "InvoiceSubTotal",
+                                "type": "number",
+                                "x-ms-content-hint": "NUMBER",
+                                "x-ms-dynamically-added": true
+                              }
+                            },
+                            "additionalProperties": {}
+                          },
+                          "statusCode": 200,
+                          "body": {
+                            "lineitems": "[]",
+                            "invoicesubtotal": 0
+                          }
+                        },
+                        "runAfter": {
+                          "For_each_existing_validation_by_percent_row": [
+                            "Succeeded"
+                          ]
+                        }
+                      },
+                      "Terminate-copy_3": {
+                        "type": "Terminate",
+                        "inputs": {
+                          "runStatus": "Succeeded"
+                        },
+                        "runAfter": {
+                          "Respond_empty_to_parent_-_2": [
+                            "Succeeded"
+                          ]
+                        }
+                      },
+                      "List_existing_validation_by_percent_rows_for_site": {
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "parameters": {
+                            "entityName": "bs_validationbypercents",
+                            "$filter": "bs_site eq '@{triggerBody()?['text']}' and bs_month eq '@{formatDateTime(triggerBody()?['date'],'MM')}' and bs_year eq '@{formatDateTime(triggerBody()?['date'],'yyyy')}'"
+                          },
+                          "host": {
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                            "operationId": "ListRecords",
+                            "connectionName": "shared_commondataserviceforapps-1"
+                          }
+                        }
+                      },
+                      "For_each_existing_validation_by_percent_row": {
+                        "type": "Foreach",
+                        "foreach": "@outputs('List_existing_validation_by_percent_rows_for_site')?['body/value']",
+                        "actions": {
+                          "Delete_existing_validation_row": {
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "parameters": {
+                                "entityName": "bs_validationbypercents",
+                                "recordId": "@items('For_each_existing_validation_by_percent_row')?['bs_validationbypercentid']"
+                              },
+                              "host": {
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                                "operationId": "DeleteRecord",
+                                "connectionName": "shared_commondataserviceforapps-1"
+                              }
+                            }
+                          }
+                        },
+                        "runAfter": {
+                          "List_existing_validation_by_percent_rows_for_site": [
+                            "Succeeded"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Compose_-_Get_Validation_Threshold_Percent_Amount": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Compose_-_Get_Validation_Threshold_Percent_Amount": {
+                  "type": "Compose",
+                  "inputs": "@mul(variables('Total Monthly Revenue'), div(float(outputs('Compose_Validation_Amount')),100))"
+                }
+              },
+              "case": 126840001
+            },
+            "Case_-_Validation_Amount": {
+              "actions": {
+                "Condition_-_Is_Revenue_Greater_Than_Amount": {
+                  "type": "If",
+                  "expression": {
+                    "and": [
+                      {
+                        "greater": [
+                          "@outputs('Compose_-_Validation_External_Revenue')",
+                          "@outputs('Compose_Validation_Amount')"
+                        ]
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "Compose_Amount_over_threshold": {
+                      "type": "Compose",
+                      "inputs": "@sub(\r\n            outputs('Compose_-_Validation_External_Revenue'),\r\n            float(\r\n                coalesce(\r\n                    outputs('Compose_Validation_Amount'),\r\n                    0\r\n                )\r\n            )\r\n        )"
+                    },
+                    "Set_variable_-_Amount_Over_Threshold_by_Amount": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "Amount Over Threshold",
+                        "value": "@outputs('Compose_Amount_over_threshold')"
+                      },
+                      "runAfter": {
+                        "Compose_Amount_over_threshold": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "Respond_empty_to_parent_-_3": {
+                        "type": "Response",
+                        "kind": "PowerApp",
+                        "inputs": {
+                          "schema": {
+                            "type": "object",
+                            "properties": {
+                              "lineitems": {
+                                "title": "LineItems",
+                                "type": "string",
+                                "x-ms-content-hint": "TEXT",
+                                "x-ms-dynamically-added": true
+                              },
+                              "invoicesubtotal": {
+                                "title": "InvoiceSubTotal",
+                                "type": "number",
+                                "x-ms-content-hint": "NUMBER",
+                                "x-ms-dynamically-added": true
+                              }
+                            },
+                            "additionalProperties": {}
+                          },
+                          "statusCode": 200,
+                          "body": {
+                            "lineitems": "[]",
+                            "invoicesubtotal": 0
+                          }
+                        },
+                        "runAfter": {
+                          "For_each_existing_validation_by_percent_row_for_validation": [
+                            "SUCCEEDED"
+                          ]
+                        }
+                      },
+                      "Terminate-copy_5": {
+                        "type": "Terminate",
+                        "inputs": {
+                          "runStatus": "Succeeded"
+                        },
+                        "runAfter": {
+                          "Respond_empty_to_parent_-_3": [
+                            "Succeeded"
+                          ]
+                        }
+                      },
+                      "List_existing_validation_by_percent_rows_for_site_for_validation_type": {
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "parameters": {
+                            "entityName": "bs_validationbypercents",
+                            "$filter": "bs_site eq '@{triggerBody()?['text']}' and bs_month eq '@{formatDateTime(triggerBody()?['date'],'MM')}' and bs_year eq '@{formatDateTime(triggerBody()?['date'],'yyyy')}'"
+                          },
+                          "host": {
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                            "operationId": "ListRecords",
+                            "connectionName": "shared_commondataserviceforapps-1"
+                          }
+                        }
+                      },
+                      "For_each_existing_validation_by_percent_row_for_validation": {
+                        "type": "Foreach",
+                        "foreach": "@outputs('List_existing_validation_by_percent_rows_for_site_for_validation_type')?['body/value']",
+                        "actions": {
+                          "Delete_existing_validation_row_for_validation": {
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "parameters": {
+                                "entityName": "bs_validationbypercents",
+                                "recordId": "@items('For_each_existing_validation_by_percent_row_for_validation')?['bs_validationbypercentid']"
+                              },
+                              "host": {
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                                "operationId": "DeleteRecord",
+                                "connectionName": "shared_commondataserviceforapps-1"
+                              }
+                            }
+                          }
+                        },
+                        "runAfter": {
+                          "List_existing_validation_by_percent_rows_for_site_for_validation_type": [
+                            "SUCCEEDED"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "case": 126840002
+            }
+          },
+          "runAfter": {
+            "Compose_-_Validation_External_Revenue": [
+              "Succeeded"
+            ],
+            "Apply_to_each_-_Revenue_Distribution_Object": [
+              "Succeeded"
+            ],
+            "Compose_Validation_Amount": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Compose_-_Validation_External_Revenue": {
+          "type": "Compose",
+          "inputs": "@if(empty(outputs('Get_rows_(V2)_-_Get_Monthly_Validation_Revenue')?['body/value']),0,outputs('Get_rows_(V2)_-_Get_Monthly_Validation_Revenue')?['body/value'][0]['TotalExternalRevenue'])",
+          "runAfter": {
+            "Get_rows_(V2)_-_Get_Monthly_Validation_Revenue": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Parse_JSON_-_Revenue_Distribution_to_JSON_Object": {
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@json(triggerBody()?['text_2'])",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "revenueAmount": {
+                    "type": "number"
+                  },
+                  "sharePercentageToCharge": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "revenueAmount",
+                  "sharePercentageToCharge"
+                ]
+              }
+            }
+          },
+          "runAfter": {
+            "Condition_-_is_validation_type_null": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Initialize_variable_-_Total_Monthly_Revenue": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Total Monthly Revenue",
+                "type": "float",
+                "value": 0
+              }
+            ]
+          },
+          "runAfter": {}
+        },
+        "Apply_to_each_-_Revenue_Distribution_Object": {
+          "type": "Foreach",
+          "foreach": "@body('Parse_JSON_-_Revenue_Distribution_to_JSON_Object')",
+          "actions": {
+            "Increment_variable_-_Total_Monthly_Revenue": {
+              "type": "IncrementVariable",
+              "inputs": {
+                "name": "Total Monthly Revenue",
+                "value": "@items('Apply_to_each_-_Revenue_Distribution_Object')?['revenueAmount']"
+              }
+            }
+          },
+          "runAfter": {
+            "Parse_JSON_-_Revenue_Distribution_to_JSON_Object": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Compose_Validation_Amount": {
+          "type": "Compose",
+          "inputs": "@float(\r\n    coalesce(\r\n        first(body('Parse_JSON_-_Deserialize_Configuration_String_to_JSON_Object'))?['bs_validationthresholdamount'],\r\n        0\r\n    )\r\n)\r\n",
+          "runAfter": {
+            "Condition_-_is_validation_type_null": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Parse_JSON_-_Deserialize_Configuration_String_to_JSON_Object": {
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@json(triggerBody()?['text_1'])",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "bs_tierdata": {
+                    "type": "string"
+                  },
+                  "bs_revenuecodedata": {
+                    "type": "string"
+                  },
+                  "bs_revenueaccumulationtype@OData.Community.Display.V1.FormattedValue": {
+                    "type": "string"
+                  },
+                  "bs_revenueaccumulationtype": {
+                    "type": "integer"
+                  },
+                  "bs_invoicegroup@OData.Community.Display.V1.FormattedValue": {
+                    "type": "string"
+                  },
+                  "bs_invoicegroup": {
+                    "type": "integer"
+                  },
+                  "bs_validationthresholdamount@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_validationthresholdamount": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "bs_validationthresholdtype@OData.Community.Display.V1.FormattedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "bs_validationthresholdtype": {
+                    "type": [
+                      "integer",
+                      "number",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Are_Input_Parameters_Valid_Condition": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Condition_-_is_validation_type_null": {
+          "type": "If",
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@empty(string(outputs('Compose_Validation_Type')))",
+                  "@true"
+                ]
+              }
+            ]
+          },
+          "actions": {
+            "Terminate-copy": {
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Succeeded"
+              },
+              "runAfter": {
+                "Respond_empty_to_parent-copy": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Respond_empty_to_parent-copy": {
+              "type": "Response",
+              "kind": "PowerApp",
+              "inputs": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "lineitems": {
+                      "title": "LineItems",
+                      "type": "string",
+                      "x-ms-content-hint": "TEXT",
+                      "x-ms-dynamically-added": true
+                    },
+                    "invoicesubtotal": {
+                      "title": "InvoiceSubTotal",
+                      "type": "number",
+                      "x-ms-content-hint": "NUMBER",
+                      "x-ms-dynamically-added": true
+                    }
+                  },
+                  "additionalProperties": {}
+                },
+                "statusCode": 200,
+                "body": {
+                  "lineitems": "[]",
+                  "invoicesubtotal": 0
+                }
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "Compose_Validation_Type": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Compose_Validation_Type": {
+          "type": "Compose",
+          "inputs": "@first(body('Parse_JSON_-_Deserialize_Configuration_String_to_JSON_Object'))?['bs_validationthresholdtype']",
+          "runAfter": {
+            "Condition_-_revenue_share_is_not_set_for_invoice_group-copy": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Compose_-_validation_invoice_number": {
+          "type": "Compose",
+          "inputs": "@first(body('Parse_JSON_-_Deserialize_Configuration_String_to_JSON_Object')).bs_invoicegroup",
+          "runAfter": {
+            "Parse_JSON_-_Deserialize_Configuration_String_to_JSON_Object": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Condition_-_revenue_share_is_not_set_for_invoice_group-copy": {
+          "type": "If",
+          "expression": {
+            "and": [
+              {
+                "not": {
+                  "equals": [
+                    "@outputs('Compose_-_validation_invoice_number')",
+                    "@triggerBody()?['number']"
+                  ]
+                }
+              }
+            ]
+          },
+          "actions": {
+            "Respond_Empty_to_Parent-copy_1": {
+              "type": "Response",
+              "kind": "PowerApp",
+              "inputs": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "lineitems": {
+                      "title": "LineItems",
+                      "type": "string",
+                      "x-ms-content-hint": "TEXT",
+                      "x-ms-dynamically-added": true
+                    },
+                    "invoicesubtotal": {
+                      "title": "InvoiceSubTotal",
+                      "type": "number",
+                      "x-ms-content-hint": "NUMBER",
+                      "x-ms-dynamically-added": true
+                    }
+                  },
+                  "additionalProperties": {}
+                },
+                "statusCode": 200,
+                "body": {
+                  "lineitems": "[]",
+                  "invoicesubtotal": 0
+                }
+              }
+            },
+            "Terminate-copy_1": {
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Succeeded"
+              },
+              "runAfter": {
+                "Respond_Empty_to_Parent-copy_1": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "Compose_-_validation_invoice_number": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Initialize_variable_-_Amount_Over_Threshold": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Amount Over Threshold",
+                "type": "float",
+                "value": 0
+              }
+            ]
+          },
+          "runAfter": {}
+        },
+        "Compose_-_Line_Item": {
+          "type": "Compose",
+          "inputs": [
+            {
+              "title": "Towne Park Fees for Validated Parking",
+              "amount": "@variables('Total Amount Due')",
+              "code": "4790",
+              "description": ""
+            }
+          ],
+          "runAfter": {
+            "Scope_-_Calculate_Amount_Due_By_Tier": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Respond_to_parent": {
+          "type": "Response",
+          "kind": "PowerApp",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "lineitems": {
+                  "title": "LineItems",
+                  "type": "string",
+                  "x-ms-content-hint": "TEXT",
+                  "x-ms-dynamically-added": true
+                },
+                "invoicesubtotal": {
+                  "title": "InvoiceSubTotal",
+                  "type": "number",
+                  "x-ms-content-hint": "NUMBER",
+                  "x-ms-dynamically-added": true
+                }
+              },
+              "additionalProperties": {}
+            },
+            "statusCode": 200,
+            "body": {
+              "lineitems": "@{outputs('Compose_-_Line_Item')}",
+              "invoicesubtotal": "@variables('Total Amount Due')"
+            }
+          },
+          "runAfter": {
+            "Compose_-_Line_Item": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Scope_-_Calculate_Amount_Due_By_Tier": {
+          "type": "Scope",
+          "actions": {
+            "For_each_Rev_Distribution_object": {
+              "type": "Foreach",
+              "foreach": "@body('Filter_array_Threshold_Structure_1')",
+              "actions": {
+                "Compose_weighted_amount_due": {
+                  "type": "Compose",
+                  "inputs": "@mul(\r\n  div(items('For_each_Rev_Distribution_object')['sharePercentageToCharge'],100),\r\n    mul(\r\n      outputs('Compose_weighted_revenue_amount'),\r\n      variables('Amount Over Threshold')\r\n    )\r\n)\r\n",
+                  "runAfter": {
+                    "Compose_weighted_revenue_amount": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Compose_weighted_revenue_amount": {
+                  "type": "Compose",
+                  "inputs": "@div(items('For_each_Rev_Distribution_object')['revenueAmount'],variables('Tier One Revenue'))"
+                },
+                "Increment_Total_Amount_Due_variable": {
+                  "type": "IncrementVariable",
+                  "inputs": {
+                    "name": "Total Amount Due",
+                    "value": "@outputs('Compose_weighted_amount_due')"
+                  },
+                  "runAfter": {
+                    "Add_a_new_row": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Add_a_new_row": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "entityName": "bs_validationbypercents",
+                      "item/bs_amountoverthreshold": "@mul(\r\n      outputs('Compose_weighted_revenue_amount'),\r\n      variables('Amount Over Threshold')\r\n    )",
+                      "item/bs_month": "@formatDateTime(triggerBody()?['date'],'MM')",
+                      "item/bs_percenttocharge": "@items('For_each_Rev_Distribution_object')['sharePercentageToCharge']",
+                      "item/bs_site": "@triggerBody()?['text']",
+                      "item/bs_thresholdamount": "@outputs('Compose_Validation_Amount')",
+                      "item/bs_thresholdtype": "@first(body('Parse_JSON_-_Deserialize_Configuration_String_to_JSON_Object'))?['bs_validationthresholdtype@OData.Community.Display.V1.FormattedValue']",
+                      "item/bs_totalduetotownepark": "@outputs('Compose_weighted_amount_due')",
+                      "item/bs_validationtype": "@first(body('Parse_JSON_-_Deserialize_Configuration_String_to_JSON_Object'))?['bs_revenueaccumulationtype@OData.Community.Display.V1.FormattedValue']",
+                      "item/bs_year": "@formatDateTime(triggerBody()?['date'],'yyyy')"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "operationId": "CreateRecord",
+                      "connectionName": "shared_commondataserviceforapps-1"
+                    }
+                  },
+                  "runAfter": {
+                    "Compose_weighted_amount_due": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "runAfter": {
+                "For_each_Threshold_1_tier": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "List_Validation_by_Percent_rows": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "bs_validationbypercents",
+                  "$filter": "bs_site eq '@{triggerBody()?['text']}' and bs_month eq '@{formatDateTime(triggerBody()?['date'],'MM')}' and bs_year eq '@{formatDateTime(triggerBody()?['date'],'yyyy')}'"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "connectionName": "shared_commondataserviceforapps-1"
+                }
+              }
+            },
+            "For_each_Validation_by_Percent_row": {
+              "type": "Foreach",
+              "foreach": "@outputs('List_Validation_by_Percent_rows')?['body/value']",
+              "actions": {
+                "Delete_a_Validation_by_Percent_row": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "entityName": "bs_validationbypercents",
+                      "recordId": "@items('For_each_Validation_by_Percent_row')?['bs_validationbypercentid']"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "operationId": "DeleteRecord",
+                      "connectionName": "shared_commondataserviceforapps-1"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "List_Validation_by_Percent_rows": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Filter_array_Threshold_Structure_1": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Parse_JSON_-_Revenue_Distribution_to_JSON_Object')",
+                "where": "@equals(item()?['thresholdStructure'],1)"
+              },
+              "runAfter": {
+                "For_each_Validation_by_Percent_row": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "For_each_Threshold_1_tier": {
+              "type": "Foreach",
+              "foreach": "@outputs('Filter_array_Threshold_Structure_1')['body']",
+              "actions": {
+                "Increment_Tier_One_Revenue_variable": {
+                  "type": "IncrementVariable",
+                  "inputs": {
+                    "name": "Tier One Revenue",
+                    "value": "@items('For_each_Threshold_1_tier')['revenueAmount']"
+                  }
+                }
+              },
+              "runAfter": {
+                "Filter_array_Threshold_Structure_1": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "runAfter": {
+            "Switch_-_Validation_Type": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Initialize_Tier_One_Revenue_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Tier One Revenue",
+                "type": "float",
+                "value": 0
+              }
+            ]
+          },
+          "runAfter": {}
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

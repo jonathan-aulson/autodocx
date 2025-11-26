@@ -1,0 +1,10 @@
+<environmentvariabledefinition schemaname="bs_pdfServiceApiToken">
+  <displayname default="PDF Service API Token">
+    <label description="PDF Service API Token" languagecode="1033" />
+  </displayname>
+  <introducedversion>1.0.28.8</introducedversion>
+  <iscustomizable>1</iscustomizable>
+  <isrequired>0</isrequired>
+  <secretstore>0</secretstore>
+  <type>100000000</type>
+</environmentvariabledefinition>

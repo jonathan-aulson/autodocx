@@ -1,0 +1,56 @@
+pr:
+  branches:
+    include:
+      - develop
+trigger:
+  branches:
+    include:
+      - develop
+
+variables:
+  OutputFolder: 'packed'
+  SourceFolder: '$(SolutionName)'
+  ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+    ActiveSPN: 'BUILD'
+  ${{ elseif eq(variables['Build.Reason'], 'Manual') }}:
+    ActiveSPN: '$(PowerPlatformEnvironment)'
+  ${{ else }}:
+    ActiveSPN: 'DEV'
+    
+pool:
+  vmImage: 'windows-latest'
+
+steps:
+- task: PowerPlatformToolInstaller@2
+
+
+- task: CmdLine@2
+  displayName: 'CreateCustomZipFolder'
+  inputs:
+    script: |
+      echo Zipping contents of $(SolutionName)
+      cd "$(Build.SourcesDirectory)\$(SolutionName)"
+      "C:\Program Files\7-Zip\7z.exe" a -tzip "$(Build.ArtifactStagingDirectory)\$(SolutionName).zip" * -mx=9
+
+- task: PowerPlatformUnPackSolution@2
+  inputs:
+    SolutionInputFile: '$(Build.ArtifactStagingDirectory)/$(SolutionName).zip'
+    SolutionTargetFolder: '$(Build.ArtifactStagingDirectory)/solutions/$(SolutionName)'
+    
+- task: PowerPlatformPackSolution@2
+  inputs:
+    SolutionOutputFile: '$(Build.ArtifactStagingDirectory)/solutions/$(SolutionName)_unmanaged.zip'
+    SolutionSourceFolder: '$(Build.ArtifactStagingDirectory)/solutions/$(SolutionName)'
+    solutionType: 'Unmanaged'
+  
+
+- task: PowerPlatformImportSolution@2
+  displayName: 'Import Solution to $(ActiveSPN)'
+  inputs:
+    authenticationType: 'PowerPlatformSPN'
+    PowerPlatformSPN: '$(ActiveSPN)'
+    SolutionInputFile: '$(Build.ArtifactStagingDirectory)/solutions/$(SolutionName)_unmanaged.zip'
+    AsyncOperation: true
+    MaxAsyncWaitTime: '60'
+    OverwriteUnmanagedCustomizations: true
+    PublishWorkflows: true

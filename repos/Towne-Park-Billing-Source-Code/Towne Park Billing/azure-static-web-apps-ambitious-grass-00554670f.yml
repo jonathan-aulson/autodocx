@@ -1,0 +1,80 @@
+name: Azure Static Web Apps CI/CD for master
+# This pipeline is concerned with deploying the changes that are merged to master and deploying a preview
+# build of the PRs created or updated that target master.
+pr:
+  branches:
+    include:
+      - master
+trigger:
+  branches:
+    include:
+      - master
+
+jobs:
+- template: azure-static-web-apps-common-steps-template.yml
+- job: build_and_deploy_job
+  displayName: Build and Deploy Job
+  dependsOn: TestsCompletion
+  condition: or(eq(variables['Build.Reason'], 'Manual'),or(eq(variables['Build.Reason'], 'PullRequest'),eq(variables['Build.Reason'], 'IndividualCI')))
+  pool:
+    vmImage: ubuntu-latest
+  variables:
+  - group: Azure-Static-Web-Apps-ambitious-grass-00554670f-variable-group
+  steps:
+  - checkout: self
+    submodules: true
+
+  - script: |
+      echo "Checking source branch..."
+      if [[ ! $(System.PullRequest.SourceBranch) =~ ^refs/heads/release/ ]] && [[ ! $(System.PullRequest.SourceBranch) =~ ^refs/heads/hotfix/ ]]; then
+        echo "PR source branch does not match 'release/*' or 'hotfix/*'. Failing the build."
+        exit 1
+      fi
+    displayName: 'Validate Source Branch for PR'
+    condition: eq(variables['Build.Reason'], 'PullRequest')
+
+  - task: AzureStaticWebApp@0
+    # This task will run when PRs targeting master are merged or changes are pushed directly to master.
+    name: DeployStaticWebApp
+    condition: ne(variables['Build.Reason'], 'PullRequest')
+    inputs:
+      azure_static_web_apps_api_token: $(AZURE_STATIC_WEB_APPS_API_TOKEN_AMBITIOUS_GRASS_00554670F)
+###### Repository/Build Configurations - These values can be configured to match your app requirements. ######
+# For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
+      app_location: "/" # App source code path
+      api_location: "api/src" # Api source code path - optional
+      output_location: "dist" # Built app content directory - optional
+###### End of Repository/Build Configurations ######
+
+  - task: AzureStaticWebApp@0
+    # This task will run when PRs targeting master are created or updated.
+    name: DeployStaticWebAppPreview
+    condition: eq(variables['Build.Reason'], 'PullRequest')
+    inputs:
+      azure_static_web_apps_api_token: $(AZURE_STATIC_WEB_APPS_API_TOKEN_AMBITIOUS_GRASS_00554670F)
+      app_location: "/"
+      api_location: "api/src"
+      output_location: "dist"
+      deployment_environment: 'release'
+  
+  - task: AzureStaticWebApp@0
+    # This task will run when PRs targeting master are created or updated.
+    name: DeployStaticWebAppPreviewTraining
+    condition: eq(variables['Build.Reason'], 'PullRequest')
+    inputs:
+      azure_static_web_apps_api_token: $(AZURE_STATIC_WEB_APPS_API_TOKEN_AMBITIOUS_GRASS_00554670F)
+      app_location: "/"
+      api_location: "api/src"
+      output_location: "dist"
+      deployment_environment: 'training'
+  
+  - task: AzureStaticWebApp@0
+    # This task will run when PRs targeting master are created or updated.
+    name: DeployStaticWebAppPreviewUAT
+    condition: eq(variables['Build.Reason'], 'PullRequest')
+    inputs:
+      azure_static_web_apps_api_token: $(AZURE_STATIC_WEB_APPS_API_TOKEN_AMBITIOUS_GRASS_00554670F)
+      app_location: "/"
+      api_location: "api/src"
+      output_location: "dist"
+      deployment_environment: 'uat'

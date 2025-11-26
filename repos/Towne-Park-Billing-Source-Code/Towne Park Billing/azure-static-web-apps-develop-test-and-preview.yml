@@ -1,0 +1,91 @@
+name: Azure Static Web Apps CI/CD for develop
+# This pipeline is concerned with deploying a preview build of the PRs created, updated or merged that target develop.
+# It also runs the Frontend and Backend tests before deploying.
+pr:
+  branches:
+    include:
+      - develop
+trigger:
+  branches:
+    include:
+      - develop
+
+jobs:
+- template: azure-static-web-apps-common-steps-template.yml
+- job: run_tests
+  displayName: 'Run Frontend and Backend tests and deploy preview build'
+  dependsOn: TestsCompletion
+  condition: or(eq(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.Reason'], 'IndividualCI'))
+  pool:
+    vmImage: ubuntu-latest
+  variables:
+    - group: Azure-Static-Web-Apps-ambitious-grass-00554670f-variable-group
+
+  steps:
+  - checkout: self
+
+  - script: |
+      echo "Checking source branch..."
+      # Get the source branch without the refs/heads/ prefix
+      SOURCE_BRANCH=$(echo "$(System.PullRequest.SourceBranch)" | sed 's|refs/heads/||')
+      echo "Source branch: $SOURCE_BRANCH"
+      
+      # Set default environment
+      echo "##vso[task.setvariable variable=DEPLOY_ENVIRONMENT]develop"
+      
+      # Check if this is a support branch
+      if [[ "$SOURCE_BRANCH" == support/* ]]; then
+        echo "Support branch detected. Will deploy to support environment."
+        echo "##vso[task.setvariable variable=DEPLOY_ENVIRONMENT]support"
+        
+        # Check if it's a valid support branch pattern
+        if [[ "$SOURCE_BRANCH" == support/feature/* ]] || [[ "$SOURCE_BRANCH" == support/bugfix/* ]]; then
+          echo "Valid support branch pattern."
+        else
+          echo "Invalid support branch pattern. Must be 'support/feature/*' or 'support/bugfix/*'. Failing the build."
+          exit 1
+        fi
+      else
+        # Validate other branch patterns
+        if [[ ! "$SOURCE_BRANCH" == feature/* ]] && [[ ! "$SOURCE_BRANCH" == bugfix/* ]] && [[ ! "$SOURCE_BRANCH" == backmerge/* ]]; then
+          echo "PR source branch does not match 'feature/*' or 'bugfix/*' or 'backmerge/*'. Failing the build."
+          exit 1
+        fi
+      fi
+    condition: eq(variables['Build.Reason'], 'PullRequest')
+    displayName: 'Validate Source Branch for PR and Set Environment'
+
+  # Deploy to support environment for support branches
+  - task: AzureStaticWebApp@0
+    displayName: 'Deploy preview build to support environment'
+    name: DeployStaticWebAppSupportPreview
+    condition: and(eq(variables['Build.Reason'], 'PullRequest'), eq(variables['DEPLOY_ENVIRONMENT'], 'support'))
+    inputs:
+      azure_static_web_apps_api_token: $(AZURE_STATIC_WEB_APPS_API_TOKEN_AMBITIOUS_GRASS_00554670F)
+      app_location: "/"
+      api_location: "api/src"
+      output_location: "dist"
+      deployment_environment: 'support'
+  
+
+  # Deploy to develop environment when changes are merged
+  - task: AzureStaticWebApp@0
+    displayName: 'Deploy to develop environment when merged'
+    name: DeployStaticWebAppDevelop
+    condition: ne(variables['Build.Reason'], 'PullRequest')
+    inputs:
+      azure_static_web_apps_api_token: $(AZURE_STATIC_WEB_APPS_API_TOKEN_AMBITIOUS_GRASS_00554670F)
+      app_location: "/"
+      api_location: "api/src"
+      output_location: "dist"
+      deployment_environment: 'develop'
+  
+  - task: AzureStaticWebApp@0
+    name: DeployStaticWebAppPreviewQA
+    condition: ne(variables['Build.Reason'], 'PullRequest')
+    inputs:
+      azure_static_web_apps_api_token: $(AZURE_STATIC_WEB_APPS_API_TOKEN_AMBITIOUS_GRASS_00554670F)
+      app_location: "/"
+      api_location: "api/src"
+      output_location: "dist"
+      deployment_environment: 'qa'
