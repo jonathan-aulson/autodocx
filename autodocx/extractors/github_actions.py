@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pathlib import Path
-from typing import Iterable, List, Set
+from typing import Any, Dict, Iterable, List, Set, Tuple
 import re, yaml
 from autodocx.types import Signal
 
@@ -70,12 +70,86 @@ class GitHubActionsExtractor:
             envs = set()
             envs |= _infer_envs_from_path(path)
             envs |= _infer_envs_from_yaml(doc)
+            triggers = self._normalize_triggers(on)
+            steps_meta, datastores, service_deps = self._collect_job_steps(doc.get("jobs") or {})
+            service_deps.update(envs)
             signals.append(Signal(
                 kind="job",
-                props={"name": name, "schedules": schedules, "file": str(path), "ci_system": "github_actions", "environments": sorted(envs)},
+                props={
+                    "name": name,
+                    "schedules": schedules,
+                    "file": str(path),
+                    "ci_system": "github_actions",
+                    "environments": sorted(envs),
+                    "triggers": triggers,
+                    "steps": steps_meta,
+                    "datasource_tables": sorted(datastores),
+                    "service_dependencies": sorted(service_deps),
+                },
                 evidence=[f"{path}:1-60"],
                 subscores={"parsed": 1.0}
             ))
         except Exception as e:
             signals.append(Signal(kind="doc", props={"name": path.name, "file": str(path), "note": f"GHA parse error: {e}"}, evidence=[f"{path}:1-1"], subscores={"parsed": 0.1}))
         return signals
+
+    def _normalize_triggers(self, on_field: Any) -> List[Dict[str, Any]]:
+        triggers: List[Dict[str, Any]] = []
+        if isinstance(on_field, str):
+            triggers.append({"event": on_field})
+        elif isinstance(on_field, list):
+            for item in on_field:
+                if isinstance(item, str):
+                    triggers.append({"event": item})
+        elif isinstance(on_field, dict):
+            for event, config in on_field.items():
+                if event == "schedule":
+                    for sched in config or []:
+                        if isinstance(sched, dict):
+                            triggers.append({"event": "schedule", "cron": sched.get("cron")})
+                    continue
+                entry: Dict[str, Any] = {"event": event}
+                if isinstance(config, dict):
+                    if config.get("branches"):
+                        entry["branches"] = config.get("branches")
+                    if config.get("types"):
+                        entry["types"] = config.get("types")
+                triggers.append(entry)
+        return triggers[:10]
+
+    def _collect_job_steps(self, jobs: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], Set[str], Set[str]]:
+        steps_meta: List[Dict[str, Any]] = []
+        datastores: Set[str] = set()
+        service_deps: Set[str] = set()
+        for job_name, job in (jobs or {}).items():
+            env = job.get("environment")
+            env_name = env.get("name") if isinstance(env, dict) else env
+            if env_name:
+                service_deps.add(str(env_name))
+            for idx, step in enumerate(job.get("steps") or []):
+                if not isinstance(step, dict):
+                    continue
+                entry: Dict[str, Any] = {
+                    "job": job_name,
+                    "name": step.get("name") or step.get("uses") or f"{job_name}:{idx+1}",
+                    "connector": step.get("uses") or ("run" if step.get("run") else step.get("shell") or "step"),
+                    "inputs_keys": sorted((step.get("with") or {}).keys())[:5],
+                }
+                if step.get("run"):
+                    entry["script"] = step["run"].splitlines()[0][:80]
+                uses = step.get("uses")
+                if uses:
+                    service_deps.add(str(uses))
+                    uses_lower = uses.lower()
+                    artifact_name = (step.get("with") or {}).get("name")
+                    if "upload-artifact" in uses_lower and artifact_name:
+                        datastores.add(str(artifact_name))
+                    if "cache" in uses_lower:
+                        cache_key = (step.get("with") or {}).get("key")
+                        if cache_key:
+                            datastores.add(str(cache_key))
+                env_ref = (step.get("with") or {}).get("environment") or step.get("env", {}).get("AZURE_ENVIRONMENT")
+                if env_ref:
+                    service_deps.add(str(env_ref))
+                steps_meta.append({k: v for k, v in entry.items() if v})
+        return steps_meta, datastores, service_deps

@@ -2,7 +2,7 @@
 from __future__ import annotations
 import json
 from pathlib import Path
-from typing import Dict, List, Iterable, Tuple
+from typing import Dict, List, Iterable, Tuple, Set
 
 _ROLE_MAP = None
 
@@ -47,3 +47,29 @@ def map_connectors_to_roles_with_evidence(connectors_with_evidence: Iterable[Tup
                     if evidence not in lst:
                         lst.append(evidence)
     return roles_to_evidence
+
+
+def map_connectors_to_roles(connectors: Iterable[str]) -> List[str]:
+    """
+    Lightweight helper used by extractors that only need the role labels.
+    Mirrors the prefix-matching behavior of map_connectors_to_roles_with_evidence
+    but returns a flat, deduped list without evidence payloads.
+    """
+    role_map = _load_role_map()
+    if not role_map:
+        return []
+    roles: List[str] = []
+    seen: Set[str] = set()
+    for raw in connectors or []:
+        if not raw:
+            continue
+        s = str(raw).lower()
+        for prefix, mapped in role_map.items():
+            if not prefix:
+                continue
+            if prefix in s:
+                for r in mapped:
+                    if r not in seen:
+                        seen.add(r)
+                        roles.append(r)
+    return roles

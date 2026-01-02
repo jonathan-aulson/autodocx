@@ -1,12 +1,19 @@
 from __future__ import annotations
 from pathlib import Path
 from typing import Iterable, List, Dict, Any
-import json, subprocess, yaml
+import json, subprocess, yaml, shutil, tempfile, os
 from autodocx.types import Signal
+
+try:
+    from rich import print as rprint
+except Exception:  # pragma: no cover - fallback when rich unavailable
+    def rprint(msg):
+        print(msg)
 
 class BicepExtractor:
     name = "bicep"
     patterns = ["**/*.bicep"]
+    _warnings_emitted: set[str] = set()
 
     def detect(self, repo: Path) -> bool:
         return any(repo.glob("**/*.bicep"))
@@ -14,19 +21,62 @@ class BicepExtractor:
     def discover(self, repo: Path) -> Iterable[Path]:
         yield from repo.glob("**/*.bicep")
 
+    def _warn_once(self, key: str, message: str) -> None:
+        if key in self._warnings_emitted:
+            return
+        self._warnings_emitted.add(key)
+        try:
+            rprint(f"[yellow]{message}[/yellow]")
+        except Exception:
+            print(message)
+
     def _build_to_arm(self, path: Path) -> Dict[str, Any] | None:
         # Try az bicep; fallback to bicep CLI; else None
         cmds = [
-            ["az", "bicep", "build", "--file", str(path), "--stdout"],
-            ["bicep", "build", str(path), "--stdout"]
+            ["az", "bicep", "build", "--file", str(path)],
+            ["bicep", "build", str(path)]
         ]
-        for cmd in cmds:
+        available_cmds = [cmd for cmd in cmds if shutil.which(cmd[0])]
+        if not available_cmds:
+            self._warn_once(
+                "bicep_cli_missing",
+                "Bicep extractor skipped compilation because neither 'az bicep' nor 'bicep' was found on PATH. "
+                "Run ./scripts/setup_wsl.sh or install the CLI manually to enable richer infra signals."
+            )
+            return None
+        for cmd in available_cmds:
+            tmp_path = None
             try:
-                out = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
-                doc = json.loads(out)
+                with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".json") as tmp:
+                    tmp_path = tmp.name
+                cmd_with_out = cmd + ["--outfile", tmp_path]
+                proc = subprocess.run(cmd_with_out, check=True, capture_output=True, text=True)
+                if proc.stderr.strip():
+                    self._warn_once(f"bicep_warning_{path}", proc.stderr.strip())
+                text = Path(tmp_path).read_text(encoding="utf-8")
+                doc = json.loads(text)
                 return doc
-            except Exception:
+            except subprocess.CalledProcessError as exc:
+                message = (exc.stderr or exc.stdout or "").strip()
+                if message:
+                    self._warn_once(f"bicep_cmd_error_{path}", message)
                 continue
+            except json.JSONDecodeError as exc:
+                self._warn_once(
+                    f"bicep_json_error_{path}",
+                    f"Bicep extractor produced invalid JSON for {path.name}: {exc}",
+                )
+                continue
+            finally:
+                if tmp_path:
+                    try:
+                        os.unlink(tmp_path)
+                    except OSError:
+                        pass
+        self._warn_once(
+            "bicep_compile_failed",
+            f"Bicep extractor could not compile {path.name}; falling back to doc-only signal."
+        )
         return None
 
     def extract(self, path: Path) -> Iterable[Signal]:

@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from autodocx.extractors.azure_pipelines import AzurePipelinesExtractor
+from autodocx.scaffold.signal_scaffold import build_scaffold
 
 
 PIPELINE_YAML = """
@@ -42,3 +43,12 @@ def test_azure_pipelines_extractor_relationships(tmp_path: Path) -> None:
     assert "depends_on" in ops, "Stage dependencies should be captured"
     assert "deploys_to" in ops and "environment" in targets, "Environment relationship expected"
     assert "artifact" in targets, "Artifact publishing relationship expected"
+    steps = signals[0].props.get("steps") or []
+    assert steps, "pipeline steps metadata should be captured"
+    datastores = signals[0].props.get("datasource_tables") or []
+    assert "drop" in datastores
+    service_deps = signals[0].props.get("service_dependencies") or []
+    assert "prod" in service_deps
+    scaffold = build_scaffold(signals[0])
+    assert scaffold["dependencies"]["datastores"]
+    assert scaffold["dependencies"]["processes"]

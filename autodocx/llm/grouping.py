@@ -32,6 +32,13 @@ def group_by_component(out_dir: str | Path, repo_root: Optional[Path] = None) ->
     repo_root = Path(repo_root).resolve() if repo_root else None
     artifacts = load_artifacts(out_dir)
     sirs = load_sirs(out_dir)
+    component_changes: Dict[str, Any] = {}
+    changes_path = out_dir / "component_changes.json"
+    if changes_path.exists():
+        try:
+            component_changes = json.loads(changes_path.read_text(encoding="utf-8"))
+        except Exception:
+            component_changes = {}
     groups: Dict[str, Dict[str, Any]] = {}
     # primary grouping by artifact.component_or_service
     for a in artifacts:
@@ -61,4 +68,6 @@ def group_by_component(out_dir: str | Path, repo_root: Optional[Path] = None) ->
                     break
             if not assigned:
                 groups.setdefault("ungrouped", {"artifacts": [], "sirs": []})["sirs"].append(s)
+    for comp, change in component_changes.items():
+        groups.setdefault(comp, {"artifacts": [], "sirs": []})["recent_changes"] = change
     return groups

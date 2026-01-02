@@ -2,7 +2,7 @@
 from __future__ import annotations
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Iterable
 from autodocx.types import Signal
 from autodocx.utils.components import derive_component
 from autodocx.artifacts.experience_packs import build_experience_pack
@@ -51,6 +51,29 @@ def _apply_narrative_sections(base: Dict[str, Any], props: Dict[str, Any]) -> No
         base.setdefault("data_examples", []).append({"outputs": props["outputs_example"]})
     if props.get("data_samples"):
         base.setdefault("data_examples", []).extend(props["data_samples"])
+
+
+def _extend_unique(target: List[Any], values: Iterable[Any]) -> None:
+    for value in values or []:
+        if not value:
+            continue
+        if value not in target:
+            target.append(value)
+
+
+def _apply_dependency_hints(base: Dict[str, Any], props: Dict[str, Any]) -> None:
+    datastores = props.get("datasource_tables") or props.get("datastores") or []
+    services = props.get("service_dependencies") or []
+    processes = props.get("process_calls") or props.get("calls_flows") or []
+    identifiers = props.get("identifier_hints") or []
+    _extend_unique(base["dependencies"]["datastores"], datastores)
+    _extend_unique(base["dependencies"]["external_services"], services)
+    if processes:
+        slots = base.setdefault("process_dependencies", [])
+        _extend_unique(slots, processes)
+    if identifiers:
+        identifier_block = base.setdefault("data", {}).setdefault("identifier_fields", [])
+        _extend_unique(identifier_block, identifiers)
 
 # -------- main mapper --------
 
@@ -222,6 +245,15 @@ def to_option1_artifact(signal: Signal, repo_root: Path) -> Dict[str, Any]:
         connectors = sorted(set(connectors_raw))
         if connectors:
             wf_entry["connectors"] = connectors
+        datastore_list = [str(d) for d in (props.get("datasource_tables") or []) if d]
+        if datastore_list:
+            wf_entry["datastores"] = sorted(set(datastore_list))
+        service_list = [str(s) for s in (props.get("service_dependencies") or []) if s]
+        if service_list:
+            wf_entry["service_dependencies"] = sorted(set(service_list))
+        identifier_list = [str(i) for i in (props.get("identifier_hints") or []) if i]
+        if identifier_list:
+            wf_entry["identifier_hints"] = sorted(set(identifier_list))
 
         msg_keys = {"shared_servicebus", "shared_eventhubs", "shared_kafka"}
         db_keys = {"shared_sql", "shared_azuresql", "shared_commondataservice", "shared_commondataserviceforapps", "shared_postgresql", "shared_mysql"}
@@ -251,9 +283,9 @@ def to_option1_artifact(signal: Signal, repo_root: Path) -> Dict[str, Any]:
                 extra_external.add(c)
 
         if extra_datastores:
-            base["dependencies"]["datastores"].extend(sorted(extra_datastores))
+            _extend_unique(base["dependencies"]["datastores"], sorted(extra_datastores))
         if extra_external:
-            base["dependencies"]["external_services"].extend(sorted(extra_external))
+            _extend_unique(base["dependencies"]["external_services"], sorted(extra_external))
 
         base["workflows"].append(wf_entry)
         if props.get("user_story"):
@@ -330,6 +362,7 @@ def to_option1_artifact(signal: Signal, repo_root: Path) -> Dict[str, Any]:
         doc = props.get("docstring") or ""
         base["description"] = doc or base["description"]
         base["capabilities"].append("exposes code component")
+        verbs = props.get("business_verbs") or []
         entry = {
             "name": props.get("name"),
             "entity_type": props.get("entity_type"),
@@ -337,7 +370,10 @@ def to_option1_artifact(signal: Signal, repo_root: Path) -> Dict[str, Any]:
             "docstring": doc,
             "start_line": props.get("start_line"),
             "end_line": props.get("end_line"),
+            "business_verbs": verbs,
         }
+        if verbs:
+            base["capabilities"].append(f"handles {', '.join(verbs[:3])}")
         base["code_entities"].append(entry)
 
     # ---- UI components ----
@@ -378,6 +414,8 @@ def to_option1_artifact(signal: Signal, repo_root: Path) -> Dict[str, Any]:
         base["business_entities"].append({"name": props.get("name")})
 
     # ---- other kinds fall through ----
+
+    _apply_dependency_hints(base, props)
 
     pack = build_experience_pack(signal)
     if pack:

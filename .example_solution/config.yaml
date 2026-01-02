@@ -1,0 +1,57 @@
+# File: .roo/config.yaml
+# This config is self-contained: it includes your API keys under `env` so Supervisor
+# can inject them into child processes, and also sets explicit values under `qdrant`
+# so tools that read config directly (not env) work without extra setup.
+
+repo_root: "./bw-samples-master"
+out_dir: "./out"
+
+# LLM provider settings
+provider: "openai"
+model: "gpt-5-chat-latest"   # exact model id echoed by the API/ledger
+temperature: 0
+top_p: 1
+
+# Evidence shortlist / Qdrant (explicit values for tools that read cfg directly)
+qdrant:
+  url: "https://de8d1b02-a6c3-4df7-a6d0-2e14c9b1ab47.us-east-1-1.aws.cloud.qdrant.io:6333"
+  api_key: "REPLACE_ME"
+  collection: "evidence_candidates_v1"
+  embedding: "gemini"
+  google_api_key: "REPLACE_ME"   # Google Gemini key
+  top_k: 50
+
+# Pipeline switches
+steps:
+  build_candidates_if_missing: true
+  qc_candidates: true
+  enrich_index: true
+  upsert_qdrant: false
+  auto_anchor_fallback: true
+  guard_append_only: true
+  require_doc_hints: true
+
+prompts:
+  claims_system: ".roo/prompts/01_claims_extraction_evidence_anchored.md"
+
+pricing:
+  openai:
+    gpt-5-mini-2025-08-07:
+      input_per_million: 0.250
+      output_per_million: 2.000
+    gpt-5-chat-latest:
+      input_per_million: 1.250
+      output_per_million: 10.000
+    gpt-5-nano-2025-08-07:
+      input_per_million: 0.050
+      output_per_million: 0.400
+  openrouter: {}
+
+# Environment for child processes (Supervisor merges these into os.environ for watcher/loop)
+# You asked to keep the keys here so processes always see them without manual export.
+env:
+  OPENAI_API_KEY: "REDACTED_OPENAI_KEY"
+  QDRANT_URL: "https://de8d1b02-a6c3-4df7-a6d0-2e14c9b1ab47.us-east-1-1.aws.cloud.qdrant.io:6333"
+  QDRANT_API_KEY: "REPLACE_ME"
+  QDRANT_COLLECTION: "evidence_candidates_v1"
+  GOOGLE_API_KEY: "REPLACE_ME"

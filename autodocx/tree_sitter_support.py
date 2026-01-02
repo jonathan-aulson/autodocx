@@ -8,7 +8,9 @@ try:
     from tree_sitter import Parser  # type: ignore
     from tree_sitter_languages import get_language  # type: ignore
 
-    TREE_SITTER_AVAILABLE = hasattr(Parser, "set_language") and callable(getattr(Parser, "set_language", None))
+    _HAS_SET_LANGUAGE = callable(getattr(Parser, "set_language", None))
+    _HAS_LANGUAGE_PROP = hasattr(Parser, "language")
+    TREE_SITTER_AVAILABLE = _HAS_SET_LANGUAGE or _HAS_LANGUAGE_PROP
 except ImportError:
     Parser = None  # type: ignore
     get_language = None  # type: ignore
@@ -42,7 +44,11 @@ def create_parser(lang_name: str) -> Parser:
     if not TREE_SITTER_AVAILABLE or Parser is None:
         raise RuntimeError("tree_sitter is not installed")
     parser = Parser()
-    parser.set_language(_language_handle(lang_name))
+    language = _language_handle(lang_name)
+    if callable(getattr(parser, "set_language", None)):
+        parser.set_language(language)
+    else:
+        setattr(parser, "language", language)
     return parser
 
 

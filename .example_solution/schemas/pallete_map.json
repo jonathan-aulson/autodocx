@@ -1,0 +1,18 @@
+{
+  "prefix_roles": {
+    "http":   ["interface.receive", "interface.reply"],
+    "rest":   ["interface.receive", "interface.reply"],
+    "soap":   ["interface.receive", "interface.reply"],
+    "process":["invoke.process"],
+    "bw":     ["invoke.process"],
+    "jdbc":   ["data.jdbc"],
+    "jms":    ["messaging.jms"],
+    "mapper": ["transform.mapper"],
+    "timer":  ["schedule.timer"],
+    "log":    ["ops.log"],
+    "error":  ["error.throw"],
+    "file":   [],
+    "json":   [],
+    "xml":    []
+  }
+}

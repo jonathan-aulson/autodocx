@@ -68,15 +68,13 @@ def _prune_evidence_ids(doc: Dict[str, Any], allowed_ids: Iterable[str]) -> None
     doc["evidence_used"] = [eid for eid in doc.get("evidence_used", []) if eid in allowed]
     section_keys = [
         "what_it_does",
+        "why_it_matters",
         "interfaces",
-        "data_highlights",
-        "risks_gaps",
-        "user_experience",
-        "risk_stories",
-        "operational_behaviors",
-        "data_flows",
-        "relationships_summary",
-        "dependency_matrix",
+        "invokes",
+        "key_inputs",
+        "key_outputs",
+        "extrapolations",
+        "traceability",
     ]
 
     def _prune_list(items: Iterable[Dict[str, Any]]) -> None:
@@ -84,9 +82,24 @@ def _prune_evidence_ids(doc: Dict[str, Any], allowed_ids: Iterable[str]) -> None
             if isinstance(entry, dict) and "evidence_ids" in entry:
                 entry["evidence_ids"] = [eid for eid in entry.get("evidence_ids", []) if eid in allowed]
 
+    def _prune_errors_logging(section: Dict[str, Any]) -> None:
+        if not isinstance(section, dict):
+            return
+        _prune_list(section.get("errors") or [])
+        _prune_list(section.get("logging") or [])
+
+    def _prune_interdependencies(section: Dict[str, Any]) -> None:
+        if not isinstance(section, dict):
+            return
+        _prune_list(section.get("calls") or [])
+        _prune_list(section.get("called_by") or [])
+        _prune_list(section.get("shared_data") or [])
+
     for component in doc.get("components", []) or []:
         for key in section_keys:
             _prune_list(component.get(key) or [])
+        _prune_errors_logging(component.get("errors_and_logging"))
+        _prune_interdependencies(component.get("interdependencies"))
 
 
 def _compute_llm_subscore(claims: Sequence[Dict[str, Any]]) -> float:
@@ -143,17 +156,20 @@ def _build_component_payloads(
             "summary": component.get("summary") or "",
             "component": {
                 "name": component.get("name") or comp_id,
+                "summary": component.get("summary") or "",
                 "what_it_does": component.get("what_it_does") or [],
+                "why_it_matters": component.get("why_it_matters") or [],
                 "interfaces": component.get("interfaces") or [],
-                "data_highlights": component.get("data_highlights") or [],
-                "risks_gaps": component.get("risks_gaps") or [],
-                "user_experience": component.get("user_experience") or [],
-                "risk_stories": component.get("risk_stories") or [],
-                "operational_behaviors": component.get("operational_behaviors") or [],
-                "data_flows": component.get("data_flows") or [],
+                "invokes": component.get("invokes") or [],
+                "key_inputs": component.get("key_inputs") or [],
+                "key_outputs": component.get("key_outputs") or [],
+                "errors_and_logging": component.get("errors_and_logging")
+                or {"errors": [], "logging": []},
+                "interdependencies": component.get("interdependencies")
+                or {"calls": [], "called_by": [], "shared_data": []},
+                "extrapolations": component.get("extrapolations") or [],
+                "traceability": component.get("traceability") or [],
                 "journey_blueprints": component.get("journey_blueprints") or [],
-                "relationships_summary": component.get("relationships_summary") or [],
-                "dependency_matrix": component.get("dependency_matrix") or [],
             },
             "evidence_used": component.get("evidence_used") or [],
             "llm_subscore": _compute_llm_subscore(component.get("what_it_does") or []),
@@ -192,57 +208,238 @@ def _fallback_journey_blueprints(context: Dict[str, Any], limit: int = 2) -> Lis
 
 
 def _enrich_component_sections(component: Dict[str, Any], context: Dict[str, Any]) -> None:
-    """
-    Ensure key narrative sections are populated, deriving content from context data
-    (experience packs, journey blueprints, process flows) when the LLM omitted them.
-    """
-    if not component.get("user_experience"):
-        entries: List[Dict[str, Any]] = []
-        for pack in context.get("experience_packs", [])[:3]:
-            screenshots = _flatten_screenshots(pack.get("screenshots"))
-            narrative = pack.get("summary") or f"{pack.get('component')} experience"
+    if not component.get("what_it_does"):
+        component["what_it_does"] = _fallback_claims_from_sirs(context, limit=4)
+    if not component.get("why_it_matters"):
+        component["why_it_matters"] = _fallback_why_from_claims(component.get("what_it_does") or [], limit=3)
+    if not component.get("interfaces"):
+        component["interfaces"] = _fallback_interfaces_from_sirs(context.get("sirs", []))
+    if not component.get("invokes"):
+        component["invokes"] = _fallback_invokes_from_flows(context.get("process_flows", []))
+    if not component.get("key_inputs"):
+        component["key_inputs"] = _fallback_io_entries(context, example_key="inputs_example")
+    if not component.get("key_outputs"):
+        component["key_outputs"] = _fallback_io_entries(context, example_key="outputs_example")
+    errs = component.get("errors_and_logging") or {}
+    errs.setdefault("errors", [])
+    errs.setdefault("logging", [])
+    if not errs["errors"] and not errs["logging"]:
+        errs = _fallback_errors_logging(context)
+    component["errors_and_logging"] = errs
+    interdeps = component.get("interdependencies") or {}
+    if not any(interdeps.get(key) for key in ("calls", "called_by", "shared_data")):
+        interdeps = _fallback_interdependencies(context)
+    component["interdependencies"] = interdeps
+    if not component.get("traceability"):
+        component["traceability"] = _fallback_traceability(context)
+    if not component.get("journey_blueprints"):
+        component["journey_blueprints"] = _fallback_journey_blueprints(context, limit=3)
+    component.setdefault("extrapolations", [])
+
+
+def _fallback_claims_from_sirs(context: Dict[str, Any], limit: int = 4) -> List[Dict[str, Any]]:
+    claims: List[Dict[str, Any]] = []
+    for sir in context.get("sirs", []):
+        summary = sir.get("user_story") or f"{sir.get('name')} workflow"
+        if not summary:
+            continue
+        claims.append(
+            {
+                "summary": summary,
+                "detail": summary,
+                "evidence_ids": sir.get("evidence_ids") or [],
+            }
+        )
+        if len(claims) >= limit:
+            break
+    return claims
+
+
+def _fallback_why_from_claims(claims: Sequence[Dict[str, Any]], limit: int = 3) -> List[Dict[str, Any]]:
+    reasons: List[Dict[str, Any]] = []
+    for claim in claims[:limit]:
+        reasons.append(
+            {
+                "impact": claim.get("summary") or claim.get("detail") or "Business impact",
+                "detail": claim.get("detail") or "",
+                "evidence_ids": claim.get("evidence_ids") or [],
+            }
+        )
+    if not reasons:
+        reasons.append(
+            {
+                "impact": "Business impact unclear [cannot_conclude]",
+                "detail": "Evidence not available to explain why this workflow matters.",
+                "evidence_ids": [],
+            }
+        )
+    return reasons
+
+
+def _fallback_interfaces_from_sirs(sirs: Iterable[Dict[str, Any]], limit: int = 5) -> List[Dict[str, Any]]:
+    entries: List[Dict[str, Any]] = []
+    seen = set()
+    for sir in sirs or []:
+        for trig in sir.get("triggers") or []:
+            key = (sir.get("name"), trig.get("type"), trig.get("path"))
+            if key in seen:
+                continue
+            seen.add(key)
             entries.append(
                 {
-                    "narrative": narrative,
-                    "screenshots": screenshots,
-                    "evidence_ids": [],
+                    "name": sir.get("name") or trig.get("name") or "Interface",
+                    "kind": trig.get("type") or "interface",
+                    "endpoint": trig.get("path") or trig.get("name") or "",
+                    "method": trig.get("method") or "",
+                    "description": sir.get("user_story") or trig.get("type") or "",
+                    "evidence_ids": sir.get("evidence_ids") or [],
                 }
             )
-        component["user_experience"] = entries
-
-    if not component.get("journey_blueprints"):
-        blueprints = _fallback_journey_blueprints(context, limit=3)
-        component["journey_blueprints"] = blueprints
-
-    if not component.get("relationships_summary"):
-        rels = []
-        for rel in context.get("process_flows", [])[:5]:
-            source = rel.get("source")
-            target = rel.get("target")
-            op = rel.get("operation") or rel.get("target_kind")
-            if source and target:
-                rels.append({"flow": f"{source} -> {target} ({op})", "evidence_ids": []})
-        component["relationships_summary"] = rels
-
-    if not component.get("dependency_matrix"):
-        matrix = []
-        counts: Dict[tuple, int] = {}
-        for rel in context.get("process_flows", []):
-            key = (rel.get("target_kind") or "unknown", rel.get("operation") or "touches")
-            counts[key] = counts.get(key, 0) + 1
-        for (kind, op), count in counts.items():
-            matrix.append({"target_kind": kind, "operation": op, "count": count, "evidence_ids": []})
-        component["dependency_matrix"] = matrix
+            if len(entries) >= limit:
+                return entries
+    return entries
 
 
-def _flatten_screenshots(items: Optional[List[Any]]) -> List[str]:
-    paths: List[str] = []
-    for shot in items or []:
-        if isinstance(shot, str):
-            paths.append(shot)
-        elif isinstance(shot, dict) and shot.get("path"):
-            paths.append(str(shot.get("path")))
-    return paths
+def _fallback_invokes_from_flows(flows: Iterable[Dict[str, Any]], limit: int = 6) -> List[Dict[str, Any]]:
+    entries: List[Dict[str, Any]] = []
+    seen = set()
+    for rel in flows or []:
+        target = rel.get("target")
+        if not target:
+            continue
+        key = (target, rel.get("target_kind"), rel.get("operation"))
+        if key in seen:
+            continue
+        seen.add(key)
+        entries.append(
+            {
+                "target": target,
+                "kind": rel.get("target_kind") or rel.get("operation") or "dependency",
+                "operation": rel.get("operation") or "touches",
+                "direction": "outbound",
+                "evidence_ids": [],
+            }
+        )
+        if len(entries) >= limit:
+            break
+    return entries
+
+
+def _describe_example(example: Any) -> str:
+    if isinstance(example, dict):
+        parts = []
+        for key, value in example.items():
+            if isinstance(value, list):
+                parts.append(f"{key}: {', '.join(str(v) for v in value[:5])}")
+            elif isinstance(value, dict):
+                parts.append(f"{key}: {', '.join(f'{k}={v}' for k, v in value.items())}")
+            else:
+                parts.append(f"{key}: {value}")
+        return "; ".join(parts)
+    return str(example)
+
+
+def _fallback_io_entries(context: Dict[str, Any], example_key: str, limit: int = 4) -> List[Dict[str, Any]]:
+    entries: List[Dict[str, Any]] = []
+    for sir in context.get("sirs", []):
+        sample = sir.get(example_key)
+        if not sample:
+            continue
+        entries.append(
+            {
+                "name": sir.get("name") or example_key,
+                "description": _describe_example(sample),
+                "evidence_ids": sir.get("evidence_ids") or [],
+            }
+        )
+        if len(entries) >= limit:
+            return entries
+    for payload in context.get("payload_examples", []):
+        sample = payload.get("inputs") if example_key == "inputs_example" else payload.get("outputs")
+        if not sample:
+            continue
+        entries.append(
+            {
+                "name": payload.get("source") or example_key,
+                "description": _describe_example(sample),
+                "evidence_ids": [],
+            }
+        )
+        if len(entries) >= limit:
+            break
+    return entries
+
+
+def _fallback_errors_logging(context: Dict[str, Any], limit: int = 4) -> Dict[str, List[Dict[str, Any]]]:
+    errors: List[Dict[str, Any]] = []
+    logging: List[Dict[str, Any]] = []
+    for sir in context.get("sirs", []):
+        for step in sir.get("steps") or []:
+            name = str(step.get("name") or step.get("type") or "")
+            lowered = name.lower()
+            entry = {"description": f"{sir.get('name')} – {name}", "evidence_ids": sir.get("evidence_ids") or []}
+            if any(keyword in lowered for keyword in ("error", "fault", "catch", "exception")):
+                if len(errors) < limit:
+                    errors.append(entry.copy())
+            if any(keyword in lowered for keyword in ("log", "audit", "trace")):
+                if len(logging) < limit:
+                    logging.append(entry.copy())
+            if len(errors) >= limit and len(logging) >= limit:
+                break
+    return {"errors": errors, "logging": logging}
+
+
+def _fallback_interdependencies(context: Dict[str, Any]) -> Dict[str, List[Dict[str, Any]]]:
+    calls: List[Dict[str, Any]] = []
+    called_by: List[Dict[str, Any]] = []
+    shared: List[Dict[str, Any]] = []
+    seen_calls = set()
+    seen_called = set()
+    seen_shared = set()
+    for row in context.get("interdependency_inputs", []):
+        process = row.get("process") or "Process"
+        for partner in row.get("calls") or []:
+            key = (process, partner, "calls")
+            if key in seen_calls:
+                continue
+            seen_calls.add(key)
+            calls.append(
+                {"partner": partner, "description": f"{process} calls {partner}", "evidence_ids": []}
+            )
+        for partner in row.get("called_by") or []:
+            key = (process, partner, "called_by")
+            if key in seen_called:
+                continue
+            seen_called.add(key)
+            called_by.append(
+                {"partner": partner, "description": f"{partner} calls {process}", "evidence_ids": []}
+            )
+        shared_with = (row.get("shared_identifiers_with") or []) + (row.get("shared_datastores_with") or [])
+        for partner in shared_with:
+            key = (process, partner, "shared")
+            if key in seen_shared:
+                continue
+            seen_shared.add(key)
+            shared.append(
+                {"partner": partner, "description": f"{process} shares data with {partner}", "evidence_ids": []}
+            )
+    return {"calls": calls[:5], "called_by": called_by[:5], "shared_data": shared[:5]}
+
+
+def _fallback_traceability(context: Dict[str, Any], limit: int = 10) -> List[Dict[str, Any]]:
+    entries: List[Dict[str, Any]] = []
+    for item in context.get("traceability_inputs", []):
+        entries.append(
+            {
+                "artifact": item.get("artifact") or "artifact",
+                "signal_type": item.get("signal_type") or "artifact",
+                "description": item.get("description") or "",
+                "evidence_ids": item.get("evidence_ids") or [],
+            }
+        )
+        if len(entries) >= limit:
+            break
+    return entries
 
 
 def rollup_group_and_persist(group_id: str, group_obj: Dict[str, Any], out_dir: Optional[str | Path] = None) -> Dict[str, Any]:

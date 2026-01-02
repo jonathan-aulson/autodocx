@@ -9,6 +9,21 @@ import yaml
 class ConfigError(RuntimeError):
     pass
 
+DEFAULT_PIPELINE_SWITCHES = {
+    "build_candidates": True,
+    "qc_candidates": True,
+    "enrich_index": True,
+    "push_qdrant": False,
+    "auto_anchor_fallback": True,
+    "guard_append_only": True,
+    "require_doc_hints": True,
+    "include_archives": True,
+    "doc_plan_refresh": True,
+    "doc_plan_fulfill": True,
+    "rag_docs": False,
+    "llm_rollup": False,
+}
+
 
 def load_config(path: str | None = None) -> Dict[str, Any]:
     """
@@ -23,6 +38,7 @@ def load_config(path: str | None = None) -> Dict[str, Any]:
             cfg = yaml.safe_load(fh) or {}
     except Exception as e:
         raise ConfigError(f"Failed to parse YAML config: {cfg_path}: {e}") from e
+    _apply_env_overrides(cfg)
     _validate_config(cfg, cfg_path)
     return cfg
 
@@ -67,12 +83,72 @@ def _validate_config(cfg: Dict[str, Any], path: Path) -> None:
             raise ConfigError(f"{path}: llm.temperature must be a number or null.")
 
 
+def _env_bool(name: str) -> bool | None:
+    val = os.getenv(name)
+    if val is None:
+        return None
+    return str(val).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _apply_env_overrides(cfg: Dict[str, Any]) -> None:
+    llm = cfg.get("llm") or {}
+    provider = os.getenv("AUTODOCX_LLM_PROVIDER")
+    if provider:
+        llm["provider"] = provider.strip()
+    model = os.getenv("AUTODOCX_LLM_MODEL")
+    if model:
+        llm["model"] = model.strip()
+    max_tokens = os.getenv("AUTODOCX_LLM_MAX_OUTPUT_TOKENS")
+    if max_tokens:
+        try:
+            llm["max_output_tokens"] = int(max_tokens)
+        except ValueError:
+            pass
+    temperature = os.getenv("AUTODOCX_LLM_TEMPERATURE")
+    if temperature is not None:
+        try:
+            llm["temperature"] = float(temperature)
+        except ValueError:
+            pass
+    cfg["llm"] = llm
+
+    out_dir_env = os.getenv("AUTODOCX_OUT_DIR")
+    if out_dir_env:
+        cfg["out_dir"] = out_dir_env.strip()
+
+    pipeline_cfg = dict(DEFAULT_PIPELINE_SWITCHES)
+    pipeline_cfg.update(cfg.get("pipeline") or {})
+    env_map = {
+        "build_candidates": "AUTODOCX_PIPELINE_BUILD_CANDIDATES",
+        "qc_candidates": "AUTODOCX_PIPELINE_QC_CANDIDATES",
+        "enrich_index": "AUTODOCX_PIPELINE_ENRICH_INDEX",
+        "push_qdrant": "AUTODOCX_PIPELINE_PUSH_QDRANT",
+        "auto_anchor_fallback": "AUTODOCX_PIPELINE_AUTO_ANCHOR_FALLBACK",
+        "guard_append_only": "AUTODOCX_PIPELINE_GUARD_APPEND_ONLY",
+        "require_doc_hints": "AUTODOCX_PIPELINE_REQUIRE_DOC_HINTS",
+        "include_archives": "AUTODOCX_PIPELINE_INCLUDE_ARCHIVES",
+        "doc_plan_refresh": "AUTODOCX_PIPELINE_DOC_PLAN_REFRESH",
+        "doc_plan_fulfill": "AUTODOCX_PIPELINE_DOC_PLAN_FULFILL",
+        "rag_docs": "AUTODOCX_PIPELINE_RAG_DOCS",
+        "llm_rollup": "AUTODOCX_PIPELINE_LLM_ROLLUP",
+    }
+    for key, env_name in env_map.items():
+        env_val = _env_bool(env_name)
+        if env_val is not None:
+            pipeline_cfg[key] = env_val
+    cfg["pipeline"] = pipeline_cfg
+
+
 def get_llm_settings() -> Dict[str, Any]:
     """
     Returns all LLM settings; no defaults here.
     """
     cfg = load_config()
-    return cfg["llm"]
+    settings = dict(cfg["llm"])
+    model_override = os.getenv("AUTODOCX_LLM_MODEL")
+    if model_override:
+        settings["model"] = model_override.strip()
+    return settings
 
 
 def get_all_settings() -> Dict[str, Any]:

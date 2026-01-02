@@ -69,8 +69,13 @@ def _iter_entry_point_extractors() -> Iterable[object]:
     try:
         from importlib.metadata import entry_points
         eps = entry_points()
-        group = eps.select(group="autodocx.extractors") if hasattr(eps, "select") else eps.get("autodocx.extractors", [])
-        for ep in group or []:
+        if hasattr(eps, "select"):
+            group = eps.select(group="autodocx.extractors")
+        elif isinstance(eps, dict):
+            group = eps.get("autodocx.extractors", [])
+        else:
+            group = []
+        for ep in group:
             try:
                 cls = ep.load()
                 inst = cls()
@@ -82,16 +87,22 @@ def _iter_entry_point_extractors() -> Iterable[object]:
 
     # pkg_resources path
     try:
-        import pkg_resources
-        for ep in pkg_resources.iter_entry_points("autodocx.extractors"):
-            try:
-                cls = ep.load()
-                inst = cls()
-                yield inst
-            except Exception as e:
-                print(f"[warn] Failed to load extractor via pkg_resources {getattr(ep, 'name', '?')}: {e}")
+        pkg_resources = importlib.import_module("pkg_resources")
+    except ModuleNotFoundError:
+        _debug("pkg_resources not installed; skipping entry point load")
     except Exception as e:
-        _debug(f"pkg_resources entry point load failed: {e}")
+        _debug(f"pkg_resources import failed: {e}")
+    else:
+        try:
+            for ep in pkg_resources.iter_entry_points("autodocx.extractors"):
+                try:
+                    cls = ep.load()
+                    inst = cls()
+                    yield inst
+                except Exception as e:
+                    print(f"[warn] Failed to load extractor via pkg_resources {getattr(ep, 'name', '?')}: {e}")
+        except Exception as e:
+            _debug(f"pkg_resources entry point load failed: {e}")
 
 def _unique_by_class(instances: Iterable[object]) -> List[object]:
     """

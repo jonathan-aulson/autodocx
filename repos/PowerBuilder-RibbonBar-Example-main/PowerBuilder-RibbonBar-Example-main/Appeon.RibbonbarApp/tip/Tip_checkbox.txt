@@ -1,0 +1,51 @@
+﻿/*
+Here it shows how to use custom theme color for the GroupBox and CheckBox on the window.
+*/
+
+/*
+1. You can use the syntax {window control name}.{xxx}.{control name} to set custom theme color for the border color, background color and text font for the GroupBox control used for different purposes.
+*/
+"w_sheet_customerwindow.gb_day": 
+{
+	"drawing": true,
+	"background-transparent": true,
+	"normal-state": 
+	{
+		"border-color": "#C7CFE4",
+		"background-color": "#F4F7FA",
+		"text-font": {"color": "#2B7BFF"}
+	},
+	"disabled-state": 
+	{
+		"border-color": "#DDE4F4",
+		"background-color": "#F4F7FA",
+		"text-font": {"color": "#ADCCFF"}
+	}
+},
+/*
+2. You can use the syntax {window control name}.{xxx}.{control name} to set custom theme color for the text font for the CheckBox control used for different purposes.
+*/
+"w_sheet_customerwindow.cbx_saturday": 
+{
+	"drawing": true,
+	"normal-state": 
+	{
+		"text-font": {"color": "#42BFE3"}
+	},
+	"hover-state": 
+	{
+		"text-font": {"color": "#42BFE3"}
+	},
+	"pressed-state": 
+	{
+		"text-font": {"color": "#42BFE3"}
+	},
+	"focused-state": 
+	{
+		"text-font": {"color": "#42BFE3"}
+	},
+	"disabled-state": 
+	{
+		"text-font": {"color": "#9DE7FC"}
+	}
+}

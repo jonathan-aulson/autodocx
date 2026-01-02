@@ -1,0 +1,12 @@
+
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:db="http://www.mulesoft.org/schema/mule/db">
+  <flow name="OrderFlow">
+    <http:listener config-ref="listener" path="/orders" allowedMethods="GET" />
+    <db:select config-ref="dbConfig" doc:name="SelectOrders">
+      <db:sql>SELECT * FROM Orders</db:sql>
+    </db:select>
+    <flow-ref name="AuditFlow" />
+  </flow>
+</mule>

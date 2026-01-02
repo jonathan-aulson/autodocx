@@ -1,0 +1,66 @@
+﻿/*
+Here it shows how to use custom theme for Tab control and HTrackBar control on a window.
+*/
+
+/*
+1. You can use the syntax {window control name}.{xxx}.{control name} to set custom theme for properties like the background-color, text font and page for a Tab control on the window.
+*/
+"w_sheet_customerwindow.tab_custom": 
+{
+	"drawing": true,
+	"background-color": "#F4F7FA",
+	"navigator": 
+	{
+		"normal-state": 
+		{
+			"background-color": "#F4F7FA",
+			"text-font": {"color": "#3D5067"}
+		},
+		"hover-state": 
+		{
+			"background-color": "#47CF70",
+			"text-font": {"color": "#FFFFFF"}
+		},
+		"focused-state": 
+		{
+			"background-color": "#39A459",
+			"text-font": {"color": "#FFFFFF"}
+		},
+		"selected-state": 
+		{
+			"background-color": "#39A459",
+			"text-font": {"color": "#FFFFFF"}
+		},
+		"disabled-state": 
+		{
+			"background-color": "#F4F7FA",
+			"text-font": {"color": "#B2BFCF"}
+		}
+	},
+	"page": 
+	{
+		"border-color": "#DDE0EF",
+		"separator-width": 2,
+		"separator-color": "#39A459",
+		"background-color": "#FFFFFF"
+	}
+},
+/*
+2. You can use the syntax {window control name}.{xxx}.{control name} to set custom theme for properties like the background-color and foreground-color for a HTrackBar control on the window.
+*/
+"w_sheet_customerwindow.tab_custom.tabpage_custom.htb_custom": 
+{
+	"drawing": true,
+	"normal-state": 
+	{
+		"background-color": "#FFFFFF"
+	},
+	"slider": 
+	{
+		"normal-state": 
+		{
+			"foreground-color": "#39A459",
+			"background-color": "#CBD7CF"
+		}
+	}
+}

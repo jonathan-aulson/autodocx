@@ -11,10 +11,10 @@ AutodocX transforms heterogeneous source repositories into evidence-backed docum
 1. **Discover** relevant files via extractor plugins.  
 2. **Extract** structured signals (SIRs) with provenance.  
 3. **Assemble** a knowledge graph and compute quality metrics.  
-4. **Map** signals into universal artifact documents.  
-5. **Render** Markdown (and optionally MkDocs sites) with diagrams.  
-6. **Roll up** component summaries with LLM assistance (optional).  
-7. **Publish** everything under the configured `out` directory.
+4. **Map** signals into universal artifacts and evidence indexes.  
+5. **Synthesize** LLM-authored workflow diagrams plus doc-context/doc-plan scaffolding (process → family → component → repo).  
+6. **Fulfill** every doc plan entry via LLM, then optionally run additional `--llm-rollup` summaries (post-doc).  
+7. **Publish** curated Markdown, regenerated MkDocs nav, assets, and metrics under the configured `out` directory.
 
 The CLI entry point (`autodocx_cli/__main__.py`) orchestrates the entire workflow.
 
@@ -45,15 +45,22 @@ The CLI entry point (`autodocx_cli/__main__.py`) orchestrates the entire workflo
 
 1. **Python** 3.10+.  
 2. **System dependencies**: Graphviz CLI (`dot`), MkDocs (`mkdocs`), Bicep CLI or Azure CLI (for Bicep extraction), optional `az` CLI.  
-3. **Virtual environment**: `python -m venv .venv && .\.venv\Scripts\activate`.  
-4. **Install**: `pip install -e .` (loads package and entry points).  
+   - Run `az bicep version` **and** `bicep --version` after provisioning to confirm both commands are on `PATH`; the Bicep extractor now relies on those binaries and falls back to doc-only output when neither command is available.  
+3. **Virtual environment**:  
+   - Windows/PowerShell: `python -m venv .venv && .\.venv\Scripts\activate`.  
+   - Linux/WSL: `python3.10 -m venv .venv && source .venv/bin/activate`. Keep the repo under `/home/<user>/...` (not `/mnt/c`) for faster scans.
+4. **Install**: `pip install -e .` (loads package and entry points). Use `pip install -e .[treesitter]` on Linux/WSL so tree-sitter wheels are available.
 5. **Config file**: `autodocx.yaml` in repo root (see Section4).  
-6. **Secrets**: `.env` with `OPENAI_API_KEY=...` for LLM-enabled runs.  
+6. **Secrets**: `.env` with `OPENAI_API_KEY=...` for LLM-enabled runs (set `AUTODOCX_LLM_MODEL` to override the YAML model per run, e.g., `gpt-5.1`).  
 7. **Optional env toggles**:  
    - `AUTODOCX_CONFIG` -> override config path.  
    - `AUTODOCX_EXTRACTORS_INCLUDE` / `AUTODOCX_EXTRACTORS_EXCLUDE` -> comma-separated class or fully-qualified names for plugin selection.  
    - `AUTODOCX_DEBUG_EXTRACTORS=1` -> verbose extractor logging.
-8. **Tree-sitter language packs (optional)**: Install `tree-sitter-languages` only when your OS/architecture provides wheels (Linux/macOS). Use `pip install -e .[treesitter]` or `pip install tree-sitter-languages` manually. Windows users can skip it—the AST extractors auto-disable if the module is missing.
+8. **Tree-sitter language packs (optional)**: Install `tree-sitter-languages` only when your OS/architecture provides wheels (Linux/macOS/WSL). Use `pip install -e .[treesitter]` or `pip install tree-sitter-languages` manually. Windows users can skip it—the AST extractors auto-disable if the module is missing.
+
+> **WSL bootstrap:** Run `./scripts/setup_wsl.sh` to install `python3.10-venv`, dev headers, `graphviz`, fonts, `mkdocs`, and optional Azure CLI/Bicep. The script also reminds you to export `OPENAI_API_KEY`. If you prefer manual steps, install the packages listed in the README before creating your virtual environment.
+
+> **Doctor command:** Use `python -m autodocx_cli doctor` to verify Graphviz, MkDocs, Azure CLI/Bicep, and `OPENAI_API_KEY` availability before long scans. The command exits non-zero when required tooling is missing so you can fix issues up front.
 
 ---
 
@@ -123,19 +130,20 @@ The `autodocx scan <repo>` command runs through the following stages (implementa
    - Workflow signals add connectors, triggers, SQL snippets, and cross-flow HTTP calls.  
    - Additional derived signals (database, routes, docs) supply complementary artifacts.
 
-10. **Rendering & MkDocs** (`autodocx/render/mkdocs.py`)  
-    - `render_docs(...)` is called through `call_render_docs`, which tries multiple call signatures for compatibility.  
-    - Writes `docs/index.md`, `docs/components/<group>/<component>.md`, normalizes YAML front-matter with facets and distance features, and embeds Graphviz images when present.  
-    - `render/business_renderer.py` crafts business-focused content, Graph Insights tables, and evidence cross-links.  
-    - Assets under `out/assets/` (e.g., Graphviz output) are mirrored into `docs/assets/`.  
-    - If `--mkdocs-build` (or `docs.mkdocs_build`) is set, the CLI attempts `mkdocs build -d out/site` (best-effort).
+10. **Doc context, plan, and MkDocs nav** (`autodocx/docplan/*`, `autodocx/llm/*`, `autodocx_cli/__main__.py`)  
+    - `build_doc_context(...)` consolidates SIR/SIRv2 paths, artifacts, diagram assets, interdependency slices, and facets per component/family plus a repo rollup, then writes `out/doc_context.json`.  
+    - `generate_llm_workflow_diagrams(...)` calls the LLM to merge related workflows into Graphviz DOT, renders SVGs via `dot`, and saves them under `out/assets/diagrams_llm/**` (these paths are appended back into the context).  
+    - `draft_doc_plan(...)` enumerates every process, every detected family, and the repo overview into `out/docs/dox_draft_plan.md` so the workflow always has a deterministic set of documents to fulfill.  
+    - `fulfill_doc_plan(...)` loads that plan + context, assembles rich LLM prompts (SIR JSON excerpts, interdependencies, SVG references, artifacts, extrapolations), trims each payload to ~60k characters, enforces the `AUTODOCX_SECTION_MIN_WORDS` floor via `_generate_with_retries`, and writes curated Markdown under `out/docs/curated/**`.  
+    - `sync_docs_assets` mirrors `out/assets/**` into `out/docs/assets/**`, and `regenerate_mkdocs_config` rewrites `out/mkdocs.yml` so the nav only references fresh curated pages (components/, families/, repo_overview.md).  
+    - If `--mkdocs-build` (or `docs.mkdocs_build`) is set, the CLI runs `mkdocs build -d out/site` using the regenerated config; failures are non-fatal but logged.
 
 11. **Evidence Index & Grouping** (`autodocx/llm/evidence_index.py`, `autodocx/llm/grouping.py`)  
     - Assemble `evidence_index.json` by walking SIR evidence and artifact evidence (including role-specific anchors).  
     - Group artifacts/SIRs by `component_or_service` with fallback heuristics (file path matching, else `ungrouped`).
 
-12. **LLM Rollup** (`autodocx/llm/rollup.py`)  
-    - Only if `--llm-rollup` and `OPENAI_API_KEY` is set.  
+12. **LLM Rollup (optional additive summaries)** (`autodocx/llm/rollup.py`)  
+    - Runs *only* when `--llm-rollup` is passed and `OPENAI_API_KEY` is set; the core documentation already relies on LLM fulfillment earlier in the pipeline.  
     - Normalize group payloads into dictionaries of `artifacts` and `sirs`.  
     - Compose prompts and call `autodocx.llm.provider.call_openai_meta` for group- and component-level summaries.  
     - Enforce structured outputs via JSON Schema (configured in YAML).  
@@ -192,6 +200,33 @@ All extractors live under `autodocx/extractors/` and are registered via `pyproje
 | `TerraformExtractor` | `**/*.tf` (requires `python-hcl2`) | `infra` signals for resources; gracefully degrades if hcl2 missing. |
 | `BicepExtractor` | `**/*.bicep` | Compiles via `az bicep build` or `bicep build`; emits `infra` and nested Logic Apps workflows. |
 | `AzureFunctionsExtractor` | `function.json`, `*.cs` | Detects HTTP triggers and emits `route` signals. |
+
+---
+
+## 8. Workflow Diagram Metadata (Ports & Control Edges)
+
+Graphviz diagrams now support **port-aware routing** so branch edges land on the correct visual exit. Extractors that emit `workflow` signals must populate the following fields so the renderer can generate meaningful ports:
+
+- **`steps[*].run_after`**: existing array of predecessor names (string or list). Required for sequential edges. Keep names stable (case-sensitive) so we can map them back to the `steps[*].name`.
+- **`control_edges`**: list of `{ "parent": "<step name>", "branch": "<label>", "children": ["<step name>", ...] }`.  
+  - `parent` should be the exact `steps[*].name` of the control node (e.g., Logic Apps `Switch`, Power Automate `Condition`, custom scope).  
+  - `branch` is the human-readable label (“Success”, “Failure”, “Case: Premium”) and becomes the out-port label.  
+  - `children` is one or more step names entered when that branch executes.
+- **Loop metadata**: for `Apply to each` / `Foreach`, continue emitting entries in `control_edges` so we can expose `loop_<slug>` ports. If a connector does not expose branch names, emit a synthetic label like `"branch": "Each item"` so the renderer can still create a unique port.
+
+During export (`autodocx/visuals/flow_export.py`):
+
+- Node IDs are generated via `_node_id("step", name)` and **must not contain colons**. If you add new extractors, reuse `_safe_slug` to keep IDs deterministic.
+- Every node automatically receives default ports `in_main` and `out_default`. Control nodes gain additional `branch_<slug>` ports based on `control_edges`. External relationship nodes expose `in_external`/`out_external`.
+- Edges now include `source_port` / `target_port` fields. Sequential/trigger edges map to the default ports, branch edges map to their branch port, and external edges land on `in_external`.
+
+### How to supply metadata from an extractor
+
+1. **Populate `steps[*]`:** Ensure each step name is unique within the workflow and add `control_type` (e.g., `"if"`, `"switch"`, `"foreach"`) so we know when to expect branch ports.
+2. **Emit `control_edges`:** Whenever the source format defines branches (Logic Apps `runAfter`, BPEL transitions, etc.), convert them into the normalized structure above. You do **not** need to emit port names—use the branch labels and the exporter will slug them automatically.
+3. **Validate with tests:** Add or update extractor tests to confirm the resulting SIR has `control_edges`. You can then run `python -m pytest tests/test_flow_export_ports.py` to verify the branch shows up with `source_port`.
+
+Following this contract ensures new technologies (e.g., PowerBuilder or Azure Logic Apps) automatically benefit from port-aware diagrams without additional renderer changes.
 | `ExpressJSExtractor` | `*.js`, `*.ts`, `package.json` | Regex for `app.get`/`router.get`, emits `route` signals with evidence ranges. |
 | `AzurePipelinesExtractor` | Azure DevOps pipeline YAML | Emits `job` signals with schedules, inferred environments, CI system. |
 | `GitHubActionsExtractor` | `.github/workflows/*.yml` | Same as above but for GitHub Actions. |
@@ -199,7 +234,23 @@ All extractors live under `autodocx/extractors/` and are registered via `pyproje
 | `MarkdownDocsExtractor` | `*.md`, `*.markdown` | Emits `doc` signals tagging READMEs/ADRs. |
 | `TibcoBWExtractor` | `*.bwp`, `*.process`, BW-flavored XML | **Primary TIBCO support**. Parses with `lxml`, extracts process name, triggers, steps (with connectors, SQL, HTTP endpoints), cross-process calls, role hints (via connectors), SQL statements, derived `db` and `route` signals. Redacts snippets via `autodocx.utils.redaction`. |
 | `TibcoProjectArtifactsExtractor` | WSDL, XSD, "Service Descriptors" JSON/XML | Emits `api` for OpenAPI-like JSON, `doc` for descriptors and schema summaries. |
+| `AWSLambdaExtractor` | SAM/CloudFormation templates, `serverless.yml` | Emits `workflow` signals for `AWS::Lambda::Function` resources and Serverless Framework functions, capturing runtime, handler, triggers, and event relationships (HTTP, schedule, S3, streams, etc.). |
+| `TypeScriptProjectExtractor` | `tsconfig.json`, `package.json` (when `typescript` dependency detected) | Emits `doc` signals summarizing compiler options, framework hints, and TypeScript-centric scripts to help renderers/LLMs understand build behavior. |
 | `Azure Functions`, `LogicApps`, `Bicep` | cooperate to capture hybrid Azure/TIBCO integration scenarios. |
+| `MuleSoftExtractor` | Mule `.xml` flows | Parses HTTP listeners/requests, DB/JMS connectors, and flow references to populate identifiers, datastores, and process dependencies. |
+| `BizTalkLogicAppsExtractor` | BizTalk `.odx`, Logic Apps Standard `workflow.json`, Durable orchestrations | Extracts triggers/actions/callouts from hybrid workflows, capturing service/datastore usage plus downstream orchestration calls. |
+
+### Business-scaffold signal contract
+
+Every extractor that emits `workflow`, `route`, or `operation` signals must provide the inputs needed by `autodocx/scaffold/signal_scaffold.py`:
+
+- `triggers`: include the trigger type, method, path/url, and evidence pointer.
+- `steps`: each step should record `name`, `connector`, `datasource` or `destination`, `inputs_keys`, and any mapper/JDBC hints so we can derive identifiers and datastores.
+- `relationships`: normalized edges describing downstream processes, services, or datastores (`calls`, `invokes`, `reads`, `writes`, `publishes`, etc.).
+- Identifier hints: populate at least one of `identifiers`, `identifier_hints`, `primary_keys`, or `foreign_keys`.
+- Dependency hints: supply `datasource_tables`, `process_calls`, and `service_dependencies` when those facts are observable (e.g., SQL statements, `CallProcess` activities, JMS destinations).
+
+The scan now writes `out/scaffold_coverage.json` and `out/scaffold_coverage.csv`, plus `scripts/check_scaffold_coverage.py` will summarize which extractors emitted signals missing identifiers/datastores/processes. Run the script after a scan to keep business scaffolds complete.
 
 **TIBCO specifics**:
 - `_make_snippet` redacts sensitive material.  

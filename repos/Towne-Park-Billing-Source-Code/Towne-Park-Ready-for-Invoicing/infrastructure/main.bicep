@@ -15,10 +15,11 @@ param connections_excelonlinebusiness_externalid string
 param connections_dataverse_url string
 param email_recipient string
 
+var managementBaseUri = environment().resourceManager
+
 resource connections_sql_1_name_resource 'Microsoft.Web/connections@2016-06-01' = {
   name: connections_sql_1_name
-  location: 'eastus2'
-  kind: 'V1'
+  location: location
   properties: {
     displayName: 'TP_STAGE'
     statuses: [
@@ -40,7 +41,7 @@ resource connections_sql_1_name_resource 'Microsoft.Web/connections@2016-06-01' 
     }
     testLinks: [
       {
-        requestUri: 'https://management.azure.com:443/subscriptions/${townepark_rss_subscriptionid}/resourceGroups/${rss_resource_group}/providers/Microsoft.Web/connections/${connections_sql_1_name}/extensions/proxy/testconnection?api-version=2016-06-01'
+        requestUri: uri(managementBaseUri, format('/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.Web/connections/{2}/extensions/proxy/testconnection?api-version=2016-06-01', townepark_rss_subscriptionid, rss_resource_group, connections_sql_1_name))
         method: 'get'
       }
     ]
@@ -50,7 +51,6 @@ resource connections_sql_1_name_resource 'Microsoft.Web/connections@2016-06-01' 
 resource connections_sharepointonline_name_resource 'Microsoft.Web/connections@2016-06-01' = {
   name: connections_sharepointonline_name
   location: location
-  kind: 'V1'
   properties: {
     displayName: 'Flow@townepark.com'
     statuses: [
@@ -73,7 +73,7 @@ resource connections_sharepointonline_name_resource 'Microsoft.Web/connections@2
     }
     testLinks: [
       {
-        requestUri: 'https://management.azure.com:443/subscriptions/${townepark_rss_subscriptionid}/resourceGroups/${rss_resource_group}/providers/Microsoft.Web/connections/${connections_sharepointonline_name}/extensions/proxy/datasets?api-version=2016-06-01'
+        requestUri: uri(managementBaseUri, format('/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.Web/connections/{2}/extensions/proxy/datasets?api-version=2016-06-01', townepark_rss_subscriptionid, rss_resource_group, connections_sharepointonline_name))
         method: 'get'
       }
     ]
@@ -83,7 +83,6 @@ resource connections_sharepointonline_name_resource 'Microsoft.Web/connections@2
 resource connections_commondataservice_1_name_resource 'Microsoft.Web/connections@2016-06-01' = {
   name: connections_commondataservice_1_name
   location: location
-  kind: 'V1'
   properties: {
     displayName: 'Flow@townepark.com'
     statuses: [
@@ -113,7 +112,6 @@ resource connections_commondataservice_1_name_resource 'Microsoft.Web/connection
 resource connections_excelonlinebusiness_name_resource 'Microsoft.Web/connections@2016-06-01' = {
   name: connections_excelonlinebusiness_name
   location: location
-  kind: 'V1'
   properties: {
     displayName: 'Flow@townepark.com'
     statuses: [
@@ -136,7 +134,7 @@ resource connections_excelonlinebusiness_name_resource 'Microsoft.Web/connection
     }
     testLinks: [
       {
-        requestUri: 'https://management.azure.com:443/subscriptions/${townepark_rss_subscriptionid}/resourceGroups/${rss_resource_group}/providers/Microsoft.Web/connections/${connections_excelonlinebusiness_name}/extensions/proxy/testconnection?api-version=2016-06-01'
+        requestUri: uri(managementBaseUri, format('/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.Web/connections/{2}/extensions/proxy/testconnection?api-version=2016-06-01', townepark_rss_subscriptionid, rss_resource_group, connections_excelonlinebusiness_name))
         method: 'get'
       }
     ]
@@ -146,7 +144,6 @@ resource connections_excelonlinebusiness_name_resource 'Microsoft.Web/connection
 resource connections_office365_name_resource 'Microsoft.Web/connections@2016-06-01' = {
   name: connections_office365_name
   location: location
-  kind: 'V1'
   properties: {
     displayName: 'Flow@townepark.com'
     statuses: [
@@ -169,16 +166,16 @@ resource connections_office365_name_resource 'Microsoft.Web/connections@2016-06-
     }
     testLinks: [
       {
-        requestUri: 'https://management.azure.com:443/subscriptions/${townepark_rss_subscriptionid}/resourceGroups/${rss_resource_group}/providers/Microsoft.Web/connections/${connections_office365_name}/extensions/proxy/testconnection?api-version=2016-06-01'
+        requestUri: uri(managementBaseUri, format('/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.Web/connections/{2}/extensions/proxy/testconnection?api-version=2016-06-01', townepark_rss_subscriptionid, rss_resource_group, connections_office365_name))
         method: 'get'
       }
     ]
   }
 }
 
-resource workflows_lapp_ready_for_invoicing_test_eastus2_01_name_resource 'Microsoft.Logic/workflows@2017-07-01' = {
+resource workflows_lapp_ready_for_invoicing_test_eastus2_01_name_resource 'Microsoft.Logic/workflows@2019-05-01' = {
   name: workflows_lapp_ready_for_invoicing_eastus2_01_name
-  location: 'eastus2'
+  location: location
   properties: {
     state: 'Enabled'
     definition: {

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
+import re
 
 try:
     from tree_sitter import Node  # type: ignore
@@ -47,6 +48,36 @@ class TreeSitterCodeExtractor:
             "class_declaration": "class",
         },
     }
+    BUSINESS_VERB_BANK = {
+        "process",
+        "calculate",
+        "invoice",
+        "bill",
+        "charge",
+        "refund",
+        "assign",
+        "approve",
+        "authorize",
+        "validate",
+        "notify",
+        "email",
+        "dispatch",
+        "schedule",
+        "sync",
+        "synchronize",
+        "import",
+        "export",
+        "reconcile",
+        "audit",
+        "archive",
+        "provision",
+        "enrich",
+        "integrate",
+        "register",
+        "escalate",
+        "track",
+        "report",
+    }
 
     def detect(self, repo: Path) -> bool:
         if not tree_sitter_available():
@@ -84,18 +115,27 @@ class TreeSitterCodeExtractor:
         for entity in entities:
             start_line = entity["start_point"][0] + 1
             end_line = entity["end_point"][0] + 1
+            datastore_hints = self._infer_datastore_hints(entity)
+            service_hints = self._infer_service_hints(entity)
+            props = {
+                "name": entity["name"],
+                "entity_type": entity["entity_type"],
+                "language": lang_name,
+                "file": str(path),
+                "docstring": entity.get("docstring", ""),
+                "start_line": start_line,
+                "end_line": end_line,
+                "business_verbs": entity.get("business_verbs", []),
+            }
+            if datastore_hints:
+                props["datasource_tables"] = datastore_hints
+            if service_hints:
+                props["service_dependencies"] = service_hints
+                props["process_calls"] = service_hints
             signals.append(
                 Signal(
                     kind="code_entity",
-                    props={
-                        "name": entity["name"],
-                        "entity_type": entity["entity_type"],
-                        "language": lang_name,
-                        "file": str(path),
-                        "docstring": entity.get("docstring", ""),
-                        "start_line": start_line,
-                        "end_line": end_line,
-                    },
+                    props=props,
                     evidence=[f"{path}:{start_line}-{end_line}"],
                     subscores={"parsed": 0.8},
                 )
@@ -127,12 +167,14 @@ class TreeSitterCodeExtractor:
             doc = self._python_docstring(node, code_bytes)
         elif lang_name in {"javascript", "typescript", "tsx", "c_sharp"}:
             doc = self._leading_comment_text(node, code_bytes)
+        verbs = self._infer_business_verbs(name, doc)
         return {
             "name": name,
             "entity_type": entity_type,
             "start_point": node.start_point,
             "end_point": node.end_point,
             "docstring": doc,
+            "business_verbs": verbs,
         }
 
     def _find_identifier(self, lang_name: str, node: Node) -> Optional[Node]:
@@ -165,3 +207,54 @@ class TreeSitterCodeExtractor:
             comments.insert(0, comment_text.lstrip("/ ").lstrip("* ").strip())
             sibling = sibling.prev_sibling
         return "\n".join(comments).strip()
+
+    def _infer_business_verbs(self, name: str, docstring: str) -> List[str]:
+        tokens = self._split_identifier(name)
+        tokens.extend(self._split_identifier(docstring))
+        verbs: List[str] = []
+        for token in tokens:
+            lower = token.lower()
+            if lower in self.BUSINESS_VERB_BANK and lower not in verbs:
+                verbs.append(lower)
+        return verbs[:5]
+
+    DATASTORE_STOPWORDS = {"and", "or", "to", "the", "a", "an", "of", "for", "from"}
+
+    def _infer_datastore_hints(self, entity: Dict[str, any]) -> List[str]:
+        hints: List[str] = []
+        text = f"{entity.get('name') or ''} {entity.get('docstring') or ''}"
+        for match in re.findall(r"(?:table|collection|dataset|queue)\s+([A-Za-z0-9_]+)", text, flags=re.IGNORECASE):
+            token = match.strip("_")
+            if token and token.lower() not in self.DATASTORE_STOPWORDS and token not in hints:
+                hints.append(match)
+        docstring_tokens = re.findall(r"[A-Za-z0-9_]+", entity.get("docstring") or "")
+        for token in docstring_tokens:
+            lower = token.lower()
+            if lower.endswith(("table", "collection", "dataset", "queue")) and lower not in self.DATASTORE_STOPWORDS and token not in hints:
+                hints.append(token)
+        for token in re.findall(r"[A-Za-z0-9_]+", entity.get("name") or ""):
+            lower = token.lower()
+            if lower.endswith(("table", "repository", "repo", "store")) and token not in hints:
+                hints.append(token)
+        return hints[:5]
+
+    def _infer_service_hints(self, entity: Dict[str, any]) -> List[str]:
+        hints: List[str] = []
+        doc = entity.get("docstring") or ""
+        for url in re.findall(r"https?://[^\s)]+", doc):
+            if url not in hints:
+                hints.append(url)
+        combined = f"{entity.get('name') or ''} {doc}"
+        for token in re.findall(r"[A-Za-z0-9_]+", combined):
+            lower = token.lower()
+            if lower.endswith(("service", "client", "api")) and token not in hints:
+                hints.append(token)
+        return hints[:5]
+
+    def _split_identifier(self, text: str) -> List[str]:
+        if not text:
+            return []
+        camel_tokens = re.findall(r"[A-Z]?[a-z]+|[A-Z]+(?=[A-Z]|$)|\d+", text)
+        snake_tokens = re.split(r"[^A-Za-z0-9]+", text)
+        combined = camel_tokens + snake_tokens
+        return [token for token in combined if token]

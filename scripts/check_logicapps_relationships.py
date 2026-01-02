@@ -3,6 +3,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from autodocx.utils.environment import load_project_dotenv
+
+load_project_dotenv()
+
 
 TARGET_SIRS = [
     "BellServiceFeeChildFlow-42A88C06-CE84-EF11-AC20-0022480A57AC.json.json",
@@ -12,7 +16,7 @@ TARGET_SIRS = [
 
 
 def main() -> None:
-    sir_dir = Path("out/sir")
+    sir_dir = Path("out/sir_v2")
     rows = []
     for name in TARGET_SIRS:
         path = sir_dir / name

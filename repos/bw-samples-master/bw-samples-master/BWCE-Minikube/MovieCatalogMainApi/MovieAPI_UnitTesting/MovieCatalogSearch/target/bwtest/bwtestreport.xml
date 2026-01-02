@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<completeReportDTO>
+    <moduleResult xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="testSuiteResultDTO">
+        <codeCoverage xsi:type="processCoverageDTO">
+            <activityCoverage xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Mapper</activityCoverage>
+            <activityCoverage xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Start</activityCoverage>
+            <activityCoverage xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Log</activityCoverage>
+            <activityCoverage xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">get</activityCoverage>
+            <activityCoverage xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">End</activityCoverage>
+            <moduleName>MovieCatalogSearch.module</moduleName>
+            <processName>moviecatalogsearch.module.SortSingleMovie</processName>
+            <transitionCoverage xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">StartToget</transitionCoverage>
+            <transitionCoverage xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">getToEnd</transitionCoverage>
+            <transitionCoverage xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">LogToMapper</transitionCoverage>
+            <transitionCoverage xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">MapperToEnd</transitionCoverage>
+        </codeCoverage>
+        <moduleInfo>
+            <appName>MovieCatalogSearch</appName>
+            <appVersion>1.0</appVersion>
+            <moduleName>MovieCatalogSearch.module</moduleName>
+            <moduleVersion>1.0.0.qualifier</moduleVersion>
+        </moduleInfo>
+        <testSetResult xsi:type="testSetResultDTO">
+            <packageName>moviecatalogsearch.module</packageName>
+            <processName>moviecatalogsearch.module.SortSingleMovie</processName>
+            <testCaseResult xsi:type="testCaseResultDTO">
+                <assertionFailure>0</assertionFailure>
+                <assertionResult xsi:type="assertionResultDTO">
+                    <activityName>Mapper</activityName>
+                    <assertionStatus>passed</assertionStatus>
+                    <instanceId>bw0a100</instanceId>
+                    <message></message>
+                </assertionResult>
+                <assertions>1</assertions>
+                <assertionsRun>1</assertionsRun>
+                <processFailures>0</processFailures>
+                <testCaseFile>/MovieCatalogSearch.module/Tests/SingleSortTest.bwt</testCaseFile>
+            </testCaseResult>
+        </testSetResult>
+    </moduleResult>
+</completeReportDTO>

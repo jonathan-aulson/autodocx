@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pathlib import Path
-from typing import Iterable, List, Dict, Any, Optional, Tuple
+from typing import Iterable, List, Dict, Any, Optional, Tuple, Set
 import hashlib
 import json, re
 from autodocx.types import Signal
@@ -55,24 +55,41 @@ class AzureFunctionsExtractor:
         func_name = doc.get("entryPoint") or parent_name or path.stem
         relationships: List[Dict[str, Any]] = []
         http_routes: List[Tuple[str, str]] = []
+        steps: List[Dict[str, Any]] = []
+        triggers_meta: List[Dict[str, Any]] = []
+        datastores: Set[str] = set()
+        service_deps: Set[str] = set()
+        process_refs: Set[str] = set()
+        identifier_hints: Set[str] = set()
 
         for binding in bindings:
-            rels, route_info = self._relationships_from_binding(binding, func_name, source=str(path))
+            rels, route_info, hint = self._relationships_from_binding(binding, func_name, source=str(path))
             relationships.extend(rels)
             http_routes.extend(route_info)
+            self._apply_binding_hint(hint, triggers_meta, steps, datastores, service_deps, process_refs, identifier_hints)
+
+        base_props = {
+            "name": func_name,
+            "engine": "azure_functions",
+            "wf_kind": "azure_function",
+            "file": str(path),
+            "triggers": triggers_meta,
+            "steps": steps,
+            "relationships": relationships,
+            "datasource_tables": sorted(datastores),
+            "service_dependencies": sorted(service_deps),
+            "process_calls": sorted(process_refs),
+            "identifier_hints": sorted(identifier_hints),
+        }
 
         if http_routes:
             for method, route in http_routes:
+                route_props = dict(base_props)
+                route_props.update({"method": method, "path": route})
                 signals.append(
                     Signal(
                         kind="route",
-                        props={
-                            "name": func_name,
-                            "method": method,
-                            "path": route,
-                            "file": str(path),
-                            "relationships": relationships,
-                        },
+                        props=route_props,
                         evidence=[f"{path}:1-80"],
                         subscores={"parsed": 1.0, "endpoint_or_op_coverage": 0.7},
                     )
@@ -82,15 +99,7 @@ class AzureFunctionsExtractor:
             signals.append(
                 Signal(
                     kind="workflow",
-                    props={
-                        "name": func_name,
-                        "engine": "azure_functions",
-                        "wf_kind": "azure_function",
-                        "file": str(path),
-                        "triggers": [],
-                        "steps": [],
-                        "relationships": relationships,
-                    },
+                    props=base_props,
                     evidence=[f"{path}:1-80"],
                     subscores={"parsed": 0.9},
                 )
@@ -118,6 +127,12 @@ class AzureFunctionsExtractor:
             body = block.group("body")
             relationships: List[Dict[str, Any]] = []
             routes: List[Tuple[str, str]] = []
+            steps_meta: List[Dict[str, Any]] = []
+            triggers_meta: List[Dict[str, Any]] = []
+            datastores: Set[str] = set()
+            service_deps: Set[str] = set()
+            process_refs: Set[str] = set()
+            identifier_hints: Set[str] = set()
 
             for match in _HTTP_TRIGGER_RE.finditer(body):
                 args = match.group("args")
@@ -142,27 +157,49 @@ class AzureFunctionsExtractor:
                 )
                 for method in methods or ["GET"]:
                     routes.append((method, cleaned_route))
+                hint = {
+                    "name": "httptrigger",
+                    "type": "httptrigger",
+                    "direction": "in",
+                    "kind": "http",
+                    "ref": cleaned_route,
+                    "context": {**context, "methods": methods or ["GET"]},
+                }
+                self._apply_binding_hint(hint, triggers_meta, steps_meta, datastores, service_deps, process_refs, identifier_hints)
 
             for binding in _BINDING_ATTR_RE.finditer(body):
                 attr = binding.group("attr")
                 if attr.lower().startswith("httptrigger"):
                     continue
-                rels, additional_routes = self._relationships_from_attribute(attr, binding.group("args"), func_name, text, path, binding.start(), binding.end())
+                rels, additional_routes, hint = self._relationships_from_attribute(
+                    attr, binding.group("args"), func_name, text, path, binding.start(), binding.end()
+                )
                 relationships.extend(rels)
                 routes.extend(additional_routes)
+                self._apply_binding_hint(hint, triggers_meta, steps_meta, datastores, service_deps, process_refs, identifier_hints)
+
+            base_props = {
+                "name": func_name,
+                "engine": "azure_functions",
+                "wf_kind": "azure_function",
+                "file": str(path),
+                "triggers": triggers_meta,
+                "steps": steps_meta,
+                "relationships": relationships,
+                "datasource_tables": sorted(datastores),
+                "service_dependencies": sorted(service_deps),
+                "process_calls": sorted(process_refs),
+                "identifier_hints": sorted(identifier_hints),
+            }
 
             if routes:
                 for method, route in routes:
+                    route_props = dict(base_props)
+                    route_props.update({"method": method, "path": route})
                     signals.append(
                         Signal(
                             kind="route",
-                            props={
-                                "name": func_name,
-                                "method": method,
-                                "path": route,
-                                "file": str(path),
-                                "relationships": relationships,
-                            },
+                            props=route_props,
                             evidence=[self._line_span(path, text, block.start(), block.end())],
                             subscores={"parsed": 1.0, "endpoint_or_op_coverage": 0.7},
                         )
@@ -171,15 +208,7 @@ class AzureFunctionsExtractor:
                 signals.append(
                     Signal(
                         kind="workflow",
-                        props={
-                            "name": func_name,
-                            "engine": "azure_functions",
-                            "wf_kind": "azure_function",
-                            "file": str(path),
-                            "triggers": [],
-                            "steps": [],
-                            "relationships": relationships,
-                        },
+                        props=base_props,
                         evidence=[self._line_span(path, text, block.start(), block.end())],
                         subscores={"parsed": 0.9},
                     )
@@ -190,11 +219,12 @@ class AzureFunctionsExtractor:
 
     def _relationships_from_binding(
         self, binding: Dict[str, Any], func_name: str, source: str
-    ) -> Tuple[List[Dict[str, Any]], List[Tuple[str, str]]]:
+    ) -> Tuple[List[Dict[str, Any]], List[Tuple[str, str]], Optional[Dict[str, Any]]]:
         btype = (binding.get("type") or "").lower()
         direction = (binding.get("direction") or "").lower()
         relationships: List[Dict[str, Any]] = []
         routes: List[Tuple[str, str]] = []
+        binding_hint: Optional[Dict[str, Any]] = None
 
         if btype == "httptrigger":
             route = self._clean_route(binding.get("route") or binding.get("path") or func_name)
@@ -217,6 +247,14 @@ class AzureFunctionsExtractor:
             )
             for method in methods:
                 routes.append((method, route))
+            binding_hint = {
+                "name": binding.get("name") or "httptrigger",
+                "type": btype,
+                "direction": "in",
+                "kind": "http",
+                "ref": route,
+                "context": context,
+            }
 
         elif "trigger" in btype:
             kind, ref, display, context = self._binding_target(btype, binding)
@@ -232,6 +270,24 @@ class AzureFunctionsExtractor:
                         evidence=[f"{source}:{btype}"],
                     )
                 )
+            binding_hint = {
+                "name": binding.get("name"),
+                "type": btype,
+                "direction": direction or "in",
+                "kind": kind,
+                "ref": ref or context.get("path"),
+                "context": context,
+            }
+        else:
+            kind, ref, display, context = self._binding_target(btype, binding)
+            binding_hint = {
+                "name": binding.get("name"),
+                "type": btype,
+                "direction": direction or ("out" if ("output" in btype or direction == "out") else "in"),
+                "kind": kind,
+                "ref": ref or context.get("path"),
+                "context": context,
+            }
 
         if "output" in btype or direction == "out":
             kind, ref, display, context = self._binding_target(btype, binding)
@@ -248,7 +304,7 @@ class AzureFunctionsExtractor:
                     )
                 )
 
-        return relationships, routes
+        return relationships, routes, binding_hint
 
     def _relationships_from_attribute(
         self,
@@ -259,10 +315,11 @@ class AzureFunctionsExtractor:
         path: Path,
         start: int,
         end: int,
-    ) -> Tuple[List[Dict[str, Any]], List[Tuple[str, str]]]:
+    ) -> Tuple[List[Dict[str, Any]], List[Tuple[str, str]], Optional[Dict[str, Any]]]:
         attr_lower = attr.lower()
         rels: List[Dict[str, Any]] = []
         routes: List[Tuple[str, str]] = []
+        binding_hint: Optional[Dict[str, Any]] = None
 
         if attr_lower.startswith("httptrigger"):
             methods = self._parse_http_methods(args)
@@ -286,11 +343,19 @@ class AzureFunctionsExtractor:
             )
             for method in methods or ["GET"]:
                 routes.append((method, cleaned_route))
+            binding_hint = {
+                "name": "httptrigger",
+                "type": attr_lower,
+                "direction": "in",
+                "kind": "http",
+                "ref": cleaned_route,
+                "context": context,
+            }
 
         else:
             kind, ref, display, context = self._binding_target_from_args(attr_lower, args)
-            if not kind or not ref:
-                return rels, route_info
+            if not kind and not ref and not context:
+                return rels, routes, None
             direction = "inbound" if attr_lower.endswith("trigger") else "outbound"
             op = "receives" if direction == "inbound" else ("publishes" if kind in {"queue", "servicebus"} else "writes")
             rels.append(
@@ -304,8 +369,76 @@ class AzureFunctionsExtractor:
                     evidence=[self._line_span(path, text, start, end)],
                 )
             )
-        return rels, routes
+            binding_hint = {
+                "name": attr_lower,
+                "type": attr_lower,
+                "direction": "in" if direction == "inbound" else "out",
+                "kind": kind,
+                "ref": ref or context.get("path"),
+                "context": context,
+            }
+        return rels, routes, binding_hint
 
+    def _apply_binding_hint(
+        self,
+        hint: Optional[Dict[str, Any]],
+        triggers: List[Dict[str, Any]],
+        steps: List[Dict[str, Any]],
+        datastores: Set[str],
+        service_deps: Set[str],
+        process_refs: Set[str],
+        identifier_hints: Set[str],
+    ) -> None:
+        if not hint:
+            return
+        binding_type = (hint.get("type") or "").lower()
+        direction = (hint.get("direction") or "").lower()
+        kind = hint.get("kind")
+        context = hint.get("context") or {}
+        ref = hint.get("ref")
+        target = ref or context.get("path")
+        datastore_kinds = {"storage", "cosmosdb", "table", "blob"}
+        service_kinds = {"queue", "servicebus", "event"}
+
+        if kind in datastore_kinds and target:
+            datastores.add(str(target))
+        if kind in service_kinds and ref:
+            service_deps.add(str(ref))
+            process_refs.add(str(ref))
+        if binding_type == "httptrigger" and context.get("route"):
+            service_deps.add(context["route"])
+            for param in context.get("route_params") or []:
+                identifier_hints.add(str(param))
+
+        is_trigger = "trigger" in binding_type and direction == "in"
+        trig_entry: Dict[str, Any] = {}
+        if is_trigger:
+            trig_entry = {
+                "type": kind or binding_type,
+                "binding": hint.get("name"),
+                "path": context.get("route"),
+                "methods": context.get("methods"),
+                "schedule": context.get("schedule"),
+                "target": ref,
+            }
+            cleaned = {k: v for k, v in trig_entry.items() if v not in (None, "", [], {})}
+            if cleaned:
+                triggers.append(cleaned)
+
+        if not is_trigger:
+            operation = "writes" if direction == "out" else "reads"
+            step_entry = {
+                "name": hint.get("name") or binding_type,
+                "connector": binding_type,
+                "type": kind or binding_type,
+                "operation": operation,
+                "datasource_table": target if kind in datastore_kinds else context.get("path"),
+                "destination": ref if kind in service_kinds else None,
+                "context": context if context else None,
+            }
+            cleaned_step = {k: v for k, v in step_entry.items() if v not in (None, "", [], {})}
+            if cleaned_step:
+                steps.append(cleaned_step)
     def _binding_target(self, btype: str, binding: Dict[str, Any]) -> Tuple[Optional[str], Optional[str], Optional[str], Dict[str, Any]]:
         btype_lower = btype.lower()
         context: Dict[str, Any] = {}

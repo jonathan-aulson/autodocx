@@ -35,11 +35,25 @@ def test_component_page_emits_yaml_front_matter(tmp_path: Path):
     comp_json = {
         "title": "Orders Component",
         "llm_subscore": 0.82,
+        "provenance": {
+            "model": "gpt-test",
+            "input_hash": "abc123",
+            "prompt_hash": "def456",
+            "generated_at": 0,
+        },
         "component": {
             "name": "Orders",
-            "what_it_does": [
-                {"claim": "Accept orders via REST API", "evidence_ids": ["e1"]},
-            ],
+            "what_it_does": [{"summary": "Accept orders via REST API", "detail": "Receives POST payloads", "evidence_ids": ["e1"]}],
+            "why_it_matters": [{"impact": "Revenue capture", "detail": "Captures billable events", "evidence_ids": ["e1"]}],
+            "interfaces": [{"name": "Orders API", "kind": "REST", "method": "POST", "endpoint": "/orders", "description": "Receives orders", "evidence_ids": ["e1"]}],
+            "invokes": [{"target": "Billing API", "kind": "REST", "operation": "POST", "direction": "outbound", "evidence_ids": ["e2"]}],
+            "key_inputs": [{"name": "Order payload", "description": "Fields: customerId, items", "evidence_ids": ["e1"]}],
+            "key_outputs": [{"name": "Billing event", "description": "Fields: invoiceId, amount", "evidence_ids": ["e2"]}],
+            "errors_and_logging": {"errors": [{"description": "Returns 400 on validation failures", "evidence_ids": ["e3"]}], "logging": []},
+            "interdependencies": {"calls": [], "called_by": [], "shared_data": []},
+            "extrapolations": [],
+            "traceability": [{"artifact": "Orders.bw", "signal_type": "workflow", "description": "Primary process", "evidence_ids": ["e1"]}],
+            "journey_blueprints": [],
         },
     }
 
@@ -96,20 +110,18 @@ def test_component_page_emits_yaml_front_matter(tmp_path: Path):
     fm_text = "\n".join(fm_lines)
     # Basic keys we expect
     assert 'title: "Orders Component"' in fm_text
+    assert "hashes:" in fm_text
+    assert 'input: "abc123"' in fm_text
+    assert "confidence:" in fm_text
     assert "facets:" in fm_text
-    assert "score: 0.78" in fm_text or "score: 0.78" in fm_text.replace(" ", "")
     assert "distance:" in fm_text
-    # From sample aggregation the avg_nearest should be present (1.2 propagated to agg)
     assert "avg_nearest_distance" in fm_text
-    # Marker id should be present in markers block
-    assert "API:Orders" in fm_text
+    assert "markers:" in fm_text
 
-    # The body should contain the Graph Insights header and the compact table
     body_text = "\n".join(body_lines)
-    assert "Graph Insights (Distance Features)" in body_text
-    assert "| Metric | Value |" in body_text
-    assert "Personas & Journeys" in body_text
-    assert "What Users See" in body_text
+    assert "## What it does" in body_text
+    assert "## Technical appendix" in body_text
+    assert "Journey blueprints" in body_text or "UI snapshots" in body_text or "Relationship highlights" in body_text
 
 
 def test_component_page_includes_relationship_sections(tmp_path: Path):
@@ -117,9 +129,20 @@ def test_component_page_includes_relationship_sections(tmp_path: Path):
     comp_json = {
         "title": "Workflow With Relationships",
         "llm_subscore": 0.91,
+        "provenance": {"model": "gpt", "input_hash": "hash1", "prompt_hash": "hash2", "generated_at": 0},
         "component": {
             "name": "Workflow With Relationships",
-            "what_it_does": [{"claim": "Calls API", "evidence_ids": ["e1"]}],
+            "what_it_does": [{"summary": "Calls API", "detail": "Invokes upstream API", "evidence_ids": ["e1"]}],
+            "why_it_matters": [{"impact": "Customer billing", "detail": "Charges users", "evidence_ids": ["e1"]}],
+            "interfaces": [],
+            "invokes": [],
+            "key_inputs": [],
+            "key_outputs": [],
+            "errors_and_logging": {"errors": [], "logging": []},
+            "interdependencies": {"calls": [], "called_by": [], "shared_data": []},
+            "extrapolations": [],
+            "traceability": [],
+            "journey_blueprints": [],
         },
     }
     relationships = [
@@ -191,15 +214,10 @@ def test_component_page_includes_relationship_sections(tmp_path: Path):
 
     md_path = out_dir / "components" / "DemoGroup" / "DemoWorkflow.md"
     text = md_path.read_text(encoding="utf-8")
-    assert "## 🧩 Relationship Highlights" in text
-    assert "## 📊 Dependency Matrix" in text
-    assert "## 👥 Personas & Journeys" in text
-    assert "## 🖼️ What Users See" in text
-    assert "## 🎛 UI Entry Points" in text
-    assert "## 🌐 Integration Catalog" in text
-    assert "## 🧱 Key Code Modules" in text
-    assert "## 📈 Process Diagrams" in text
-    assert "## 📚 Glossary & Roles" in text
+    assert "## What it does" in text
+    assert "## Invokes / Dependencies" in text
+    assert "## Technical appendix" in text
+    assert "Relationship highlights" in text
 
 
 def test_group_page_process_and_integration_sections(tmp_path: Path):

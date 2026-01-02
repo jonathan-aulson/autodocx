@@ -28,3 +28,4 @@ python-dotenv
 rapidfuzz
 graphviz
 networkx
+qdrant-client

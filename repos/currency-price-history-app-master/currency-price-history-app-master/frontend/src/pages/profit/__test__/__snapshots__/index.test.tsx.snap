@@ -1,0 +1,53 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`MaxProfitPerDayList component renders currency profit page 1`] = `
+<tr
+  className="MuiTableRow-root WithStyles(ForwardRef(TableRow))-root-1"
+>
+  <td
+    aria-sort={null}
+    className="MuiTableCell-root MuiTableCell-alignCenter"
+  >
+    20180507
+  </td>
+  <td
+    aria-sort={null}
+    className="MuiTableCell-root MuiTableCell-alignCenter"
+  >
+    ETC
+  </td>
+  <td
+    aria-sort={null}
+    className="MuiTableCell-root MuiTableCell-alignRight"
+  >
+    0930
+  </td>
+  <td
+    aria-sort={null}
+    className="MuiTableCell-root MuiTableCell-alignRight"
+  >
+    $ 
+    14.32
+  </td>
+  <td
+    aria-sort={null}
+    className="MuiTableCell-root MuiTableCell-alignRight"
+  >
+    1245
+  </td>
+  <td
+    aria-sort={null}
+    className="MuiTableCell-root MuiTableCell-alignRight"
+  >
+    $ 
+    15.03
+  </td>
+  <td
+    aria-sort={null}
+    className="MuiTableCell-root MuiTableCell-alignRight"
+  >
+    $ 
+    0.71
+  </td>
+</tr>
+`;

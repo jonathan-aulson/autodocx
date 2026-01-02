@@ -1,0 +1,101 @@
+{
+  "workflows": {
+    "BWCE-Minikube::moviecatalogsearch.module.GetRatings": {
+      "component": "BWCE-Minikube",
+      "name": "moviecatalogsearch.module.GetRatings",
+      "steps_summary": "extensionActivity[extensionactivity] -> extensionActivity[extensionactivity] -> End[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig]",
+      "relationships": 0
+    },
+    "BWCE-Minikube::moviecatalogsearch.module.Process": {
+      "component": "BWCE-Minikube",
+      "name": "moviecatalogsearch.module.Process",
+      "steps_summary": "extensionActivity[extensionactivity] -> SearchMovies[extactivity] -> CallProcess[process] -> extensionActivity[extensionactivity] -> SortMovies[extactivity] -> CallProcess[process]",
+      "relationships": 0
+    },
+    "BWCE-Minikube::moviecatalogsearch.module.SearchMovies": {
+      "component": "BWCE-Minikube",
+      "name": "moviecatalogsearch.module.SearchMovies",
+      "steps_summary": "extensionActivity[extensionactivity] -> extensionActivity[extensionactivity] -> End[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> get[moviecatalogsearch.module.HttpClientResource] -> extensionActivity[extensionactivity] -> Log[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig]",
+      "relationships": 2
+    },
+    "BWCE-Minikube::moviecatalogsearch.module.SortMovieSingle": {
+      "component": "BWCE-Minikube",
+      "name": "moviecatalogsearch.module.SortMovieSingle",
+      "steps_summary": "extensionActivity[extensionactivity] -> extensionActivity[extensionactivity] -> End[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> get[moviecatalogsearch.module.HttpClientResource2] -> extensionActivity[extensionactivity] -> Mapper[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig]",
+      "relationships": 2
+    },
+    "BWCE-Minikube::moviecatalogsearch.module.SortMovies": {
+      "component": "BWCE-Minikube",
+      "name": "moviecatalogsearch.module.SortMovies",
+      "steps_summary": "extensionActivity[extensionactivity] -> extensionActivity[extensionactivity] -> End[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> extensionActivity[extensionactivity] -> Accumulate[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> activityNames[activitynames] -> extensionActivity[extensionactivity] -> Mapper[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> InvokeOmdb[moviecatalogsearch.module.HttpClientResource1] -> extensionActivity[extensionactivity] -> Log1[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> extensionActivity[extensionactivity] -> Log2[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> extensionActivity[extensionactivity] -> Log[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig]",
+      "relationships": 2
+    },
+    "BWCE-Minikube::bwtestreport": {
+      "component": "BWCE-Minikube",
+      "name": "bwtestreport",
+      "steps_summary": "activityCoverage[activitycoverage] -> activityCoverage[activitycoverage] -> activityCoverage[activitycoverage] -> activityCoverage[activitycoverage] -> activityCoverage[activitycoverage] -> activityName[activityname]",
+      "relationships": 0
+    },
+    "BWCE-Minikube::moviecatalogsearch.module.SortSingleMovie": {
+      "component": "BWCE-Minikube",
+      "name": "moviecatalogsearch.module.SortSingleMovie",
+      "steps_summary": "extensionActivity[extensionactivity] -> extensionActivity[extensionactivity] -> End[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> get[moviecatalogsearch.module.HttpClientResource2] -> extensionActivity[extensionactivity] -> Log[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> extensionActivity[extensionactivity] -> Mapper[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig]",
+      "relationships": 2
+    },
+    "BWCE-Minikube::moviesearch.module.Process": {
+      "component": "BWCE-Minikube",
+      "name": "moviesearch.module.Process",
+      "steps_summary": "extensionActivity[extensionactivity] -> SearchOmdb[extactivity] -> CallProcess[process]",
+      "relationships": 0
+    },
+    "BWCE-Minikube::moviesearch.module.SearchOmdb": {
+      "component": "BWCE-Minikube",
+      "name": "moviesearch.module.SearchOmdb",
+      "steps_summary": "extensionActivity[extensionactivity] -> extensionActivity[extensionactivity] -> End[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> get[moviesearch.module.HttpClientResource1]",
+      "relationships": 2
+    },
+    "TN2018::creditapp.module.EquifaxScore": {
+      "component": "TN2018",
+      "name": "creditapp.module.EquifaxScore",
+      "steps_summary": "extensionActivity[extensionactivity] -> extensionActivity[extensionactivity] -> End[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> post[creditapp.module.HttpClientResource2]",
+      "relationships": 2
+    },
+    "TN2018::creditapp.module.ExperianScore": {
+      "component": "TN2018",
+      "name": "creditapp.module.ExperianScore",
+      "steps_summary": "extensionActivity[extensionactivity] -> extensionActivity[extensionactivity] -> End[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> extensionActivity[extensionactivity] -> SendHTTPRequest[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> httpParameters[httpparameters] -> extensionActivity[extensionactivity] -> RenderJSON[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> extensionActivity[extensionactivity] -> ParseJSON[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig]",
+      "relationships": 0
+    },
+    "TN2018::creditapp.module.MainProcess": {
+      "component": "TN2018",
+      "name": "creditapp.module.MainProcess",
+      "steps_summary": "extensionActivity[extensionactivity] -> EquifaxScore[extactivity] -> CallProcess[process] -> extensionActivity[extensionactivity] -> ExperianScore[extactivity] -> CallProcess[process]",
+      "relationships": 0
+    },
+    "TN2018::creditcheckservice.LookupDatabase": {
+      "component": "TN2018",
+      "name": "creditcheckservice.LookupDatabase",
+      "steps_summary": "extensionActivity[extensionactivity] -> extensionActivity[extensionactivity] -> End[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> extensionActivity[extensionactivity] -> QueryRecords[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> extensionActivity[extensionactivity] -> UpdatePulls[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig]",
+      "relationships": 0
+    },
+    "TN2018::creditcheckservice.Process": {
+      "component": "TN2018",
+      "name": "creditcheckservice.Process",
+      "steps_summary": "extensionActivity[extensionactivity] -> LogFailure[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> extensionActivity[extensionactivity] -> LogSuccess[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> extensionActivity[extensionactivity] -> LookupDatabase[extactivity] -> CallProcess[process]",
+      "relationships": 0
+    },
+    "TN2018::experianservice.module.Process": {
+      "component": "TN2018",
+      "name": "experianservice.module.Process",
+      "steps_summary": "extensionActivity[extensionactivity] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> extensionActivity[extensionactivity] -> SendHTTPResponse[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> extensionActivity[extensionactivity] -> JDBCQuery[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> extensionActivity[extensionactivity] -> ParseJSON[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> extensionActivity[extensionactivity] -> RenderJSON[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig]",
+      "relationships": 0
+    },
+    "TN2018::loggingservice.LogProcess": {
+      "component": "TN2018",
+      "name": "loggingservice.LogProcess",
+      "steps_summary": "extensionActivity[extensionactivity] -> extensionActivity[extensionactivity] -> End[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> extensionActivity[extensionactivity] -> consolelog[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> extensionActivity[extensionactivity] -> TextFile[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> extensionActivity[extensionactivity] -> RenderXml[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig] -> extensionActivity[extensionactivity] -> XMLFile[activityextension] -> BWActivity[bwactivity] -> activityConfig[activityconfig]",
+      "relationships": 0
+    }
+  },
+  "integrations": {}
+}

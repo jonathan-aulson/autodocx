@@ -35,6 +35,47 @@ def _collect_relationships_from_sirs(sirs: List[Dict[str, Any]]) -> List[Dict[st
     return rels
 
 
+def _collect_scaffold_hints_from_sirs(sirs: List[Dict[str, Any]]) -> Dict[str, List[str]]:
+    summary = {"identifiers": set(), "datastores": set(), "services": set(), "processes": set()}
+    for sir in sirs or []:
+        props = sir.get("props") or {}
+        scaffold = sir.get("business_scaffold") or props.get("business_scaffold") or {}
+        io_summary = (scaffold.get("io_summary") or {}) if scaffold else {}
+        summary["identifiers"].update(io_summary.get("identifiers") or [])
+        deps = scaffold.get("dependencies") or {}
+        summary["datastores"].update(deps.get("datastores") or [])
+        summary["services"].update(deps.get("services") or deps.get("external_services") or [])
+        summary["processes"].update(deps.get("processes") or [])
+        summary["datastores"].update(props.get("datasource_tables") or [])
+        summary["services"].update(props.get("service_dependencies") or [])
+        summary["processes"].update(props.get("process_calls") or props.get("calls_flows") or [])
+        summary["identifiers"].update(props.get("identifier_hints") or [])
+    return {k: sorted(v) for k, v in summary.items() if v}
+
+
+def _render_scaffold_dependencies_section(hints: Dict[str, List[str]]) -> List[str]:
+    if not hints:
+        return []
+    lines = ["## Identifiers & Dependencies"]
+    if hints.get("identifiers"):
+        lines.append(f"- **Identifiers:** {', '.join(hints['identifiers'][:10])}")
+    else:
+        lines.append("- **Identifiers:** _Not captured yet_")
+    if hints.get("datastores"):
+        lines.append(f"- **Datastores:** {', '.join(hints['datastores'][:10])}")
+    else:
+        lines.append("- **Datastores:** _Not captured yet_")
+    if hints.get("services"):
+        lines.append(f"- **Service touchpoints:** {', '.join(hints['services'][:10])}")
+    else:
+        lines.append("- **Service touchpoints:** _Not captured yet_")
+    if hints.get("processes"):
+        lines.append(f"- **Process dependencies:** {', '.join(hints['processes'][:10])}")
+    else:
+        lines.append("- **Process dependencies:** _Not captured yet_")
+    return lines
+
+
 def _relationship_highlights(rels: List[Dict[str, Any]]) -> List[str]:
     if not rels:
         return []
@@ -189,6 +230,7 @@ def _collect_code_entities(sirs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                 "name": name,
                 "language": props.get("language", ""),
                 "docstring": props.get("docstring", ""),
+                "business_verbs": props.get("business_verbs") or [],
             }
         )
     return entries
@@ -330,6 +372,12 @@ def _resolve_asset_path(path: str) -> str:
     return path
 
 
+def _slug(value: str) -> str:
+    if not value:
+        return "item"
+    return "".join(ch.lower() if ch.isalnum() else "-" for ch in value).strip("-") or "item"
+
+
 def _component_title(c_json: Dict[str, Any], component_key: str) -> str:
     title = c_json.get("title") or c_json.get("component", {}).get("name") or component_key
     return str(title)
@@ -341,49 +389,394 @@ def _confidence_line(llm_subscore: Optional[float]) -> str:
     return f"> **Confidence Score:** {llm_subscore:.2f} — *(see scoring table at bottom for details)*"
 
 
-def _derive_overview_lines(c_json: Dict[str, Any]) -> List[str]:
-    claims = []
-    for w in _safe_list(c_json.get("component", {}).get("what_it_does")):
-        if isinstance(w, dict) and w.get("claim"):
-            claims.append(str(w["claim"]))
-        if len(claims) >= 3:
-            break
-    if not claims:
-        return ["Overview not available from current evidence."]
-    lines = []
-    lines.append("This component provides the following core capabilities:")
-    for c in claims:
-        lines.append(f"- {c}")
+def _evidence_suffix(evidence_ids: Iterable[str]) -> str:
+    ids = [str(eid) for eid in (evidence_ids or []) if str(eid)]
+    if not ids:
+        return ""
+    preview = ", ".join(ids[:5])
+    more = "" if len(ids) <= 5 else f" (+{len(ids) - 5} more)"
+    return f" _(Evidence: {preview}{more})_"
+
+
+def _render_claim_section(title: str, entries: Iterable[Dict[str, Any]], summary_key: str = "summary", detail_key: str = "detail") -> List[str]:
+    lines: List[str] = [title]
+    matched = False
+    for entry in entries or []:
+        if not isinstance(entry, dict):
+            continue
+        summary = entry.get(summary_key) or entry.get(detail_key)
+        detail = entry.get(detail_key) or entry.get(summary_key)
+        if not summary and not detail:
+            continue
+        matched = True
+        bullet = f"- **{_safe(summary, 'Statement')}**"
+        if detail and detail != summary:
+            bullet += f" — {detail}"
+        bullet += _evidence_suffix(entry.get("evidence_ids") or [])
+        lines.append(bullet)
+    if not matched:
+        lines.append("_No evidence captured yet._")
     return lines
 
 
-def _e2e_flow_table(c_json: Dict[str, Any]) -> str:
+def _render_interfaces_section(interfaces: Iterable[Dict[str, Any]]) -> List[str]:
+    lines = ["## Interfaces exposed", ""]
+    header = ["| Name | Kind | Method | Endpoint | Evidence |", "|------|------|--------|----------|----------|"]
     rows = []
-    for w in _safe_list(c_json.get("component", {}).get("what_it_does")):
-        if not isinstance(w, dict):
+    for entry in interfaces or []:
+        if not isinstance(entry, dict):
             continue
-        action = _safe(w.get("claim"), "Action")
-        if "receive" in action.lower() or "request" in action.lower():
-            input_hint = "Request"
-            output_hint = "Structured response"
-        elif "query" in action.lower() or "retrieve" in action.lower() or "get " in action.lower():
-            input_hint = "Lookup"
-            output_hint = "Data"
-        elif "sort" in action.lower():
-            input_hint = "List or record"
-            output_hint = "Ordered result"
-        else:
-            input_hint = "Input"
-            output_hint = "Output"
-        rows.append((input_hint, action, output_hint))
-
+        rows.append(
+            f"| {_safe(entry.get('name'), '-')} | {_safe(entry.get('kind'), '-')} | {_safe(entry.get('method'), '-')} | {_safe(entry.get('endpoint'), '-')} | {_safe(', '.join(entry.get('evidence_ids') or []), '-')} |"
+        )
     if not rows:
-        return ""
+        rows.append("| _Pending_ |  |  |  |  |")
+    lines.extend(header + rows)
+    return lines
 
-    out = ["| Step | Input | Action | Output |", "|------|-------|--------|--------|"]
-    for i, (i1, a1, o1) in enumerate(rows, start=1):
-        out.append(f"| {i} | {i1} | {a1} | {o1} |")
-    return "\n".join(out)
+
+def _render_invokes_section(invokes: Iterable[Dict[str, Any]], interdeps: Dict[str, Any]) -> List[str]:
+    lines: List[str] = ["## Invokes / Dependencies"]
+    table = ["| Target | Kind | Operation | Evidence |", "|--------|------|-----------|----------|"]
+    any_row = False
+    for entry in invokes or []:
+        if not isinstance(entry, dict):
+            continue
+        any_row = True
+        table.append(
+            f"| {_safe(entry.get('target'), '-')} | {_safe(entry.get('kind'), '-')} | {_safe(entry.get('operation'), '-')} | {_safe(', '.join(entry.get('evidence_ids') or []), '-')} |"
+        )
+    if not any_row:
+        table.append("| _Pending_ |  |  |  |")
+    lines.extend(table)
+    lines.append("")
+    lines.append("### Interdependency map")
+    interdeps = interdeps or {}
+    for label, key in [("Calls", "calls"), ("Called by", "called_by"), ("Shared data", "shared_data")]:
+        partners = ", ".join({entry.get("partner", "-") for entry in interdeps.get(key) or []}) or "_None yet._"
+        lines.append(f"- **{label}:** {partners}")
+    return lines
+
+
+def _render_key_io_section(key_inputs: Iterable[Dict[str, Any]], key_outputs: Iterable[Dict[str, Any]]) -> List[str]:
+    def _table(entries: Iterable[Dict[str, Any]], heading: str) -> List[str]:
+        tbl = [f"### {heading}", "| Name | Description | Evidence |", "|------|-------------|----------|"]
+        any_row = False
+        for entry in entries or []:
+            if not isinstance(entry, dict):
+                continue
+            any_row = True
+            tbl.append(
+                f"| {_safe(entry.get('name'), '-')} | {_safe(entry.get('description'), '-')} | {_safe(', '.join(entry.get('evidence_ids') or []), '-')} |"
+            )
+        if not any_row:
+            tbl.append("| _Pending_ |  |  |")
+        return tbl
+
+    lines = ["## Key inputs & outputs"]
+    lines.extend(_table(key_inputs, "Inputs"))
+    lines.append("")
+    lines.extend(_table(key_outputs, "Outputs"))
+    return lines
+
+
+def _render_errors_logging_section(errors_and_logging: Dict[str, Any]) -> List[str]:
+    section = ["## Errors & Logging"]
+    block = errors_and_logging or {"errors": [], "logging": []}
+    if not block.get("errors") and not block.get("logging"):
+        section.append("_No error or logging behavior captured yet._")
+        return section
+    if block.get("errors"):
+        section.append("### Error handling")
+        for entry in block.get("errors", []):
+            section.append(f"- {entry.get('description', 'Behavior')}{_evidence_suffix(entry.get('evidence_ids') or [])}")
+    if block.get("logging"):
+        section.append("")
+        section.append("### Logging & telemetry")
+        for entry in block.get("logging", []):
+            section.append(f"- {entry.get('description', 'Behavior')}{_evidence_suffix(entry.get('evidence_ids') or [])}")
+    return section
+
+
+def _render_extrapolations_section(entries: Iterable[Dict[str, Any]]) -> List[str]:
+    lines = ["## Extrapolations"]
+    any_entry = False
+    for entry in entries or []:
+        if not isinstance(entry, dict):
+            continue
+        any_entry = True
+        hypothesis = entry.get("hypothesis") or "Hypothesis"
+        rationale = entry.get("rationale") or ""
+        score = entry.get("hypothesis_score")
+        score_txt = f"(score={score})" if isinstance(score, (int, float)) else ""
+        lines.append(f"- **{hypothesis}** {score_txt} — {rationale}{_evidence_suffix(entry.get('evidence_ids') or [])}")
+    if not any_entry:
+        lines.append("_No extrapolations have been recorded._")
+    return lines
+
+
+def _render_traceability_section(entries: Iterable[Dict[str, Any]]) -> List[str]:
+    lines = ["## Traceability", "| Artifact | Type | Description | Evidence |", "|----------|------|-------------|----------|"]
+    any_row = False
+    for entry in entries or []:
+        if not isinstance(entry, dict):
+            continue
+        any_row = True
+        lines.append(
+            f"| {_safe(entry.get('artifact'), '-')} | {_safe(entry.get('signal_type'), '-')} | {_safe(entry.get('description'), '-')} | {_safe(', '.join(entry.get('evidence_ids') or []), '-')} |"
+        )
+    if not any_row:
+        lines.append("| _Pending_ |  |  |  |")
+    return lines
+
+
+def _render_related_documents_section(group_id: str, component_key: str, sirs: List[Dict[str, Any]]) -> List[str]:
+    lines = ["## Related Documents"]
+    group_slug = group_id.replace(" ", "_")
+    related = [f"- [Group overview](../groups/{group_slug}.md)"]
+    for sir in sirs or []:
+        name = sir.get("name") or sir.get("id")
+        if not name:
+            continue
+        related.append(f"- {name} (process evidence)")
+    if len(related) == 1:
+        related.append("- _Additional related docs will appear after the next scan._")
+    lines.extend(related)
+    return lines
+
+
+def _append_technical_appendix(
+    *,
+    md: List[str],
+    comp: Dict[str, Any],
+    sirs: List[Dict[str, Any]],
+    rels: List[Dict[str, Any]],
+    agg: Optional[Dict[str, Any]],
+    svg_paths: List[str],
+    overview_svg: Optional[str],
+    sequence_svg: Optional[str],
+    journey_svgs: List[Dict[str, Any]],
+    screenshots: List[Dict[str, str]],
+    ui_components: List[Dict[str, Any]],
+    integrations: List[Dict[str, Any]],
+    code_entities: List[Dict[str, Any]],
+) -> None:
+    md.append("## Technical appendix")
+    md.append("")
+    blueprints = comp.get("journey_blueprints") or []
+    if blueprints:
+        md.append("### Journey blueprints")
+        for bp in blueprints:
+            md.append(f"- **{bp.get('title', 'Journey')}** — {' -> '.join(bp.get('steps', []) or [])}{_evidence_suffix(bp.get('evidence_ids') or [])}")
+        md.append("")
+    if screenshots:
+        md.append("### UI snapshots")
+        md.extend(_render_screenshot_markdown(screenshots))
+        md.append("")
+    if rels:
+        md.append("### Relationship highlights")
+        md.extend(_relationship_highlights(rels))
+        md.append("")
+        matrix_block = _relationship_matrix_table(rels)
+        if matrix_block:
+            md.append(matrix_block)
+            md.append("")
+        mermaid = _mermaid_diagram_from_relationships(rels)
+        if mermaid:
+            md.append(mermaid)
+            md.append("")
+    if agg:
+        md.append("### Graph insights")
+        md.append(_compact_graph_insights_table(agg))
+        md.append("")
+    if sequence_svg:
+        md.append("### Sequence snapshot")
+        md.append(f"![Sequence]({sequence_svg})")
+        md.append("")
+    if journey_svgs:
+        md.append("### Generated journey maps")
+        for journey in journey_svgs:
+            md.append(f"#### {journey.get('title')}")
+            md.append(f"![Journey]({journey.get('path')})")
+        md.append("")
+    if overview_svg:
+        md.append("### Component overview")
+        md.append(f"![Component overview]({overview_svg})")
+        md.append("")
+    if svg_paths:
+        md.append("### Process diagrams")
+        for svg in svg_paths:
+            md.append(f"![Process]({svg})")
+        md.append("")
+    if ui_components:
+        md.append("### UI entry points")
+        md.append("| Component | Framework | Routes |")
+        md.append("|-----------|-----------|--------|")
+        for comp_entry in ui_components:
+            routes = ", ".join(comp_entry.get("routes") or []) or "-"
+            md.append(f"| {comp_entry.get('name')} | {comp_entry.get('framework') or '-'} | {routes} |")
+        md.append("")
+    if integrations:
+        md.append("### Integration catalog")
+        md.append("| Library | Kind | Language |")
+        md.append("|---------|------|----------|")
+        for integ in integrations:
+            md.append(f"| {integ.get('library')} | {integ.get('integration_kind')} | {integ.get('language') or '-'} |")
+        md.append("")
+    if code_entities:
+        md.append("### Key code modules")
+        for entry in code_entities[:10]:
+            doc = entry.get("docstring") or "No summary."
+            verbs = entry.get("business_verbs") or []
+            verb_suffix = f" _verbs: {', '.join(verbs[:3])}_" if verbs else ""
+            md.append(f"- `{entry.get('name')}` ({entry.get('language') or '-'}) – {doc}{verb_suffix}")
+        md.append("")
+
+
+def render_family_pages(out_docs_dir: Path, interdeps: Dict[str, Any]) -> None:
+    families = interdeps.get("families") or {}
+    if not families:
+        return
+    family_dir = out_docs_dir / "families"
+    family_dir.mkdir(parents=True, exist_ok=True)
+    for family, members in families.items():
+        if not members:
+            continue
+        _render_family_page(family_dir, family, members, interdeps)
+
+
+def render_repo_overview(out_docs_dir: Path, interdeps: Dict[str, Any]) -> None:
+    nodes = interdeps.get("nodes") or {}
+    families = interdeps.get("families") or {}
+    edges = interdeps.get("edges") or []
+    mapping = {name: data.get("family") for name, data in nodes.items()}
+    overview_path = out_docs_dir / "REPO_OVERVIEW.md"
+    fm = [
+        "---",
+        'title: "Repository Overview"',
+        f"family_count: {len(families)}",
+        f"process_count: {len(nodes)}",
+        "---",
+    ]
+    lines = ["# Repository Overview", ""]
+    if families:
+        lines.append("## Families")
+        lines.append("| Family | Members |")
+        lines.append("|--------|---------|")
+        for fam, members in sorted(families.items()):
+            lines.append(f"| {fam} | {len(members)} |")
+        lines.append("")
+    cross_calls: Dict[Tuple[str, str], int] = {}
+    for edge in edges:
+        if edge.get("kind") != "calls":
+            continue
+        src = edge.get("from")
+        tgt = edge.get("to")
+        fam_src = mapping.get(src)
+        fam_tgt = mapping.get(tgt)
+        if not fam_src or not fam_tgt or fam_src == fam_tgt:
+            continue
+        cross_calls[(fam_src, fam_tgt)] = cross_calls.get((fam_src, fam_tgt), 0) + 1
+    lines.append("## Cross-family calls")
+    if cross_calls:
+        lines.append("| From | To | Count |")
+        lines.append("|------|----|-------|")
+        for (fam_src, fam_tgt), count in sorted(cross_calls.items()):
+            lines.append(f"| {fam_src} | {fam_tgt} | {count} |")
+    else:
+        lines.append("_No cross-family calls detected._")
+    lines.append("")
+    shared_pairs: Dict[Tuple[str, str], Dict[str, List[str]]] = {}
+    for edge in edges:
+        if edge.get("kind") not in {"shared_identifier", "shared_datastore"}:
+            continue
+        src = edge.get("from")
+        tgt = edge.get("to")
+        fam_src = mapping.get(src)
+        fam_tgt = mapping.get(tgt)
+        if not fam_src or not fam_tgt:
+            continue
+        key = tuple(sorted((fam_src, fam_tgt)))
+        shared = shared_pairs.setdefault(key, {"identifiers": [], "datastores": []})
+        if edge.get("kind") == "shared_identifier":
+            shared["identifiers"].append(edge.get("value"))
+        else:
+            shared["datastores"].append(edge.get("value"))
+    lines.append("## Shared identifiers / datastores")
+    if shared_pairs:
+        for (fam_a, fam_b), payload in shared_pairs.items():
+            ident = ", ".join(sorted({v for v in payload["identifiers"] if v})) or "-"
+            data = ", ".join(sorted({v for v in payload["datastores"] if v})) or "-"
+            lines.append(f"- **{fam_a} ↔ {fam_b}:** identifiers [{ident}] · datastores [{data}]")
+    else:
+        lines.append("_No shared identifiers or datastores detected._")
+    lines.append("")
+    overview_path.write_text("\n".join(fm + lines), encoding="utf-8")
+
+
+def _render_family_page(out_dir: Path, family: str, members: List[str], interdeps: Dict[str, Any]) -> None:
+    nodes = interdeps.get("nodes") or {}
+    edges = interdeps.get("edges") or []
+    slug = _slug(family)
+    path = out_dir / f"{slug}.md"
+    fm = ["---", f'title: "Family: {family}"', f"members: {len(members)}", "---"]
+    lines = [f"# Family: {family}", ""]
+    lines.append("## Members")
+    for name in sorted(members):
+        comp = (nodes.get(name) or {}).get("component") or "unknown"
+        lines.append(f"- {name} _(component: {comp})_")
+    lines.append("")
+    lines.append("## Interfaces")
+    lines.append("| Process | Interface |")
+    lines.append("|---------|-----------|")
+    for name in sorted(members):
+        interfaces = (nodes.get(name) or {}).get("interfaces") or []
+        if not interfaces:
+            lines.append(f"| {name} | _None captured_ |")
+            continue
+        for iface in interfaces:
+            lines.append(f"| {name} | {iface} |")
+    lines.append("")
+    lines.append("## Intra-family calls")
+    intra = []
+    for edge in edges:
+        if edge.get("kind") == "calls" and edge.get("from") in members and edge.get("to") in members:
+            intra.append(f"- {edge.get('from')} ➜ {edge.get('to')}")
+    if intra:
+        lines.extend(intra)
+    else:
+        lines.append("_No internal calls detected._")
+    lines.append("")
+    lines.append("## Shared identifiers & datastores")
+    shared_items = []
+    for edge in edges:
+        if edge.get("from") not in members or edge.get("to") not in members:
+            continue
+        if edge.get("kind") == "shared_identifier":
+            shared_items.append(f"- {edge.get('from')} shares identifier `{edge.get('value')}` with {edge.get('to')}")
+        elif edge.get("kind") == "shared_datastore":
+            shared_items.append(f"- {edge.get('from')} shares datastore `{edge.get('value')}` with {edge.get('to')}")
+    if shared_items:
+        lines.extend(shared_items)
+    else:
+        lines.append("_No shared datasets or identifiers detected._")
+    lines.append("")
+    lines.append("## Cross-family calls originating here")
+    cross = []
+    member_set = set(members)
+    for edge in edges:
+        if edge.get("kind") != "calls":
+            continue
+        src = edge.get("from")
+        tgt = edge.get("to")
+        if src in member_set and tgt not in member_set:
+            cross.append(f"- {src} ➜ {tgt}")
+    if cross:
+        lines.extend(cross)
+    else:
+        lines.append("_No outbound cross-family calls detected._")
+    lines.append("")
+    path.write_text("\n".join(fm + lines), encoding="utf-8")
 
 
 def _interdependencies_block(sirs: List[Dict[str, Any]]) -> List[str]:
@@ -529,13 +922,31 @@ def _compact_graph_insights_table(agg: Dict[str, Any]) -> str:
     return "\n".join(rows)
 
 
-def _render_yaml_front_matter_for_component(title: str, facets: Optional[Dict[str, Any]], agg: Optional[Dict[str, Any]]) -> List[str]:
+def _render_yaml_front_matter_for_component(
+    title: str,
+    provenance: Dict[str, Any],
+    llm_subscore: Optional[float],
+    facets: Optional[Dict[str, Any]],
+    agg: Optional[Dict[str, Any]],
+    traceability_count: int,
+    relationship_count: int,
+) -> List[str]:
     """
     Build YAML front-matter lines (without final newline) for a component page.
     """
     fm: List[str] = []
     fm.append("---")
     fm.append(f'title: "{title}"')
+    fm.append("hashes:")
+    fm.append(f'  input: "{provenance.get("input_hash") or ""}"')
+    fm.append(f'  prompt: "{provenance.get("prompt_hash") or ""}"')
+    fm.append("provenance:")
+    fm.append(f'  model: "{provenance.get("model") or ""}"')
+    fm.append(f"  generated_at: {provenance.get('generated_at', 'null')}")
+    fm.append("confidence:")
+    fm.append(f"  llm_subscore: {llm_subscore if llm_subscore is not None else 'null'}")
+    fm.append(f"  traceability: {traceability_count}")
+    fm.append(f"  relationships: {relationship_count}")
     # facets block
     fm.append("facets:")
     fm.append(f"  score: {facets.get('score', 0.0) if facets else 0.0}")
@@ -595,6 +1006,7 @@ def _render_yaml_front_matter_for_sir(title: str, facets: Optional[Dict[str, Any
     return fm
 
 
+
 def render_business_component_page(
     out_docs_dir: Path,
     group_id: str,
@@ -605,11 +1017,7 @@ def render_business_component_page(
     facets: Optional[Dict[str, Any]] = None,
     settings: Optional[Dict[str, Any]] = None,
 ) -> None:
-    """
-    Render the business-facing component page, including YAML front-matter with facets
-    and distance metadata so MkDocs and LLM rollups see the same structured info.
-    settings is optional and is passed to graphviz rendering functions (for marker highlighting).
-    """
+    """Render the business-facing component page following the reference layout."""
     gid = group_id.replace(" ", "_")
     cid = component_key.replace(" ", "_").replace("/", "_")
 
@@ -620,206 +1028,82 @@ def render_business_component_page(
     title = _component_title(c_json, component_key)
     llm_sub = c_json.get("llm_subscore")
 
-    # Generate per-process flows (SVG) and a component overview (SVG) - pass settings for highlighting
-    svg_paths = []
+    svg_paths: List[str] = []
     for sir in sirs or []:
         svg_rel = render_bw_process_flow_svg(sir, out_docs_dir, group_id, component_key, settings=settings)
         if svg_rel:
             svg_paths.append(svg_rel)
 
     overview_svg = render_component_overview_svg(sirs or [], out_docs_dir, group_id, component_key, settings=settings)
-
-    # Aggregate graph features for front-matter and summary
     agg = _aggregate_graph_features(sirs) or {}
 
-    # Build page lines
+    comp = c_json.get("component", {}) or {}
+    provenance = c_json.get("provenance") or {}
+    traceability = comp.get("traceability") or []
+    rels = _collect_relationships_from_sirs(sirs)
+
     md: List[str] = []
-
-    # YAML front-matter (component-level)
-    md.extend(_render_yaml_front_matter_for_component(title, facets, agg))
-    md.append("")  # blank line after frontmatter
-
+    md.extend(
+        _render_yaml_front_matter_for_component(
+            title,
+            provenance,
+            llm_sub,
+            facets,
+            agg,
+            len(traceability),
+            len(rels),
+        )
+    )
+    md.append("")
     md.append(f"# {title}")
     md.append("<!-- CONFIDENCE_INLINE -->")
     md.append(_confidence_line(llm_sub))
     md.append("")
-    md.append("## 📌 Purpose")
-    md.append("This guide explains the component from a business perspective. It focuses on end-to-end flow and what it delivers.")
+    md.extend(_render_claim_section("## What it does", comp.get("what_it_does")))
     md.append("")
-    md.append("## 👥 Audience")
-    md.append("- Business owners")
-    md.append("- Product managers")
-    md.append("- Operations teams")
-    md.append("- Compliance and audit reviewers")
+    md.extend(_render_claim_section("## Why it matters", comp.get("why_it_matters"), summary_key="impact"))
     md.append("")
-    md.append("## 🔑 Key Questions this answers")
-    md.append("- What does this component do, end-to-end?")
-    md.append("- What inputs does it require and what outputs does it produce?")
-    md.append("- What other processes or services does it depend on?")
-    md.append("- What value does it deliver?")
+    md.extend(_render_interfaces_section(comp.get("interfaces")))
     md.append("")
-    md.append("## 🛠️ Overview")
-    md.extend(_derive_overview_lines(c_json))
+    md.extend(_render_invokes_section(comp.get("invokes"), comp.get("interdependencies")))
     md.append("")
-    personas = _collect_personas_from_sirs(sirs)
-    stories = _collect_user_stories_from_sirs(sirs)
-    if personas or stories:
-        md.append("## 👥 Personas & Journeys")
-        persona_lines = _render_persona_lines(personas)
-        if persona_lines:
-            md.extend(persona_lines)
-        for story in stories[:5]:
-            md.append(f"- Journey: {story}")
-        if not persona_lines and not stories:
-            md.append("_Persona insights pending richer evidence._")
+    md.extend(_render_key_io_section(comp.get("key_inputs"), comp.get("key_outputs")))
+    md.append("")
+    scaffold_hints = _collect_scaffold_hints_from_sirs(sirs)
+    if scaffold_hints:
+        md.extend(_render_scaffold_dependencies_section(scaffold_hints))
         md.append("")
-    screenshots = _collect_screenshots_from_sirs(sirs)
-    if screenshots:
-        md.append("## 🖼️ What Users See")
-        md.extend(_render_screenshot_markdown(screenshots))
-        md.append("")
-    md.append("## 🔄 End-to-End Flow")
-    flow_tbl = _e2e_flow_table(c_json)
-    if flow_tbl:
-        md.append(flow_tbl)
-    else:
-        md.append("_Flow will be captured as more evidence is parsed._")
+    md.extend(_render_errors_logging_section(comp.get("errors_and_logging")))
     md.append("")
-    md.append("## 🔗 Interdependencies & Data Touchpoints")
-    md.extend(_interdependencies_block(sirs))
+    md.extend(_render_extrapolations_section(comp.get("extrapolations")))
+    md.append("")
+    md.extend(_render_traceability_section(traceability))
+    md.append("")
+    md.extend(_render_related_documents_section(group_id, component_key, sirs))
     md.append("")
 
-    ui_components = _collect_ui_components_from_sirs(sirs)
-    if ui_components:
-        md.append("## 🎛 UI Entry Points")
-        md.append("| Component | Framework | Routes |")
-        md.append("|-----------|-----------|--------|")
-        for comp in ui_components:
-            routes = ", ".join(comp.get("routes") or []) or "-"
-            md.append(f"| {comp.get('name')} | {comp.get('framework') or '-'} | {routes} |")
+    _append_technical_appendix(
+        md=md,
+        comp=comp,
+        sirs=sirs,
+        rels=rels,
+        agg=agg,
+        svg_paths=svg_paths,
+        overview_svg=overview_svg,
+        sequence_svg=render_relationship_sequence_svg(sirs or [], out_docs_dir, group_id, component_key, settings=settings),
+        journey_svgs=render_rollup_journey_svgs(c_json, out_docs_dir, group_id, component_key),
+        screenshots=_collect_screenshots_from_sirs(sirs),
+        ui_components=_collect_ui_components_from_sirs(sirs),
+        integrations=_collect_integrations_from_sirs(sirs),
+        code_entities=_collect_code_entities(sirs),
+    )
+
+    if evidence_md_filename:
         md.append("")
-
-    integrations = _collect_integrations_from_sirs(sirs)
-    if integrations:
-        md.append("## 🌐 Integration Catalog")
-        md.append("| Library | Kind | Language |")
-        md.append("|---------|------|----------|")
-        for integ in integrations:
-            md.append(f"| {integ.get('library')} | {integ.get('integration_kind')} | {integ.get('language') or '-'} |")
-        md.append("")
-
-    rels = _collect_relationships_from_sirs(sirs)
-    if rels:
-        md.append("## 🧩 Relationship Highlights")
-        md.extend(_relationship_highlights(rels))
-        md.append("")
-        matrix_block = _relationship_matrix_table(rels)
-        if matrix_block:
-            md.append("## 📊 Dependency Matrix")
-            md.append(matrix_block)
-            md.append("")
-        mermaid = _mermaid_diagram_from_relationships(rels)
-        if mermaid:
-            md.append("## 🗺️ Flow Diagram (Mermaid)")
-            md.append(mermaid)
-            md.append("")
-        else:
-            md.append("## 🗺️ Flow Diagram (Mermaid)")
-            md.append("_Mermaid view not available; will render after more relationships are captured._")
-            md.append("")
-
-    # Graph Insights (distance features) — compact table preferred
-    if agg:
-        md.append("## 🧭 Graph Insights (Distance Features)")
-        md.append("")
-        md.append(_compact_graph_insights_table(agg))
-        md.append("")
-    sequence_svg = render_relationship_sequence_svg(sirs or [], out_docs_dir, group_id, component_key, settings=settings)
-    if sequence_svg:
-        md.append("## 🔁 Sequence Snapshot")
-        md.append(f"![Sequence]({sequence_svg})")
-        md.append("")
-
-    journey_svgs = render_rollup_journey_svgs(c_json, out_docs_dir, group_id, component_key)
-    if journey_svgs:
-        md.append("## ✨ LLM Journey Maps")
-        for journey in journey_svgs:
-            md.append(f"### {journey.get('title')}")
-            md.append(f"![Journey]({journey.get('path')})")
-            md.append("")
-
-    code_entities = _collect_code_entities(sirs)
-    if code_entities:
-        md.append("## 🧱 Key Code Modules")
-        for entry in code_entities[:10]:
-            doc = entry.get("docstring") or "No summary."
-            md.append(f"- `{entry.get('name')}` ({entry.get('language') or '-'}) – {doc}")
-        md.append("")
-
-    diagrams = _collect_process_diagrams_from_sirs(sirs)
-    if diagrams:
-        md.append("## 📈 Process Diagrams")
-        for name in diagrams:
-            md.append(f"- {name}")
-        md.append("")
-
-    entities = _collect_business_entities_from_sirs(sirs)
-    if entities:
-        md.append("## 📚 Glossary & Roles")
-        for entry in entities:
-            source = entry.get("source")
-            suffix = f" ({source})" if source else ""
-            md.append(f"- {entry.get('name')}{suffix}")
-        md.append("")
-
-    md.append("## ✅ Business Value")
-    md.append("- Flexibility: enables change without code modifications where applicable")
-    md.append("- Reliability: consistent behavior across processes/services")
-    md.append("- Traceability: evidence-backed claims and logging")
-    md.append("")
-    md.append("## ⚠️ Known Unknowns")
-    md.extend(_unknowns_block(c_json))
-    md.append("")
-
-    if overview_svg:
-        md.append("## Module Overview")
-        md.append(f"![Flow]({overview_svg})")
-        md.append("")
-
-    if svg_paths:
-        md.append("## Visual Flow Diagrams")
-        for rel in svg_paths:
-            md.append("")
-            md.append(f"![Flow]({rel})")
-        md.append("")
-
-    # Details with evidence links
-    md.append("## Details (Evidence-backed)")
-    comp = c_json.get("component", {}) or {}
-    for w in comp.get("what_it_does", []) or []:
-        if isinstance(w, dict):
-            claim = w.get("claim", "")
-            eids = [str(e) for e in (w.get("evidence_ids") or [])]
-            if evidence_md_filename and eids:
-                links = [f"[{eid}]({evidence_md_filename}#{_anchor_eid(eid)})" for eid in eids]
-            else:
-                links = eids
-            md.append(f"- {claim} (evidence: {', '.join(links)})")
-    md.append("")
-
-    # Compact confidence block
-    md.append("<!-- CONFIDENCE_ROLLUP_START -->")
-    md.append("## Confidence & Evidence Rollup")
-    md.append("")
-    md.append("!!! info \"How to read these scores\"")
-    md.append("    - The confidence score reflects how closely claims match their cited evidence.")
-    md.append("    - Higher scores indicate stronger alignment to the underlying sources.")
-    md.append("")
-    md.append("<!-- CONFIDENCE_ROLLUP_END -->")
+        md.append("## Evidence appendix")
+        md.append(f"See [{evidence_md_filename}]({evidence_md_filename}) for the raw evidence snippets referenced above.")
 
     page_path.write_text("\n".join(md), encoding="utf-8")
-
-
 def render_business_group_page(
     out_docs_dir: Path,
     group_id: str,

@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<RibbonBar BuiltinTheme="0" Font="FaceName:Tahoma; TextSize:10" >
+  <RibbonItems>
+    <ApplicationButton Text="App" Enabled="true" Tag="" Visible="true">
+      <ApplicationMenu>
+        <Master>
+	  			<Item Text="API URL" Enabled="true" Tag="" Visible="true" PictureName="image\settings.png" Checked="false" Type="0" Selected="" Clicked="ue_changeurl" Shortcut="" />
+          <Item Text="Exit" Enabled="true" Tag="" Visible="true" PictureName="ExitSmall!" Checked="false" Type="0" Selected="" Clicked="ue_exitClicked" Shortcut="">
+          </Item>
+        </Master>
+      </ApplicationMenu>
+    </ApplicationButton>
+    <Categories>
+      <Category Text="Home" Enabled="true" Tag="" Visible="true">
+        <Panel Text="Windows" Enabled="true" Tag="" Visible="true" PictureName="SwitchWindowsSmall!">
+          <Group Tag="" Enabled="true" NewLine="true" Visible="true">
+            <SmallButton Text="Close All" Enabled="true" Tag="CloseAll" Visible="true" PictureName="CloseAllSmall!" DefaultCommand="true" Checked="false" PowerTipText="" PowerTipDescription="" Clicked="ue_closeAll" Selected="" Shortcut="">
+            </SmallButton>
+          </Group>
+          <Group Tag="" Enabled="true" NewLine="true" Visible="true">
+            <SmallButton Text="Close" Enabled="true" Tag="CloseOne" Visible="true" PictureName="CloseSmall!" DefaultCommand="true" Checked="false" PowerTipText="" PowerTipDescription="" Clicked="ue_closeOne" Selected="" Shortcut="">
+            </SmallButton>
+          </Group>
+        </Panel>
+        <Panel Text="Monitor Center" Enabled="true" Tag="anchor" Visible="true" PictureName="ToolkitCodeInsight!">
+          <LargeButton Text="Dashboard" Tag="w_dashboard" PictureName="image\Dashboard.png" Clicked="ue_sheetSelectorClicked" Enabled="true" Visible="true" DefaultCommand="true" Checked="false" PowerTipText="Dashboard" PowerTipDescription="Dashboard Information" Selected="Dashboard-select.png" Shortcut="" />
+          <LargeButton Text="Health" Tag="w_health" PictureName="image\Health.png" Clicked="ue_sheetSelectorClicked" Enabled="true" Visible="true" DefaultCommand="true" Checked="false" PowerTipText="Health" PowerTipDescription="Health Information" Selected="" Shortcut="" />
+          <LargeButton Text="License" Tag="w_license" PictureName="image\License.png" Clicked="ue_sheetSelectorClicked" Enabled="true" Visible="true" DefaultCommand="true" Checked="false" PowerTipText="License" PowerTipDescription="License Information" Selected="" Shortcut="" />
+          <LargeButton Text="Session" Tag="w_session_list" PictureName="image\Session.png" Clicked="ue_sheetSelectorClicked" Enabled="true" Visible="true" DefaultCommand="true" Checked="false" PowerTipText="Session" PowerTipDescription="Session Information" Selected="" Shortcut="" />
+          <LargeButton Text="Statistics" Tag="w_statistics" PictureName="image\Statistics.png" Clicked="ue_sheetSelectorClicked" Enabled="true" Visible="true" DefaultCommand="true" Checked="false" PowerTipText="Statistics" PowerTipDescription="Statistics Information" Selected="" Shortcut="" />
+          <LargeButton Text="Transaction" Tag="w_transaction" PictureName="image\Transaction.png" Clicked="ue_sheetSelectorClicked" Enabled="true" Visible="true" DefaultCommand="true" Checked="false" PowerTipText="Transaction" PowerTipDescription="Transaction Information" Selected="" Shortcut="" />
+        </Panel>
+        <Panel Text="Configuration Manager" Enabled="true" Tag="anchor" Visible="true" PictureName="ScriptYes1!">
+          <LargeButton Text="Application" Tag="w_application" PictureName="image\Application.png" Clicked="ue_sheetSelectorClicked" Enabled="true" Visible="true" DefaultCommand="true" Checked="false" PowerTipText="Application" PowerTipDescription="Application Information" Selected="" Shortcut="" />
+          <LargeButton Text="Connection" Tag="w_connection" PictureName="image\Connection.png" Clicked="ue_sheetSelectorClicked" Enabled="true" Visible="true" DefaultCommand="true" Checked="false" PowerTipText="Connection" PowerTipDescription="Connection Information" Selected="" Shortcut="" />
+        </Panel>
+
+        <Panel Text="Actions" Enabled="true" Tag="w_healthPanel" Visible="false" PictureName="ActionsSmall!">
+          <Group Tag="" Enabled="true" NewLine="true" Visible="true">
+            <SmallButton Text="Overall" Enabled="true" Tag="health" Visible="true" PictureName="image\overall.png" DefaultCommand="true" Checked="false" PowerTipText="" PowerTipDescription="" Clicked="ue_dataAction" Selected="" Shortcut="">
+            </SmallButton>
+            <SmallButton Text="Details" Enabled="true" Tag="healthDetails" Visible="true" PictureName="image\Details.png" DefaultCommand="true" Checked="false" PowerTipText="" PowerTipDescription="" Clicked="ue_dataAction" Selected="" Shortcut="">
+            </SmallButton>
+            <SmallButton Text="UI" Enabled="true" Tag="healthui" Visible="true" PictureName="image\UI.png" DefaultCommand="true" Checked="false" PowerTipText="" PowerTipDescription="" Clicked="ue_dataAction" Selected="" Shortcut="">
+            </SmallButton>
+          </Group>
+          <Group Tag="" Enabled="true" NewLine="true" Visible="true">
+            <SmallButton Text="Liveness" Enabled="true" Tag="healthliveness" Visible="true" PictureName="image\Liveness.png" DefaultCommand="true" Checked="false" PowerTipText="" PowerTipDescription="" Clicked="ue_dataAction" Selected="" Shortcut="">
+            </SmallButton>
+ 	    <SmallButton Text="Readiness" Enabled="true" Tag="healthreadiness" Visible="true" PictureName="image\readiness.png" DefaultCommand="true" Checked="false" PowerTipText="" PowerTipDescription="" Clicked="ue_dataAction" Selected="" Shortcut="">
+            </SmallButton>
+          </Group>
+        </Panel>
+        <Panel Text="Actions" Enabled="true" Tag="w_licensePanel" Visible="false" PictureName="ActionsSmall!">
+          <Group Tag="" Enabled="true" NewLine="true" Visible="true">
+            <SmallButton Text="Licenses Info" Enabled="true" Tag="licenseinfo" Visible="true" PictureName="image\License-info.png" DefaultCommand="true" Checked="false" PowerTipText="" PowerTipDescription="" Clicked="ue_dataAction" Selected="" Shortcut="">
+            </SmallButton>
+          </Group>
+          <Group Tag="" Enabled="true" NewLine="true" Visible="true">
+            <SmallButton Text="Instance Info" Enabled="true" Tag="instanceinfo" Visible="true" PictureName="image\Instance-info.png" DefaultCommand="true" Checked="false" PowerTipText="" PowerTipDescription="" Clicked="ue_dataAction" Selected="" Shortcut="">
+            </SmallButton>
+          </Group>
+        </Panel>
+        
+         <Panel Text="Actions" Enabled="true" Tag="w_session_listPanel" Visible="false" PictureName="ActionsSmall!">
+          <Group Tag="" Enabled="true" NewLine="true" Visible="true">
+            <SmallButton Text="Load All" Enabled="true" Tag="LoadAll" Visible="true" PictureName="image\load-all.png" DefaultCommand="true" Checked="false" PowerTipText="" PowerTipDescription="" Clicked="ue_dataAction" Selected="" Shortcut="">
+            </SmallButton>
+	    				<SmallButton Text="Summary" Enabled="true" Tag="LoadSummary" Visible="true" PictureName="image\summary.png" DefaultCommand="true" Checked="false" PowerTipText="" PowerTipDescription="" Clicked="ue_dataAction" Selected="" Shortcut="">
+            </SmallButton>
+          </Group>
+          <Group Tag="" Enabled="true" NewLine="true" Visible="true">
+            <SmallButton Text="Kill By Session ID" Enabled="true" Tag="KillBySessionID" Visible="true" PictureName="image\kill.png" DefaultCommand="true" Checked="false" PowerTipText="" PowerTipDescription="" Clicked="ue_dataAction" Selected="" Shortcut="">
+            </SmallButton>
+          </Group>
+        </Panel>
+
+        <Panel Text="Actions" Enabled="true" Tag="w_statisticsPanel" Visible="false" PictureName="image\ActionsSmall!">
+          <Group Tag="" Enabled="true" NewLine="true" Visible="true">
+            <SmallButton Text="Transaction Summary" Enabled="true" Tag="TransactonSummary" Visible="true" PictureName="image\Transaction-summary.png" DefaultCommand="true" Checked="false" PowerTipText="" PowerTipDescription="" Clicked="ue_dataAction" Selected="" Shortcut="">
+            </SmallButton>
+          </Group>
+          <Group Tag="" Enabled="true" NewLine="true" Visible="true">
+            <SmallButton Text="Request Summary" Enabled="true" Tag="RequestSummary" Visible="true" PictureName="image\request-summary.png" DefaultCommand="true" Checked="false" PowerTipText="" PowerTipDescription="" Clicked="ue_dataAction" Selected="" Shortcut="">
+            </SmallButton>
+          </Group>
+        </Panel>
+
+        <Panel Text="Actions" Enabled="true" Tag="w_transactionPanel" Visible="false" PictureName="image\ActionsSmall!">
+          <Group Tag="" Enabled="true" NewLine="true" Visible="true">
+          	<SmallButton Text="Refresh" Enabled="true" Tag="Refresh" Visible="true" PictureName="image\Refresh.png" DefaultCommand="true" Checked="false" PowerTipText="" PowerTipDescription="" Clicked="ue_dataAction" Selected="" Shortcut="">
+            </SmallButton>
+            </Group>
+            <Group Tag="" Enabled="true" NewLine="true" Visible="true">
+            <SmallButton Text="" Enabled="false" Tag="Refresh" Visible="false" PictureName="" DefaultCommand="true" Checked="false" PowerTipText="" PowerTipDescription="" Clicked="ue_dataAction" Selected="" Shortcut="">
+            </SmallButton>
+          </Group>
+        </Panel>
+        
+        <Panel Text="Actions" Enabled="true" Tag="w_applicationPanel" Visible="false" PictureName="image\ActionsSmall!">
+          <Group Tag="" Enabled="true" NewLine="true" Visible="true">
+            <SmallButton Text="Refresh" Enabled="true" Tag="LoadAll" Visible="true" PictureName="image\Refresh.png" DefaultCommand="true" Checked="false" PowerTipText="" PowerTipDescription="" Clicked="ue_dataAction" Selected="" Shortcut="">
+            </SmallButton>
+          </Group>
+          <Group Tag="" Enabled="true" NewLine="true" Visible="true">
+            <SmallButton Text="Edit" Enabled="true" Tag="Edit" Visible="true" PictureName="EditSmall!" DefaultCommand="true" Checked="false" PowerTipText="" PowerTipDescription="" Clicked="ue_dataAction" Selected="" Shortcut="">
+            </SmallButton>
+          </Group>
+        </Panel>
+        
+        <Panel Text="Actions" Enabled="true" Tag="w_connectionPanel" Visible="false" PictureName="ActionsSmall!">
+          <Group Tag="" Enabled="true" NewLine="true" Visible="true">
+            <SmallButton Text="Load One" Enabled="true" Tag="LoadOne" Visible="true" PictureName="image\load-one.png" DefaultCommand="true" Checked="false" PowerTipText="" PowerTipDescription="" Clicked="ue_dataAction" Selected="" Shortcut="">
+            </SmallButton>
+            <SmallButton Text="Load All" Enabled="true" Tag="LoadAll" Visible="true" PictureName="image\load-all.png" DefaultCommand="true" Checked="false" PowerTipText="" PowerTipDescription="" Clicked="ue_dataAction" Selected="" Shortcut="">
+            </SmallButton>
+          </Group>
+          <Group Tag="" Enabled="true" NewLine="true" Visible="true">
+            <SmallButton Text="Add" Enabled="true" Tag="add" Visible="true" PictureName="AddSmall!" DefaultCommand="true" Checked="false" PowerTipText="" PowerTipDescription="" Clicked="ue_dataAction" Selected="" Shortcut="">
+            </SmallButton>
+             <SmallButton Text="Edit" Enabled="true" Tag="edit" Visible="true" PictureName="EditSmall!" DefaultCommand="true" Checked="false" PowerTipText="" PowerTipDescription="" Clicked="ue_dataAction" Selected="" Shortcut="">
+            </SmallButton>
+             <SmallButton Text="Remove" Enabled="true" Tag="remove" Visible="true" PictureName="DeleteSmall!" DefaultCommand="true" Checked="false" PowerTipText="" PowerTipDescription="" Clicked="ue_dataAction" Selected="" Shortcut="">
+            </SmallButton>
+          </Group>
+        </Panel>
+      </Category>
+    </Categories>
+  </RibbonItems>
+</RibbonBar>

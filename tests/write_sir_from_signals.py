@@ -4,7 +4,7 @@ import json
 from autodocx.registry import load_extractors
 
 repo = Path("repos/Towne-Park-Billing-Source-Code/Towne-Park-Billing-PA-Solution/BillingSystem").resolve()
-out_sir = Path("out/sir")
+out_sir = Path("out/sir_v2")
 out_sir.mkdir(parents=True, exist_ok=True)
 
 extractors = load_extractors()

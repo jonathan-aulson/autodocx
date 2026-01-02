@@ -62,6 +62,22 @@ Day-to-day, you only touch 3 places:
 - Eg: autodocx scan ./repos/Towne-Park-Billing-Source-Code --out out --debug --mkdocs-build --llm-rollup
 - Open: out/index.md, out/system.md, out/artifacts.md
 
+### Running inside WSL Ubuntu
+
+- Keep the repo under your Linux filesystem (e.g., `/home/<user>/projects/...`) instead of `/mnt/c` so file-watching and cache cleanup stay fast.
+- Bootstrap dependencies with `./scripts/setup_wsl.sh` (installs Python 3.10 dev headers, Graphviz, fonts, MkDocs, build-essential, plus optional Azure CLI + Bicep).
+- If you prefer manual setup, run:
+
+  ```bash
+  sudo apt update && sudo apt install -y python3.10-venv python3.10-dev build-essential pkg-config \
+    graphviz graphviz-dev fonts-dejavu mkdocs libxml2-dev libxslt1-dev curl git
+  ```
+
+- Optionally add Azure CLI + Bicep: `curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash && az bicep install`.
+- Create the virtualenv with `python3.10 -m venv .venv && source .venv/bin/activate`, then run `pip install -e .[treesitter]`.
+- Run `python -m autodocx_cli doctor` (or `python3 -m ...`) to confirm Graphviz, MkDocs, Azure CLI/Bicep, and `OPENAI_API_KEY` are available before scanning.
+- Set `AUTODOCX_SKIP_PYCLEAN=1` if the repo ever lives on `/mnt/c` to skip the aggressive `__pycache__` purge during CLI startup.
+
 ## How to add a new extractor
 
 Create autodocx/extractors/<[name]>.py

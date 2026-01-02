@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pathlib import Path
-from typing import Iterable, List, Set, Dict, Any, Optional
+from typing import Iterable, List, Set, Dict, Any, Optional, Tuple
 import hashlib
 import re, yaml
 from autodocx.types import Signal
@@ -81,7 +81,13 @@ class AzurePipelinesExtractor:
             envs = set()
             envs |= _infer_envs_from_path(path)
             envs |= _infer_envs_from_yaml(doc)
-            relationships = self._collect_relationships(doc, pipeline_name=name, file_path=str(path))
+            (
+                relationships,
+                steps_meta,
+                datastores,
+                service_deps,
+                process_refs,
+            ) = self._collect_relationships(doc, pipeline_name=name, file_path=str(path))
             signals.append(Signal(
                 kind="job",
                 props={
@@ -91,6 +97,10 @@ class AzurePipelinesExtractor:
                     "ci_system": "azure_pipelines",
                     "environments": sorted(envs),
                     "relationships": relationships,
+                    "steps": steps_meta,
+                    "datasource_tables": sorted(datastores),
+                    "service_dependencies": sorted(service_deps),
+                    "process_calls": sorted(process_refs),
                 },
                 evidence=[f"{path}:1-60"],
                 subscores={"parsed": 1.0}
@@ -101,28 +111,51 @@ class AzurePipelinesExtractor:
 
     # -------------- relationship helpers --------------
 
-    def _collect_relationships(self, doc: Dict[str, Any], pipeline_name: str, file_path: str) -> List[Dict[str, Any]]:
+    def _collect_relationships(
+        self, doc: Dict[str, Any], pipeline_name: str, file_path: str
+    ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], Set[str], Set[str], Set[str]]:
         relationships: List[Dict[str, Any]] = []
+        steps_meta: List[Dict[str, Any]] = []
+        datastores: Set[str] = set()
+        service_deps: Set[str] = set()
+        process_refs: Set[str] = set()
         stages = doc.get("stages")
         if isinstance(stages, list):
             for stage in stages:
-                relationships.extend(self._relationships_from_stage(stage, file_path))
+                self._relationships_from_stage(stage, file_path, relationships, steps_meta, datastores, service_deps, process_refs)
         jobs = doc.get("jobs")
         if isinstance(jobs, list):
             for job in jobs:
-                relationships.extend(self._relationships_from_job(job, file_path))
+                self._relationships_from_job(job, file_path, relationships, steps_meta, datastores, service_deps, process_refs)
         steps = doc.get("steps")
         if isinstance(steps, list):
-            relationships.extend(self._relationships_from_steps(steps, source={"type": "pipeline", "name": pipeline_name}, file_path=file_path))
-        return relationships
+            self._relationships_from_steps(
+                steps,
+                source={"type": "pipeline", "name": pipeline_name},
+                file_path=file_path,
+                relationships=relationships,
+                steps_meta=steps_meta,
+                datastores=datastores,
+                service_deps=service_deps,
+            )
+        return relationships, steps_meta, datastores, service_deps, process_refs
 
-    def _relationships_from_stage(self, stage: Dict[str, Any], file_path: str) -> List[Dict[str, Any]]:
-        relationships: List[Dict[str, Any]] = []
+    def _relationships_from_stage(
+        self,
+        stage: Dict[str, Any],
+        file_path: str,
+        relationships: List[Dict[str, Any]],
+        steps_meta: List[Dict[str, Any]],
+        datastores: Set[str],
+        service_deps: Set[str],
+        process_refs: Set[str],
+    ) -> None:
         stage_name = stage.get("stage") or stage.get("name")
         if not stage_name:
-            return relationships
+            return
         source = {"type": "stage", "name": stage_name}
         for dep in _ensure_list(stage.get("dependsOn")):
+            process_refs.add(f"{stage_name}->{dep}")
             relationships.append(self._relationship(
                 source=source,
                 target={"kind": "stage", "ref": dep, "display": dep},
@@ -138,6 +171,7 @@ class AzurePipelinesExtractor:
         else:
             env_name = env
         if env_name:
+            service_deps.add(str(env_name))
             relationships.append(self._relationship(
                 source=source,
                 target={"kind": "environment", "ref": env_name, "display": env_name},
@@ -148,21 +182,32 @@ class AzurePipelinesExtractor:
                 evidence=[f"{file_path}:stages"],
             ))
         for job in stage.get("jobs") or []:
-            relationships.extend(self._relationships_from_job(job, file_path, parent_stage=stage_name))
-        return relationships
+            self._relationships_from_job(job, file_path, relationships, steps_meta, datastores, service_deps, process_refs, parent_stage=stage_name)
 
-    def _relationships_from_job(self, job: Dict[str, Any], file_path: str, parent_stage: Optional[str] = None) -> List[Dict[str, Any]]:
-        relationships: List[Dict[str, Any]] = []
+    def _relationships_from_job(
+        self,
+        job: Dict[str, Any],
+        file_path: str,
+        relationships: List[Dict[str, Any]],
+        steps_meta: List[Dict[str, Any]],
+        datastores: Set[str],
+        service_deps: Set[str],
+        process_refs: Set[str],
+        parent_stage: Optional[str] = None,
+    ) -> None:
         job_name = job.get("job") or job.get("deployment") or job.get("name")
         if not job_name:
-            return relationships
+            return
         source = {"type": "job", "name": job_name}
+        for dep in _ensure_list(job.get("dependsOn")):
+            process_refs.add(f"{job_name}->{dep}")
         env = job.get("environment")
         if isinstance(env, dict):
             env_name = env.get("name")
         else:
             env_name = env
         if env_name:
+            service_deps.add(str(env_name))
             relationships.append(self._relationship(
                 source=source,
                 target={"kind": "environment", "ref": env_name, "display": env_name},
@@ -174,23 +219,55 @@ class AzurePipelinesExtractor:
             ))
         steps = job.get("steps")
         if isinstance(steps, list):
-            relationships.extend(self._relationships_from_steps(steps, source=source, file_path=file_path))
+            self._relationships_from_steps(
+                steps,
+                source=source,
+                file_path=file_path,
+                relationships=relationships,
+                steps_meta=steps_meta,
+                datastores=datastores,
+                service_deps=service_deps,
+            )
         strategy = job.get("strategy") or {}
         run_once = (strategy.get("runOnce") or {}).get("deploy") or {}
         strategy_steps = run_once.get("steps")
         if isinstance(strategy_steps, list):
-            relationships.extend(self._relationships_from_steps(strategy_steps, source=source, file_path=file_path))
-        return relationships
+            self._relationships_from_steps(
+                strategy_steps,
+                source=source,
+                file_path=file_path,
+                relationships=relationships,
+                steps_meta=steps_meta,
+                datastores=datastores,
+                service_deps=service_deps,
+            )
 
-    def _relationships_from_steps(self, steps: List[Any], source: Dict[str, Any], file_path: str) -> List[Dict[str, Any]]:
-        relationships: List[Dict[str, Any]] = []
+    def _relationships_from_steps(
+        self,
+        steps: List[Any],
+        source: Dict[str, Any],
+        file_path: str,
+        relationships: List[Dict[str, Any]],
+        steps_meta: List[Dict[str, Any]],
+        datastores: Set[str],
+        service_deps: Set[str],
+    ) -> None:
         for step in steps:
             if not isinstance(step, dict):
                 continue
             task = (step.get("task") or "").lower()
             inputs = step.get("inputs") or {}
+            entry: Dict[str, Any] = {
+                "name": step.get("displayName") or task or "step",
+                "connector": task or ("script" if step.get("script") else "step"),
+                "job": source.get("name"),
+                "inputs_keys": sorted(inputs.keys())[:5] if isinstance(inputs, dict) else [],
+            }
+            if step.get("script"):
+                entry["script"] = step["script"].splitlines()[0][:80]
             env_name = inputs.get("PowerPlatformSPN") or inputs.get("environment")
             if env_name:
+                service_deps.add(str(env_name))
                 relationships.append(self._relationship(
                     source=source,
                     target={"kind": "environment", "ref": env_name, "display": env_name},
@@ -203,6 +280,8 @@ class AzurePipelinesExtractor:
             if task.startswith("publishbuildartifacts") or "publish" in step:
                 artifact_name = inputs.get("ArtifactName") or step.get("publish")
                 if artifact_name:
+                    datastores.add(str(artifact_name))
+                    entry["datasource_table"] = artifact_name
                     relationships.append(self._relationship(
                         source=source,
                         target={"kind": "artifact", "ref": artifact_name, "display": artifact_name},
@@ -212,7 +291,7 @@ class AzurePipelinesExtractor:
                         context={"task": step.get("displayName")},
                         evidence=[f"{file_path}:steps"],
                     ))
-        return relationships
+            steps_meta.append({k: v for k, v in entry.items() if v})
 
     def _relationship(
         self,

@@ -1,0 +1,303 @@
+﻿/*
+Here it shows how to use custom theme for all the controls on a custom window.
+
+The current sample demonstrates the custom theme functionality on a window itself, a UserObject, CommandButton, StaticText, SingleLineEdit controls, and different types of DataWindow separately. 
+
+Note that the UI settings of the DataWindow set by the expression or the Modify method have higher priorities than the theme file, except for the border and resizable properties, in which case, the settings on the painter have higher priorities than the theme file.
+*/
+
+/*
+1.You can use the syntax {window control name} to set custom theme for the background color and text font of the window's title, statusbar, border.
+*/
+"w_sheet_customtheme": 
+{
+	"drawing": true,
+	"background-color": "#F5F6FC",
+	"title": 
+	{
+		"active-state": 
+		{
+			"background-color": "#F5F6FC",
+			"text-font": {"color": "#3D5067"}
+		},
+		"inactive-state": 
+		{
+			"background-color": "#F5F6FC",
+			"text-font": {"color": "#3D5067"}
+		}
+	},
+	"statusbar": 
+	{
+		"background-color": "#C3C7CF",
+		"text-font": {"color": "#3C465A"}
+	},
+	"border": 
+	{
+		"margin": [1,30,1,1],
+		"active-state": 
+		{
+			"border-color": "#E9ECF9"
+		},
+		"inactive-state": 
+		{
+			"border-color": "#E9ECF9"
+		}
+	}
+},
+/*
+2. You can use the syntax {window control name}.{xxx}.{control name} to set custom theme for the background-color and border-color for a UserObject used for different purposes on the window.
+*/
+"w_sheet_customtheme.uo_person": 
+{
+	"drawing": true,
+	"default-style": true,
+	"normal-state": 
+	{
+		"background-color": "#F5F6FC",
+		"border-color": "#F5F6FC"
+	},
+	"disabled-state": 
+	{
+		"background-color": "#F5F6FC",
+		"border-color": "#F5F6FC"
+	}
+},
+/*
+3. You can use the syntax {window control name}${control name} to set custom theme for the border color, background color and text font for a CommandButton control used for different purposes on the window.
+*/
+"w_sheet_customtheme$commandbutton":
+{
+	"drawing":true,
+	"normal-state":
+	{
+		"border-color":"#286AFF",
+		"background-color":"#286AFF",
+		"text-font":{"color":"#FFFFFF"}
+	},
+	"hover-state":
+	{
+		"border-color":"#3D79FF",
+		"background-color":"#3D79FF",
+		"text-font":{"color":"#FFFFFF"}
+	},
+	"pressed-state":
+	{
+		"border-color":"#1D60F6",
+		"background-color":"#1D60F6",
+		"text-font":{"color":"#FFFFFF"}
+	},
+	"focused-state":
+	{
+		"border-color":"#3D79FF",
+		"background-color":"#3D79FF",
+		"text-font":{"color":"#FFFFFF"}
+	},
+	"default-state":
+	{
+		"border-color":"#286AFF",
+		"background-color":"#286AFF",
+		"text-font":{"color":"#FFFFFF"}
+	},
+	"disabled-state":
+	{
+		"border-color":"#7FA6FF",
+		"background-color":"#7FA6FF",
+		"text-font":{"color":"#AEC7FF"}
+	}
+},
+/*
+4. You can use the syntax {window control name}.{xxx}.{control name} to set custom theme for the background-color, header band and detail band for a Grid style DataWindow.
+*/
+"w_sheet_customtheme.uo_person.dw_browser": 
+{
+	"background-color-enabled": true,
+	"background-color": "#FFFFFF",
+	"grid-style": 
+	{
+		"drawing": true,
+		"head-band": 
+		{
+			"background-color": "#E9ECF9",
+			"dwo-text-font":{"color":"#3D5067"}
+		},
+		"detail-band": 
+		{
+			"selected-row-text-color": "#3D5067",
+			"selected-row-background-color": "#D4DAF5"
+		},
+		"grid-line": 
+		{
+			"horizontal-line": true,
+			"vertical-line": true,
+			"line-color": "#E0E4E6"
+		},
+		"dwo-column":
+		{
+			"border":2,
+			"border-color":"#404040",
+			"background-color":"#262626",
+			"text-font":{"color":"#3D5067"}
+		}
+	}
+},
+/*
+5. You can use the syntax {window control name}.{xxx}.{control name} to set custom theme for the border color, background color and text font for a specific CommandButton on the window.
+*/
+"w_sheet_customtheme.uo_person.cb_save": 
+{
+	"drawing": true,
+	"normal-state": 
+	{
+		"border-color": "#2CB469",
+		"background-color": "#2CB469",
+		"text-font": {"color": "#FFFFFF"}
+	},
+	"hover-state": 
+	{
+		"border-color": "#41CB7F",
+		"background-color": "#41CB7F",
+		"text-font": {"color": "#FFFFFF"}
+	},
+	"pressed-state": 
+	{
+		"border-color": "#21A45B",
+		"background-color": "#21A45B",
+		"text-font": {"color": "#FFFFFF"}
+	}
+},
+/*
+6. You can use the syntax {window control name}.{xxx}.{control name} to set custom theme for the background-color and text font for a StaticText used for different purposes on the window.
+*/
+"w_sheet_customtheme.uo_person.st_detail": 
+{
+	"drawing": true,
+	"border": 0,
+	"background-transparent": false,
+	"normal-state": 
+	{
+		"background-color": "#F5F6FC",
+		"text-font": {"color": "#3D5067"}
+	}
+},
+/*
+7. You can use the syntax {window control name}.{xxx}.{control name} to set custom theme for properites like the background-color and border color for a UserObject used for different purposes on the window.
+*/
+"w_sheet_customtheme.uo_person.uo_search": 
+{
+	"drawing": true,
+	"default-style": true,
+	"normal-state": 
+	{
+		"background-color": "#F5F6FC",
+		"border-color": "#E4E6F2"
+	},
+	"disabled-state": 
+	{
+		"background-color": "#F5F6FC",
+		"border-color": "#E4E6F2"
+	}
+},
+/*
+8. You can use the syntax {window control name}.{xxx}.{control name} to set custom theme for properites like the border-color, background-color and text font for a SingleLineEdit used for different purposes on the window.
+*/
+"w_sheet_customtheme.uo_person.uo_search.sle_search": 
+{
+	"drawing": true,
+	"normal-state": 
+	{
+		"border-color": "#E4E6F2",
+		"background-color": "#FFFFFF",
+		"text-font": {"color": "#3D5067"}
+	},
+	"hover-state": 
+	{
+		"border-color": "#666FE8",
+		"background-color": "#FFFFFF",
+		"text-font": {"color": "#3D5067"}
+	},
+	"focused-state": 
+	{
+		"border-color": "#666FE8",
+		"background-color": "#FFFFFF",
+		"text-font": {"color": "#3D5067"}
+	},
+	"placeholder": 
+	{
+		"text-font": {"color": "#9696AA"}
+	}
+},
+/*
+9. You can use the syntax {window control name}.{xxx}.{control name} to set custom theme for properites like the background-color and button for a DataWindow on the window.
+*/
+"w_sheet_customtheme.uo_person.dw_detail": 
+{
+	"drawing": true,
+	"background-color-enabled": true,
+	"background-color": "#FFFFFF",
+	"normal-state": {"border-color": "#E9ECF9"},
+	"dwo-button": 
+	{
+		"drawing": true,
+		"normal-state": 
+		{
+			"border-color": "#286AFF",
+			"background-color": "#286AFF",
+			"text-font": {"color": "#FFFFFF"}
+		},
+		"hover-state": 
+		{
+			"border-color": "#3D79FF",
+			"background-color": "#3D79FF",
+			"text-font": {"color": "#FFFFFF"}
+		},
+		"pressed-state": 
+		{
+			"border-color": "#1D60F6",
+			"background-color": "#1D60F6",
+			"text-font": {"color": "#FFFFFF"}
+		},
+		"default-state": 
+		{
+			"border-color": "#286AFF",
+			"background-color": "#286AFF",
+			"text-font": {"color": "#FFFFFF"}
+		},
+		"disabled-state": 
+		{
+			"border-color": "#7FA6FF",
+			"background-color": "#7FA6FF",
+			"text-font": {"color": "#AEC7FF"}
+		}
+	},
+	"dwo-column": 
+	{
+		"drawing": true,
+		"border": 0,
+		"border-color": "#E9ECF9",
+		"background-color": "#FFFFFF",
+		"text-font": {"color": "#3D5067"},
+		"dropdown-type": 
+		{
+			"drawing": true,
+			"selected-row-text-color": "#3C465A",
+			"selected-row-background-color": "#B6BECD",
+			"unselected-row-background-color": "#FFFFFF",
+			"normal-state": 
+			{
+				"background-color": "#FFFFFF"
+			},
+			"hover-state": 
+			{
+				"background-color": "#FFFFFF"
+			}
+		}
+	},
+	"dwo-text": 
+	{
+		"drawing": true,
+		"border": 2,
+		"border-color": "#E7EBF2",
+		"background-color": "#FFFFFF",
+		"text-font": {"color": "#3D5067"}
+	}
+}

@@ -54,12 +54,16 @@ class TibcoProjectArtifactsExtractor:
                         ))
                     else:
                         # generic service descriptor JSON (TIBCO may store descriptors this way)
-                        signals.append(Signal(
-                            kind="doc",
-                            props={"name": path.stem, "file": str(path), "note": "Service descriptor JSON (not OpenAPI)"},
-                            evidence=[f"{path}:1-40"],
-                            subscores={"parsed": 0.5}
-                        ))
+                        svc_sig = self._parse_service_descriptor(obj, path)
+                        if svc_sig:
+                            signals.append(svc_sig)
+                        else:
+                            signals.append(Signal(
+                                kind="doc",
+                                props={"name": path.stem, "file": str(path), "note": "Service descriptor JSON (not OpenAPI)"},
+                                evidence=[f"{path}:1-40"],
+                                subscores={"parsed": 0.5}
+                            ))
                 else:
                     signals.append(Signal(
                         kind="doc",
@@ -126,3 +130,40 @@ class TibcoProjectArtifactsExtractor:
                 subscores={"parsed": 0.1}
             ))
         return signals
+
+    def _parse_service_descriptor(self, obj: Dict[str, Any], path: Path) -> Signal | None:
+        """
+        Best-effort parser for TIBCO service descriptor JSON (non-OpenAPI).
+        Extracts endpoints/methods and surfaces them as triggers so downstream
+        scaffold can treat them like HTTP interfaces.
+        """
+        endpoints: List[Dict[str, Any]] = []
+        # common shapes: {"bindings":[{"http":{"path":...,"method":...}}]}
+        bindings = obj.get("bindings") or obj.get("services") or []
+        for binding in bindings:
+            http = binding.get("http") if isinstance(binding, dict) else None
+            if isinstance(http, dict):
+                path_val = http.get("path") or http.get("uri") or binding.get("path")
+                method = (http.get("method") or http.get("verb") or "").upper()
+                if path_val:
+                    endpoints.append({"type": "http", "path": path_val, "method": method or None, "evidence": {"file": str(path)}})
+        # alternative: operations list
+        for op in obj.get("operations") or []:
+            if not isinstance(op, dict):
+                continue
+            path_val = op.get("path") or op.get("resourcePath")
+            method = (op.get("method") or op.get("verb") or "").upper()
+            if path_val:
+                endpoints.append({"type": "http", "path": path_val, "method": method or None, "evidence": {"file": str(path)}})
+
+        if not endpoints:
+            return None
+        props = {
+            "name": obj.get("name") or path.stem,
+            "file": str(path),
+            "triggers": endpoints,
+            "steps": [],
+            "relationships": [],
+            "identifiers": [obj.get("name") or path.stem],
+        }
+        return Signal(kind="service_descriptor", props=props, evidence=[f"{path}:1-40"], subscores={"parsed": 0.7})

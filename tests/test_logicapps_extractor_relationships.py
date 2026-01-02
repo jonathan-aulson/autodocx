@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from autodocx.extractors.logicapps import LogicAppsWDLExtractor
+from autodocx.scaffold.signal_scaffold import build_scaffold
 
 
 def test_logicapps_extractor_emits_relationships(tmp_path: Path) -> None:
@@ -14,7 +15,7 @@ def test_logicapps_extractor_emits_relationships(tmp_path: Path) -> None:
                 "inputs": {
                     "schema": {
                         "properties": {
-                            "site": {"type": "string"},
+                            "siteId": {"type": "string"},
                         }
                     }
                 },
@@ -36,6 +37,14 @@ def test_logicapps_extractor_emits_relationships(tmp_path: Path) -> None:
                 },
                 "runAfter": {"Call_API": ["Succeeded"]},
             },
+            "InvokeChild": {
+                "type": "Http",
+                "inputs": {
+                    "method": "post",
+                    "uri": "https://prod-00.westus.logic.azure.com/workflows/childFlow/triggers/manual/run",
+                },
+                "runAfter": {"Read_SQL": ["Succeeded"]},
+            },
         },
     }
 
@@ -53,3 +62,11 @@ def test_logicapps_extractor_emits_relationships(tmp_path: Path) -> None:
     assert "http" in kinds
     assert "sql" in kinds
     assert any(rel["source"]["type"] == "trigger" for rel in relationships)
+    assert "[dbo].[Invoices]" in (workflow.props.get("datasource_tables") or []), "datastores should capture SQL tables"
+    services = workflow.props.get("service_dependencies") or []
+    assert any(dep.startswith("https://example.com") for dep in services)
+    assert "siteId" in (workflow.props.get("identifier_hints") or [])
+    scaffold = build_scaffold(workflow)
+    assert scaffold["io_summary"]["identifiers"], "expected identifiers in scaffold"
+    assert scaffold["dependencies"]["datastores"], "expected datastores in scaffold"
+    assert scaffold["dependencies"]["processes"], "expected process dependencies in scaffold"

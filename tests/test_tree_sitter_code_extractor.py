@@ -10,7 +10,7 @@ from autodocx.tree_sitter_support import tree_sitter_available
 
 PYTHON_SAMPLE = '''
 def greet(name):
-    """Return a greeting."""
+    """Reads from orders_table and returns a greeting."""
     return f"Hello {name}"
 
 class BillingService:
@@ -36,3 +36,7 @@ def test_tree_sitter_extractor_emits_code_entities(tmp_path: Path) -> None:
     greet_signal = next(sig for sig in signals if sig.props["name"] == "greet")
     assert greet_signal.props["entity_type"] == "function"
     assert "greeting" in greet_signal.props["docstring"]
+    assert "orders_table" in (greet_signal.props.get("datasource_tables") or [])
+
+    billing_signal = next(sig for sig in signals if sig.props["name"] == "BillingService")
+    assert "BillingService" in (billing_signal.props.get("service_dependencies") or [])

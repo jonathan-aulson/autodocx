@@ -64,6 +64,8 @@ pyproject.toml
 ./autodocx/utils/redaction.py
 ./autodocx/utils/roles.py
 ./autodocx/utils/text.py
+./autodocx/visuals/flow_export.py
+./autodocx/visuals/flow_renderer.py
 ./autodocx/visuals/graphviz_flows.py
 ./autodocx_cli/__init__.py
 ./autodocx_cli/__main__.py

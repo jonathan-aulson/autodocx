@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jndi:namedResource xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:http="http://xsd.tns.tibco.com/bw/models/sharedresource/httpclient" xmlns:jndi="http://xsd.tns.tibco.com/amf/models/sharedresource/jndi" xmi:id="_p6n_IayDEemnEIz6kVJMoQ" name="moviesearch.module.HttpClientResource1" type="http:HttpClientConfiguration">
+  <jndi:configuration xsi:type="http:HttpClientConfiguration" xmi:id="_p6omMKyDEemnEIz6kVJMoQ" httpClientVersion="httpcomponents" cmdExecutionIsolationStrategy="THREAD" cmdExecutionIsolationTimeout="1000" cmdExecutionTimeoutEnabled="true" cmdExecutionIsolationInterruptOnTimeout="true" cmdExecutionIsolationSemaphoreMaxConcRequests="8" cmdCircuitBreakerRequestVolumeThreshold="20" cmdCircuitBreakerSleepWindow="5000" cmdCircuitBreakerErrorThresholdPercentage="50" cmdMetricsRollingStatsTime="10000" cmdMetricsRollingStatsNumBuckets="10" cmdMetricsHealthSnapshotInterval="500" cmdRequestLogEnabled="true" tpCoreSize="10" tpMaxQueueSize="-1" tpQueueSizeRejectionThreshold="5" tpKeepAliveTime="1">
+    <tcpDetails xmi:id="_p6omMayDEemnEIz6kVJMoQ" host="RemoteServiceHost www.omdbapi.com">
+      <substitutionBindings xmi:id="_qVP24KyJEemnEIz6kVJMoQ" template="host" propName="RemoteServiceHost"/>
+      <substitutionBindings xmi:id="_s1EIQKyJEemnEIz6kVJMoQ" template="port" propName="RemoteServicePort"/>
+    </tcpDetails>
+  </jndi:configuration>
+</jndi:namedResource>

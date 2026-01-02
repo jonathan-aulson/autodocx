@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<emulation:EmulationData xmlns:emulation="http:///emulation.ecore" isBW="true" location="/MovieCatalogSearch.module/Tests/SingleSortTest.bwt">
+  <ProcessNode Id="moviecatalogsearch.module.SortSingleMovie" Name="moviecatalogsearch.module.SortSingleMovie" ModelType="BW" moduleName="MovieCatalogSearch.module">
+    <Assertion Id="f5f36a11-bc28-4a74-8e6e-93069e70af07" Name="Mapper" hasDecoration="true">
+      <Lang>urn:oasis:names:tc:wsbpel:2.0:sublang:xslt1.0</Lang>
+      <Expression>
+&lt;xsl:stylesheet xmlns:xsl=&quot;http://www.w3.org/1999/XSL/Transform&quot; xmlns:tns2=&quot;http://www.example.org/MovieCatalogMaster&quot; version=&quot;2.0&quot;>&lt;xsl:param name=&quot;Mapper&quot;/>&lt;xsl:template match=&quot;/&quot;>&lt;xsl:choose>&lt;xsl:when test=&quot;$Mapper/tns2:imdbID='tt6077448'&quot;>&lt;result status=&quot;passed&quot; message=&quot;Assertion passed.&quot;/>&lt;/xsl:when>&lt;xsl:otherwise>&lt;result status=&quot;failed&quot; message=&quot;Assertion failed.&quot;/>&lt;/xsl:otherwise>&lt;/xsl:choose>&lt;/xsl:template>&lt;/xsl:stylesheet></Expression>
+      <OriginalExpression>&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?>
+&lt;xsl:stylesheet xmlns:xsl=&quot;http://www.w3.org/1999/XSL/Transform&quot; xmlns:tns2=&quot;http://www.example.org/MovieCatalogMaster&quot; version=&quot;2.0&quot;>&lt;xsl:param name=&quot;Mapper&quot;/>&lt;xsl:template name=&quot;&quot; match=&quot;/&quot;>&lt;Primitive-Assertion>&lt;AssertType>&lt;string>&lt;testInput>&lt;xsl:value-of select=&quot;$Mapper/tns2:imdbID&quot;/>&lt;/testInput>&lt;goldInput>&lt;xsl:value-of select=&quot;&amp;quot;tt6077448&amp;quot;&quot;/>&lt;/goldInput>&lt;/string>&lt;/AssertType>&lt;/Primitive-Assertion>&lt;/xsl:template>&lt;/xsl:stylesheet></OriginalExpression>
+    </Assertion>
+    <Operation Name="callProcess" serviceName="moviecatalogsearch.module.SortSingleMovie">
+      <Inputs Id="2c5a0819-6cdf-42e3-b406-ec012525ade9MovieCatalogSearch.module_moviecatalogsearch.module.SortSingleMovie_callProcess_Start" Name="Start" isDefault="true" type="CALLPROCESS">
+        <informations Name="input" nameSpace="http://www.example.org/MovieCatalogMaster">
+          <nameSpaces prefix="tns" nameSapce="http://www.example.org/MovieCatalogMaster"/>
+          <Parameter Name="tns:MovieInfo">
+            <parameters Name="tns:Title" Value="Sacred Games" type="string" nameSpace="http://www.example.org/MovieCatalogMaster" canDelete="true"/>
+            <parameters Name="tns:Year" Value="2018" type="string" nameSpace="http://www.example.org/MovieCatalogMaster" canDelete="true"/>
+            <parameters Name="tns:imdbID" Value="tt6077448" type="string" nameSpace="http://www.example.org/MovieCatalogMaster" canDelete="true"/>
+            <parameters Name="tns:Type" Value="series" type="string" nameSpace="http://www.example.org/MovieCatalogMaster" canDelete="true"/>
+            <parameters Name="tns:Poster" type="string" nameSpace="http://www.example.org/MovieCatalogMaster" canDelete="true"/>
+          </Parameter>
+        </informations>
+      </Inputs>
+      <resolvedInput inputValue="&lt;tns:MovieInfo xmlns:tns='http://www.example.org/MovieCatalogMaster' >&lt;tns:Title>Sacred Games&lt;/tns:Title>&lt;tns:Year>2018&lt;/tns:Year>&lt;tns:imdbID>tt6077448&lt;/tns:imdbID>&lt;tns:Type>series&lt;/tns:Type>&lt;tns:Poster>&lt;/tns:Poster>&lt;/tns:MovieInfo>"/>
+    </Operation>
+    <MockActivity Id="89ef5bbf-540c-40e8-8071-a4a019b37ff6" Name="get" hasDecoration="true">
+      <MockOutputFilePath>/Users/awagle/Work/3uk/Projects/MovieCatalogMainApi/SacredGamesDetails.xml</MockOutputFilePath>
+    </MockActivity>
+  </ProcessNode>
+</emulation:EmulationData>

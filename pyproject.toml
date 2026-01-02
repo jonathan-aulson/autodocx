@@ -19,7 +19,8 @@ dependencies = [
   "graphviz",
   "networkx",
   "tree_sitter",
-  "jsonschema"
+  "jsonschema",
+  "qdrant-client"
 ]
 
 [project.scripts]
@@ -45,6 +46,11 @@ integration_imports = "autodocx.extractors.integration_imports:IntegrationImport
 process_diagrams = "autodocx.extractors.process_diagrams:ProcessDiagramExtractor"
 business_entities = "autodocx.extractors.business_entities:BusinessEntityExtractor"
 power_automate = "autodocx.extractors.power_automate:PowerAutomateExtractor"
+aws_lambda = "autodocx.extractors.aws_lambda:AWSLambdaExtractor"
+typescript_project = "autodocx.extractors.typescript_project:TypeScriptProjectExtractor"
+powerbuilder = "autodocx.extractors.powerbuilder:PowerBuilderExtractor"
+mulesoft = "autodocx.extractors.mulesoft:MuleSoftExtractor"
+biztalk_logicapps = "autodocx.extractors.biztalk_logicapps:BizTalkLogicAppsExtractor"
 
 [project.optional-dependencies]
 treesitter = ["tree-sitter-languages>=1.9.0"]

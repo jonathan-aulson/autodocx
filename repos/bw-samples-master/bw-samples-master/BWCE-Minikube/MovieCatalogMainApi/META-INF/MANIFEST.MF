@@ -1,0 +1,11 @@
+Manifest-Version: 1.0
+TIBCO-BW-Application: META-INF/TIBCO.xml
+Bundle-SymbolicName: MovieCatalogSearch
+Bundle-Name: MovieCatalogSearch
+Bundle-Version: 1.0.0.20190723101125
+Bundle-ManifestVersion: 2
+TIBCO-BW-Edition: bwcf
+Bundle-Vendor: TIBCO Software Inc.
+TIBCO-BW-ConfigProfile: META-INF/default.substvar
+TIBCO-BW-Version: 2.4.4 V34 2019-05-22
+

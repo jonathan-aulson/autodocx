@@ -1,0 +1,57 @@
+﻿/*
+Here it shows how to use custom theme for StaticText control and SingleLineEdit control on a window.
+*/
+
+/*
+1. You can use the syntax {window control name}.{xxx}.{control name} to set custom theme for properties like the background-color and text font for a StaticText on the window.
+*/
+"w_sheet_customerwindow.st_lastname": 
+{
+	"drawing": true,
+	"border": 0,
+	"background-transparent": true,
+	"normal-state": 
+	{
+		"background-color": "#F4F7FA",
+		"text-font": {"color": "#2B7BFF"}
+	},
+	"disabled-state": 
+	{
+		"background-color": "#F4F7FA",
+		"text-font": {"color": "#ADCCFF"}
+	}
+},
+/*
+2. You can use the syntax {window control name}.{xxx}.{control name} to set custom theme for properties like the border-color, background-color and text font for a SingleLineEdit on the window.
+*/
+"w_sheet_customerwindow.sle_lastname": 
+{
+	"drawing": true,
+	"normal-state": 
+	{
+		"border-color": "#C3D3E4",
+		"background-color": "#E3EBF4",
+		"text-font": {"color": "#2B7BFF"}
+	},
+	"hover-state": 
+	{
+		"border-color": "#5CA1E6",
+		"background-color": "#E9EFF5",
+		"text-font": {"color": "#2B7BFF"}
+	},
+	"focused-state": 
+	{
+		"border-color": "#5CA1E6",
+		"background-color": "#E9EFF5",
+		"text-font": {"color": "#2B7BFF"}
+	},
+	"disabled-state": 
+	{
+		"border-color": "#D5E5F4",
+		"background-color": "#E9EFF5"
+	},
+	"placeholder": 
+	{
+		"text-font": {"color": "#90B1E7"}
+	}
+}

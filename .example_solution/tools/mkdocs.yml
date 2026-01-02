@@ -1,0 +1,28 @@
+site_name: Concentra BW Docs
+site_description: Auto-generated business docs for TIBCO BW services
+site_url: https://jonathan-aulson.github.io/Concentra-Tibco-Context/
+docs_dir: out/docs
+use_directory_urls: true
+theme:
+  name: material
+  features:
+  - navigation.instant
+plugins:
+- search
+- privacy
+markdown_extensions:
+- attr_list
+- admonition
+- tables
+- attr_list
+- md_in_html
+- footnotes
+- pymdownx.details
+- pymdownx.tabbed
+- pymdownx.superfences
+- pymdownx.snippets
+- pymdownx.emoji:
+    emoji_index: !!python/name:material.extensions.emoji.twemoji
+    emoji_generator: !!python/name:material.extensions.emoji.to_svg
+- toc:
+    permalink: true

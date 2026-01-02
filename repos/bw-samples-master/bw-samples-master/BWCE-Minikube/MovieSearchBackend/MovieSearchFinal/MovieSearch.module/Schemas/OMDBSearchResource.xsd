@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://tns.tibco.com/bw/json/1563800063700" elementFormDefault="qualified" targetNamespace="http://tns.tibco.com/bw/json/1563800063700">
+  <complexType name="OMDBSearchElementType">
+    <sequence>
+      <element maxOccurs="unbounded" minOccurs="0" name="Search">
+        <complexType>
+          <sequence>
+            <element maxOccurs="1" minOccurs="0" name="Title" type="string"/>
+            <element maxOccurs="1" minOccurs="0" name="Year" type="string"/>
+            <element maxOccurs="1" minOccurs="0" name="imdbID" type="string"/>
+            <element maxOccurs="1" minOccurs="0" name="Type" type="string"/>
+            <element maxOccurs="1" minOccurs="0" name="Poster" type="string"/>
+          </sequence>
+        </complexType>
+      </element>
+      <element maxOccurs="1" minOccurs="0" name="totalResults" type="string"/>
+      <element maxOccurs="1" minOccurs="0" name="Response" type="string"/>
+    </sequence>
+  </complexType>
+  <element name="OMDBSearchElement" type="tns:OMDBSearchElementType"/>
+</schema>

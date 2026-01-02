@@ -42,6 +42,19 @@ class SQLMigrationsExtractor:
                     props["columns"] = columns
                     props["inputs_example"] = {"columns": [c["name"] for c in columns[:5]]}
                     props["data_samples"] = [self._mock_data_sample(columns)]
+                datastore_refs = {table}
+                process_refs = set()
+                for fk in foreign_keys:
+                    ref_table = (fk.get("references") or {}).get("table")
+                    if ref_table:
+                        datastore_refs.add(ref_table)
+                        process_refs.add(ref_table)
+                props["datasource_tables"] = sorted(datastore_refs)
+                if process_refs:
+                    props["process_calls"] = sorted(process_refs)
+                identifier_hints = self._identifier_hints_from_columns(columns)
+                if identifier_hints:
+                    props["identifier_hints"] = identifier_hints
                 signals.append(Signal(kind="db", props=props, evidence=[f"{path}:{ln}-{ln+20}"], subscores={"parsed": 1.0, "schema_evidence": 0.6}))
         except Exception as e:
             signals.append(Signal(kind="doc", props={"name": path.name, "file": str(path), "note": f"SQL parse error: {e}"}, evidence=[f"{path}:1-1"], subscores={"parsed": 0.1}))
@@ -115,6 +128,17 @@ class SQLMigrationsExtractor:
             definition = " ".join(parts[1:])
             cols.append({"name": col_name, "definition": definition})
         return cols
+
+    def _identifier_hints_from_columns(self, columns: List[Dict[str, str]]) -> List[str]:
+        hints: List[str] = []
+        for col in columns or []:
+            name = col.get("name")
+            if not name:
+                continue
+            lower = name.lower()
+            if lower.endswith(("id", "key", "code", "number")) and name not in hints:
+                hints.append(name)
+        return hints
 
     def _mock_data_sample(self, columns: List[Dict[str, str]]) -> Dict[str, Any]:
         sample = {}

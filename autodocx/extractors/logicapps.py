@@ -1,9 +1,24 @@
 from __future__ import annotations
 from pathlib import Path
-from typing import Iterable, List, Dict, Any, Optional, Tuple
+from typing import Iterable, List, Dict, Any, Optional, Tuple, Set
 import hashlib
 import json, yaml, re
 from autodocx.types import Signal
+
+CONNECTOR_ALIASES = {
+    "shared_sql": "SQL Server",
+    "sql": "SQL Server",
+    "shared_commondataserviceforapps": "Dataverse",
+    "shared_office365": "Office 365 Outlook",
+    "shared_sharepointonline": "SharePoint Online",
+    "shared_powerbi": "Power BI",
+    "shared_azureblob": "Azure Blob Storage",
+    "shared_http": "HTTP",
+    "shared_hhttp": "HTTP",
+    "shared_bs-5fsendmailbyserviceprincipal-5f4f4d8f3ae476f46d": "TownePark SendMail Service",
+    "response": "Power App response",
+    "http": "HTTP",
+}
 
 class LogicAppsWDLExtractor:
     name = "logicapps_wdl"
@@ -145,12 +160,18 @@ class LogicAppsWDLExtractor:
         steps = actions_data["steps"]
         calls_flows = actions_data["calls_flows"]
         relationships.extend(self._trigger_action_relationships(triggers, steps, source_path=source_path))
+        identifier_hints = set(actions_data.get("identifier_hints") or [])
+        identifier_hints.update(self._identifier_tokens_from_triggers(triggers))
         return {
             "triggers": triggers,
             "steps": steps,
             "calls_flows": sorted(set(calls_flows)),
             "relationships": relationships,
             "control_edges": actions_data["control_edges"],
+            "datasource_tables": sorted(actions_data.get("datastores") or []),
+            "service_dependencies": sorted(actions_data.get("services") or []),
+            "identifier_hints": sorted(identifier_hints),
+            "process_calls": sorted(actions_data.get("process_calls") or []),
         }
 
     def _emit_from_definition(self, path: Path, raw: str, definition: dict, root_label: str, connection_refs: Optional[Dict[str, Any]] = None) -> List[Signal]:
@@ -160,19 +181,21 @@ class LogicAppsWDLExtractor:
         parsed = self._parse_definition(definition, connection_refs=connection_refs, source_path=path)
         parsed.update(self._augment_workflow_props(name, parsed))
         content_version = definition.get("contentVersion") or "" 
-        return [Signal(
-            kind="workflow",
-            props={
-                "name": name,
-                "file": str(path),
-                "engine": engine,
-                "wf_kind": wf_kind,
-                "version": content_version, 
-                **parsed
-            },
-            evidence=[f"{path}:{root_label}"],
-            subscores={"parsed": 1.0, "schema_evidence": 0.4 if parsed.get("triggers") else 0.1}
-        )]
+        return [
+            Signal(
+                kind="workflow",
+                props={
+                    "name": name,
+                    "file": str(path),
+                    "engine": engine,
+                    "wf_kind": wf_kind,
+                    "version": content_version,
+                    **parsed,
+                },
+                evidence=[f"{path}:{root_label}"],
+                subscores={"parsed": 1.0, "schema_evidence": 0.4 if parsed.get("triggers") else 0.1},
+            )
+        ]
 
     def _name_from_path(self, path: Path) -> str:
         parts_lower = [p.lower() for p in path.parts]
@@ -196,6 +219,7 @@ class LogicAppsWDLExtractor:
         rels: List[Dict[str, Any]] = []
         target_kind, target_ref, target_display, context = self._infer_target_details(step, inputs, connection_refs or {})
         connector = step.get("connector") or ""
+        detail = step.get("operation_detail")
         if target_kind and target_ref:
             rels.append(
                 self._format_relationship(
@@ -211,6 +235,7 @@ class LogicAppsWDLExtractor:
                     context=context,
                     auth=self._auth_block(step, connection_refs or {}),
                     evidence=self._relationship_evidence(source_path, step.get("name")),
+                    detail=detail,
                 )
             )
 
@@ -229,6 +254,7 @@ class LogicAppsWDLExtractor:
                     context={"child_workflow": step["child_workflow_uri"]},
                     auth=self._auth_block(step, connection_refs or {}),
                     evidence=self._relationship_evidence(source_path, step.get("name")),
+                    detail=detail or f"Invoke {step['child_workflow_uri']}",
                 )
         )
         return rels
@@ -247,9 +273,21 @@ class LogicAppsWDLExtractor:
         relationships: List[Dict[str, Any]] = []
         control_edges: List[Dict[str, Any]] = []
         calls_flows: List[str] = []
+        datastores: Set[str] = set()
+        services: Set[str] = set()
+        identifier_hints: Set[str] = set()
+        process_calls: Set[str] = set()
 
         for name, node in (actions or {}).items():
-            info, rels, child_flow = self._build_step_info(
+            (
+                info,
+                rels,
+                child_flow,
+                step_datastores,
+                step_services,
+                step_identifiers,
+                step_process_refs,
+            ) = self._build_step_info(
                 name, node, connection_refs=connection_refs, source_path=source_path
             )
             info["parent_step"] = parent
@@ -258,6 +296,11 @@ class LogicAppsWDLExtractor:
             relationships.extend(rels)
             if child_flow:
                 calls_flows.append(child_flow)
+                process_calls.add(child_flow)
+            datastores.update(step_datastores)
+            services.update(step_services)
+            identifier_hints.update(step_identifiers)
+            process_calls.update(step_process_refs)
 
             branches = self._control_branches_for_action(node, info.get("control_type"))
             if branches:
@@ -278,12 +321,20 @@ class LogicAppsWDLExtractor:
                     relationships.extend(nested["relationships"])
                     control_edges.extend(nested["control_edges"])
                     calls_flows.extend(nested["calls_flows"])
+                    datastores.update(nested.get("datastores") or [])
+                    services.update(nested.get("services") or [])
+                    identifier_hints.update(nested.get("identifier_hints") or [])
+                    process_calls.update(nested.get("process_calls") or [])
 
         return {
             "steps": flat_steps,
             "relationships": relationships,
             "control_edges": control_edges,
             "calls_flows": calls_flows,
+            "datastores": sorted(datastores),
+            "services": sorted(services),
+            "identifier_hints": sorted(identifier_hints),
+            "process_calls": sorted(process_calls),
         }
 
     def _build_step_info(
@@ -292,7 +343,15 @@ class LogicAppsWDLExtractor:
         node: Dict[str, Any],
         connection_refs: Optional[Dict[str, Any]],
         source_path: Optional[Path],
-    ) -> (Dict[str, Any], List[Dict[str, Any]], Optional[str]):
+    ) -> Tuple[
+        Dict[str, Any],
+        List[Dict[str, Any]],
+        Optional[str],
+        Set[str],
+        Set[str],
+        Set[str],
+        Set[str],
+    ]:
         atype = (node or {}).get("type")
         inputs = (node or {}).get("inputs") or {}
         if not isinstance(inputs, dict):
@@ -312,9 +371,37 @@ class LogicAppsWDLExtractor:
             "child_workflow_uri": None,
             "control_type": atype if self._is_control_action(atype) else None,
             "control_expression": node.get("expression"),
+            "kind": node.get("kind"),
         }
+        conn_meta = self._resolve_connection_metadata(connection_name, connection_refs or {}, host)
+        param_keys = self._collect_object_keys(inputs.get("parameters"))
+        body_fields = self._collect_object_keys(inputs.get("body"))
+        schema_props = self._collect_schema_props(inputs.get("schema"))
+        info["parameter_keys"] = param_keys
+        info["body_fields"] = body_fields
+        info["schema_properties"] = schema_props
+        info["connection_display"] = conn_meta.get("display")
+        info["connection_logical_name"] = conn_meta.get("logical_name")
+        info["api_display"] = conn_meta.get("api_display")
+        info["host_api_id"] = conn_meta.get("api_id")
 
         calls_flow = None
+        step_datastores: Set[str] = set()
+        step_services: Set[str] = set()
+        step_identifier_hints: Set[str] = set()
+        step_process_refs: Set[str] = set()
+
+        params = inputs.get("parameters") if isinstance(inputs.get("parameters"), dict) else {}
+        table_candidate = (
+            params.get("entityName")
+            or params.get("table")
+            or params.get("dataset")
+            or inputs.get("table")
+            or inputs.get("entityName")
+            or inputs.get("dataset")
+        )
+        if isinstance(table_candidate, str):
+            info["datasource_table"] = table_candidate
 
         if atype in ["OpenApiConnection", "ApiConnection", "ApiConnectionWebhook", "ServiceProvider"]:
             info["connector"] = (((inputs.get("host") or {}).get("connection") or {}).get("name") or "").strip()
@@ -322,6 +409,8 @@ class LogicAppsWDLExtractor:
             info["url_or_path"] = inputs.get("path")
             if isinstance(inputs.get("body"), dict):
                 info["inputs_keys"] = sorted(list(inputs["body"].keys()))
+            if not info.get("datasource_table"):
+                info["datasource_table"] = (inputs.get("body") or {}).get("table") or params.get("table")
 
         if atype in ["Http", "HttpWebhook"]:
             info["connector"] = "http"
@@ -333,6 +422,9 @@ class LogicAppsWDLExtractor:
             if "/workflows/" in (uri or "") and "/triggers/" in (uri or "") and "/run" in (uri or ""):
                 calls_flow = uri
                 info["child_workflow_uri"] = uri
+            if uri:
+                step_services.add(uri)
+                info["service_dependency"] = uri
 
         if not info["connector"]:
             resolved = None
@@ -349,8 +441,30 @@ class LogicAppsWDLExtractor:
         if not info["connector"] and atype:
             info["connector"] = atype
 
+        friendly, op_detail = self._build_action_summary(
+            info,
+            conn_meta,
+            body_fields,
+            schema_props,
+            param_keys,
+        )
+        if friendly:
+            info["friendly_display"] = friendly
+        if op_detail:
+            info["operation_detail"] = op_detail
+
         rels = self._relationships_from_action(info, inputs, source_path=source_path, connection_refs=connection_refs)
-        return info, rels, calls_flow
+        step_datastores.update(self._datastores_from_step(info, inputs, rels))
+        step_services.update(self._services_from_step(info, inputs, rels))
+        step_identifier_hints.update(self._identifier_tokens_from_list(body_fields))
+        step_identifier_hints.update(self._identifier_tokens_from_list(schema_props))
+        step_identifier_hints.update(self._identifier_tokens_from_list(info.get("inputs_keys") or []))
+        for rel in rels:
+            target_kind = (rel.get("target") or {}).get("kind")
+            display = (rel.get("target") or {}).get("display") or (rel.get("target") or {}).get("ref")
+            if target_kind in {"workflow", "process"} and display:
+                step_process_refs.add(display)
+        return info, rels, calls_flow, step_datastores, step_services, step_identifier_hints, step_process_refs
 
     def _is_control_action(self, atype: Optional[str]) -> bool:
         if not atype:
@@ -392,6 +506,101 @@ class LogicAppsWDLExtractor:
             if base_actions:
                 branches["Control.Body"] = base_actions
         return branches
+
+    def _resolve_connection_metadata(
+        self,
+        connection_name: Optional[str],
+        connection_refs: Dict[str, Any],
+        host: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        ref = {}
+        if connection_name:
+            ref = (connection_refs or {}).get(connection_name) or {}
+        api_meta = ref.get("api") or {}
+        connection_meta = ref.get("connection") or {}
+        display = (ref.get("displayName") or ref.get("apiDisplayName") or api_meta.get("displayName") or "").strip()
+        api_name = api_meta.get("name") or ""
+        if not display and api_name:
+            display = self._connector_alias(api_name)
+        if not display and connection_name:
+            display = self._connector_alias(connection_name)
+        logical_name = connection_meta.get("connectionReferenceLogicalName")
+        api_id = (host or {}).get("apiId")
+        op_id = (host or {}).get("operationId")
+        api_display = display or self._connector_alias(api_name)
+        return {
+            "display": display,
+            "logical_name": logical_name,
+            "api_id": api_id,
+            "operation_id": op_id,
+            "api_display": api_display,
+        }
+
+    def _collect_object_keys(self, value: Any) -> List[str]:
+        if isinstance(value, dict):
+            keys = [str(k) for k in value.keys()]
+            return sorted(keys)
+        return []
+
+    def _collect_schema_props(self, schema: Any) -> List[str]:
+        if not isinstance(schema, dict):
+            return []
+        props = schema.get("properties")
+        if isinstance(props, dict):
+            return sorted([str(k) for k in props.keys()])
+        return []
+
+    def _clean_label(self, raw: Optional[str]) -> str:
+        if not raw:
+            return ""
+        text = raw.replace("_", " ").replace("-", " ").replace(".", " ")
+        text = re.sub(r"\s{2,}", " ", text)
+        return text.strip().title()
+
+    def _connector_alias(self, connector: Optional[str]) -> str:
+        if not connector:
+            return ""
+        base = connector.lower()
+        if base in CONNECTOR_ALIASES:
+            return CONNECTOR_ALIASES[base]
+        if connector.startswith("shared_"):
+            return connector.replace("shared_", "").replace("_", " ").title()
+        return connector.replace("_", " ").title()
+
+    def _build_action_summary(
+        self,
+        info: Dict[str, Any],
+        conn_meta: Dict[str, Any],
+        body_fields: List[str],
+        schema_props: List[str],
+        param_keys: List[str],
+    ) -> (str, str):
+        action_label = self._clean_label(info.get("name") or info.get("type") or "Step")
+        target_label = (
+            conn_meta.get("display")
+            or conn_meta.get("api_display")
+            or self._connector_alias(info.get("connector"))
+            or self._clean_label(info.get("kind"))
+        )
+        method = (info.get("method") or "").upper()
+        friendly = action_label
+        if target_label and target_label.lower() not in action_label.lower():
+            friendly = f"{action_label} → {target_label}"
+        if method and method not in friendly.upper():
+            friendly = f"{method} {friendly}"
+
+        detail_bits: List[str] = []
+        url = info.get("url_or_path")
+        if url:
+            detail_bits.append(url)
+        fields = schema_props or body_fields or param_keys or info.get("inputs_keys") or []
+        if fields:
+            detail_bits.append("fields {" + ", ".join(fields[:4]) + "}")
+        op_id = conn_meta.get("operation_id")
+        if op_id and op_id not in detail_bits:
+            detail_bits.append(op_id)
+        operation_detail = " – ".join([bit for bit in detail_bits if bit])
+        return friendly.strip(), operation_detail.strip()
 
     # ---- narrative helpers ----
 
@@ -479,6 +688,50 @@ class LogicAppsWDLExtractor:
             return {}
         return {"responses": candidates[:5]}
 
+    def _datastores_from_step(self, step: Dict[str, Any], inputs: Dict[str, Any], relationships: List[Dict[str, Any]]) -> Set[str]:
+        targets: Set[str] = set()
+        connector = (step.get("connector") or "").lower()
+        candidate = step.get("datasource_table") or inputs.get("table") or inputs.get("entityName")
+        if any(key in connector for key in ["sql", "dataverse", "commondataservice", "sharepoint", "azureblob", "cosmos"]):
+            if candidate:
+                targets.add(candidate)
+        for rel in relationships:
+            target = (rel.get("target") or {}).get("display")
+            kind = (rel.get("target") or {}).get("kind")
+            if kind in {"sql", "dataverse", "sharepoint"} and target:
+                targets.add(target)
+        return targets
+
+    def _services_from_step(self, step: Dict[str, Any], inputs: Dict[str, Any], relationships: List[Dict[str, Any]]) -> Set[str]:
+        services: Set[str] = set()
+        url = step.get("url_or_path") or inputs.get("uri")
+        if url and url.startswith("http"):
+            services.add(url)
+        for rel in relationships:
+            target = (rel.get("target") or {}).get("display")
+            kind = (rel.get("target") or {}).get("kind")
+            if kind in {"http", "service", "queue", "servicebus"} and target:
+                services.add(target)
+        return services
+
+    def _identifier_tokens_from_list(self, values: List[str]) -> Set[str]:
+        tokens: Set[str] = set()
+        for value in values or []:
+            if not value:
+                continue
+            for token in re.findall(r"[A-Za-z0-9_]+", str(value)):
+                lower = token.lower()
+                if lower.endswith(("id", "key", "code", "number")):
+                    tokens.add(token)
+        return tokens
+
+    def _identifier_tokens_from_triggers(self, triggers: List[Dict[str, Any]]) -> Set[str]:
+        hints: Set[str] = set()
+        for trig in triggers:
+            hints.update(self._identifier_tokens_from_list(trig.get("schema_props") or []))
+            hints.update(self._identifier_tokens_from_list(trig.get("parameter_keys") or []))
+        return hints
+
     def _build_latency_hint(self, triggers: List[Dict[str, Any]]) -> Dict[str, Any]:
         for trig in triggers:
             sched = trig.get("schedule")
@@ -505,9 +758,10 @@ class LogicAppsWDLExtractor:
     def _build_touchpoints_summary(self, labels: List[str]) -> List[str]:
         if not labels:
             return []
-        if len(labels) <= 5:
+        limit = 12
+        if len(labels) <= limit:
             return labels
-        return labels[:4] + ["..."]
+        return labels[:limit]
 
     def _trigger_action_relationships(
         self, triggers: List[Dict[str, Any]], steps: List[Dict[str, Any]], source_path: Optional[Path]
@@ -608,6 +862,7 @@ class LogicAppsWDLExtractor:
         context: Optional[Dict[str, Any]],
         auth: Dict[str, Any],
         evidence: List[str],
+        detail: Optional[str] = None,
     ) -> Dict[str, Any]:
         op_type = self._infer_operation_type(target_kind, source_name, method)
         rel = {
@@ -627,6 +882,8 @@ class LogicAppsWDLExtractor:
             "evidence": evidence,
             "confidence": 0.9,
         }
+        if detail:
+            rel["operation"]["detail"] = detail
         if auth:
             rel["auth"] = auth
         return rel
@@ -638,6 +895,8 @@ class LogicAppsWDLExtractor:
             block["connection_reference"] = conn_name
             ref_meta = (connection_refs or {}).get(conn_name) or {}
             display = (ref_meta.get("displayName") or ref_meta.get("apiDisplayName") or "").strip()
+            if not display:
+                display = step.get("connection_display") or self._connector_alias(conn_name)
             if display:
                 block["connection_display_name"] = display
         return block

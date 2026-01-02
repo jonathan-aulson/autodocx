@@ -4,6 +4,131 @@ from typing import Any, Dict
 
 from jsonschema import validate
 
+CLAIM_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "summary": {"type": "string"},
+        "detail": {"type": "string"},
+        "evidence_ids": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["summary", "detail", "evidence_ids"],
+}
+
+WHY_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "impact": {"type": "string"},
+        "detail": {"type": "string"},
+        "evidence_ids": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["impact", "detail", "evidence_ids"],
+}
+
+INTERFACE_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "name": {"type": "string"},
+        "kind": {"type": "string"},
+        "endpoint": {"type": "string"},
+        "method": {"type": "string"},
+        "description": {"type": "string"},
+        "evidence_ids": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["name", "kind", "endpoint", "method", "description", "evidence_ids"],
+}
+
+INVOKE_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "target": {"type": "string"},
+        "kind": {"type": "string"},
+        "operation": {"type": "string"},
+        "direction": {"type": "string"},
+        "evidence_ids": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["target", "kind", "operation", "direction", "evidence_ids"],
+}
+
+IO_ENTRY_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "name": {"type": "string"},
+        "description": {"type": "string"},
+        "evidence_ids": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["name", "description", "evidence_ids"],
+}
+
+ERROR_ENTRY_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "description": {"type": "string"},
+        "evidence_ids": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["description", "evidence_ids"],
+}
+
+ERRORS_AND_LOGGING_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "errors": {"type": "array", "items": ERROR_ENTRY_SCHEMA},
+        "logging": {"type": "array", "items": ERROR_ENTRY_SCHEMA},
+    },
+    "required": ["errors", "logging"],
+}
+
+INTERDEPENDENCY_ENTRY_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "partner": {"type": "string"},
+        "description": {"type": "string"},
+        "evidence_ids": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["partner", "description", "evidence_ids"],
+}
+
+INTERDEPENDENCIES_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "calls": {"type": "array", "items": INTERDEPENDENCY_ENTRY_SCHEMA},
+        "called_by": {"type": "array", "items": INTERDEPENDENCY_ENTRY_SCHEMA},
+        "shared_data": {"type": "array", "items": INTERDEPENDENCY_ENTRY_SCHEMA},
+    },
+    "required": ["calls", "called_by", "shared_data"],
+}
+
+EXTRAPOLATION_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "hypothesis": {"type": "string"},
+        "rationale": {"type": "string"},
+        "hypothesis_score": {"type": "number"},
+        "evidence_ids": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["hypothesis", "rationale", "hypothesis_score", "evidence_ids"],
+}
+
+TRACEABILITY_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "artifact": {"type": "string"},
+        "signal_type": {"type": "string"},
+        "description": {"type": "string"},
+        "evidence_ids": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["artifact", "signal_type", "description", "evidence_ids"],
+}
 
 GROUP_RESPONSE_SCHEMA: Dict[str, Any] = {
     "type": "object",
@@ -20,121 +145,34 @@ GROUP_RESPONSE_SCHEMA: Dict[str, Any] = {
                 "required": [
                     "id",
                     "name",
+                    "summary",
                     "what_it_does",
+                    "why_it_matters",
                     "interfaces",
-                    "data_highlights",
-                    "risks_gaps",
-                    "user_experience",
-                    "risk_stories",
-                    "operational_behaviors",
-                    "data_flows",
+                    "invokes",
+                    "key_inputs",
+                    "key_outputs",
+                    "errors_and_logging",
+                    "interdependencies",
+                    "extrapolations",
+                    "traceability",
                     "journey_blueprints",
-                    "relationships_summary",
-                    "dependency_matrix",
                 ],
                 "additionalProperties": False,
                 "properties": {
                     "id": {"type": "string"},
                     "name": {"type": "string"},
-                    "what_it_does": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "required": ["claim", "detail", "evidence_ids"],
-                            "additionalProperties": False,
-                            "properties": {
-                                "claim": {"type": "string"},
-                                "detail": {"type": "string"},
-                                "evidence_ids": {"type": "array", "items": {"type": "string"}},
-                            },
-                        },
-                    },
-                    "interfaces": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "additionalProperties": False,
-                            "properties": {
-                                "kind": {"type": "string"},
-                                "description": {"type": "string"},
-                                "evidence_ids": {"type": "array", "items": {"type": "string"}},
-                            },
-                            "required": ["kind", "description", "evidence_ids"],
-                        },
-                    },
-                    "data_highlights": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "additionalProperties": False,
-                            "properties": {
-                                "note": {"type": "string"},
-                                "evidence_ids": {"type": "array", "items": {"type": "string"}},
-                            },
-                            "required": ["note", "evidence_ids"],
-                        },
-                    },
-                    "risks_gaps": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "additionalProperties": False,
-                            "properties": {
-                                "issue": {"type": "string"},
-                                "evidence_ids": {"type": "array", "items": {"type": "string"}},
-                            },
-                            "required": ["issue", "evidence_ids"],
-                        },
-                    },
-                    "user_experience": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "additionalProperties": False,
-                            "properties": {
-                                "narrative": {"type": "string"},
-                                "screenshots": {"type": "array", "items": {"type": "string"}},
-                                "evidence_ids": {"type": "array", "items": {"type": "string"}},
-                            },
-                            "required": ["narrative", "screenshots", "evidence_ids"],
-                        },
-                    },
-                    "risk_stories": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "additionalProperties": False,
-                            "properties": {
-                                "story": {"type": "string"},
-                                "evidence_ids": {"type": "array", "items": {"type": "string"}},
-                            },
-                            "required": ["story", "evidence_ids"],
-                        },
-                    },
-                    "operational_behaviors": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "additionalProperties": False,
-                            "properties": {
-                                "behavior": {"type": "string"},
-                                "evidence_ids": {"type": "array", "items": {"type": "string"}},
-                            },
-                            "required": ["behavior", "evidence_ids"],
-                        },
-                    },
-                    "data_flows": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "additionalProperties": False,
-                            "properties": {
-                                "description": {"type": "string"},
-                                "evidence_ids": {"type": "array", "items": {"type": "string"}},
-                            },
-                            "required": ["description", "evidence_ids"],
-                        },
-                    },
+                    "summary": {"type": "string"},
+                    "what_it_does": {"type": "array", "items": CLAIM_SCHEMA},
+                    "why_it_matters": {"type": "array", "items": WHY_SCHEMA},
+                    "interfaces": {"type": "array", "items": INTERFACE_SCHEMA},
+                    "invokes": {"type": "array", "items": INVOKE_SCHEMA},
+                    "key_inputs": {"type": "array", "items": IO_ENTRY_SCHEMA},
+                    "key_outputs": {"type": "array", "items": IO_ENTRY_SCHEMA},
+                    "errors_and_logging": ERRORS_AND_LOGGING_SCHEMA,
+                    "interdependencies": INTERDEPENDENCIES_SCHEMA,
+                    "extrapolations": {"type": "array", "items": EXTRAPOLATION_SCHEMA},
+                    "traceability": {"type": "array", "items": TRACEABILITY_SCHEMA},
                     "journey_blueprints": {
                         "type": "array",
                         "items": {
@@ -142,39 +180,10 @@ GROUP_RESPONSE_SCHEMA: Dict[str, Any] = {
                             "additionalProperties": False,
                             "properties": {
                                 "title": {"type": "string"},
-                                "steps": {
-                                    "type": "array",
-                                    "items": {"type": "string"},
-                                },
+                                "steps": {"type": "array", "items": {"type": "string"}},
                                 "evidence_ids": {"type": "array", "items": {"type": "string"}},
                             },
                             "required": ["title", "steps", "evidence_ids"],
-                        },
-                    },
-                    "relationships_summary": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "additionalProperties": False,
-                            "properties": {
-                                "flow": {"type": "string"},
-                                "evidence_ids": {"type": "array", "items": {"type": "string"}},
-                            },
-                            "required": ["flow", "evidence_ids"],
-                        },
-                    },
-                    "dependency_matrix": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "additionalProperties": False,
-                            "properties": {
-                                "target_kind": {"type": "string"},
-                                "operation": {"type": "string"},
-                                "count": {"type": "number"},
-                                "evidence_ids": {"type": "array", "items": {"type": "string"}},
-                            },
-                            "required": ["target_kind", "operation", "count", "evidence_ids"],
                         },
                     },
                 },
@@ -230,165 +239,52 @@ COMPONENT_RESPONSE_SCHEMA: Dict[str, Any] = {
         "component_id": {"type": "string"},
         "title": {"type": "string"},
         "summary": {"type": "string"},
-        "component": {
-            "type": "object",
-            "required": [
-                "name",
-                "what_it_does",
-                "interfaces",
-                "data_highlights",
-                "risks_gaps",
-                "user_experience",
-                "risk_stories",
-                "operational_behaviors",
-                "data_flows",
-                "journey_blueprints",
-                "relationships_summary",
-                "dependency_matrix",
-            ],
-            "additionalProperties": False,
-            "properties": {
-                "name": {"type": "string"},
-                "what_it_does": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "required": ["claim", "detail", "evidence_ids"],
-                        "additionalProperties": False,
-                        "properties": {
-                            "claim": {"type": "string"},
-                            "detail": {"type": "string"},
-                            "evidence_ids": {"type": "array", "items": {"type": "string"}},
+            "component": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "summary",
+                    "what_it_does",
+                    "why_it_matters",
+                    "interfaces",
+                    "invokes",
+                    "key_inputs",
+                    "key_outputs",
+                    "errors_and_logging",
+                    "interdependencies",
+                    "extrapolations",
+                    "traceability",
+                    "journey_blueprints",
+                ],
+                "additionalProperties": False,
+                "properties": {
+                    "name": {"type": "string"},
+                    "summary": {"type": "string"},
+                    "what_it_does": {"type": "array", "items": CLAIM_SCHEMA},
+                    "why_it_matters": {"type": "array", "items": WHY_SCHEMA},
+                    "interfaces": {"type": "array", "items": INTERFACE_SCHEMA},
+                    "invokes": {"type": "array", "items": INVOKE_SCHEMA},
+                    "key_inputs": {"type": "array", "items": IO_ENTRY_SCHEMA},
+                    "key_outputs": {"type": "array", "items": IO_ENTRY_SCHEMA},
+                    "errors_and_logging": ERRORS_AND_LOGGING_SCHEMA,
+                    "interdependencies": INTERDEPENDENCIES_SCHEMA,
+                    "extrapolations": {"type": "array", "items": EXTRAPOLATION_SCHEMA},
+                    "traceability": {"type": "array", "items": TRACEABILITY_SCHEMA},
+                    "journey_blueprints": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": False,
+                            "properties": {
+                                "title": {"type": "string"},
+                                "steps": {"type": "array", "items": {"type": "string"}},
+                                "evidence_ids": {"type": "array", "items": {"type": "string"}},
+                            },
+                            "required": ["title", "steps", "evidence_ids"],
                         },
-                    },
-                },
-                "interfaces": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": False,
-                        "properties": {
-                            "kind": {"type": "string"},
-                            "description": {"type": "string"},
-                            "evidence_ids": {"type": "array", "items": {"type": "string"}},
-                        },
-                        "required": ["kind", "description", "evidence_ids"],
-                    },
-                },
-                "data_highlights": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": False,
-                        "properties": {
-                            "note": {"type": "string"},
-                            "evidence_ids": {"type": "array", "items": {"type": "string"}},
-                        },
-                        "required": ["note", "evidence_ids"],
-                    },
-                },
-                "risks_gaps": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": False,
-                        "properties": {
-                            "issue": {"type": "string"},
-                            "evidence_ids": {"type": "array", "items": {"type": "string"}},
-                        },
-                        "required": ["issue", "evidence_ids"],
-                    },
-                },
-                "user_experience": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": False,
-                        "properties": {
-                            "narrative": {"type": "string"},
-                            "screenshots": {"type": "array", "items": {"type": "string"}},
-                            "evidence_ids": {"type": "array", "items": {"type": "string"}},
-                        },
-                        "required": ["narrative", "screenshots", "evidence_ids"],
-                    },
-                },
-                "risk_stories": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": False,
-                        "properties": {
-                            "story": {"type": "string"},
-                            "evidence_ids": {"type": "array", "items": {"type": "string"}},
-                        },
-                        "required": ["story", "evidence_ids"],
-                    },
-                },
-                "operational_behaviors": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": False,
-                        "properties": {
-                            "behavior": {"type": "string"},
-                            "evidence_ids": {"type": "array", "items": {"type": "string"}},
-                        },
-                        "required": ["behavior", "evidence_ids"],
-                    },
-                },
-                "data_flows": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": False,
-                        "properties": {
-                            "description": {"type": "string"},
-                            "evidence_ids": {"type": "array", "items": {"type": "string"}},
-                        },
-                        "required": ["description", "evidence_ids"],
-                    },
-                },
-                "journey_blueprints": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": False,
-                        "properties": {
-                            "title": {"type": "string"},
-                            "steps": {"type": "array", "items": {"type": "string"}},
-                            "evidence_ids": {"type": "array", "items": {"type": "string"}},
-                        },
-                        "required": ["title", "steps", "evidence_ids"],
-                    },
-                },
-                "relationships_summary": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": False,
-                        "properties": {
-                            "flow": {"type": "string"},
-                            "evidence_ids": {"type": "array", "items": {"type": "string"}},
-                        },
-                        "required": ["flow", "evidence_ids"],
-                    },
-                },
-                "dependency_matrix": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": False,
-                        "properties": {
-                            "target_kind": {"type": "string"},
-                            "operation": {"type": "string"},
-                            "count": {"type": "number"},
-                            "evidence_ids": {"type": "array", "items": {"type": "string"}},
-                        },
-                        "required": ["target_kind", "operation", "count", "evidence_ids"],
                     },
                 },
             },
-        },
         "evidence_used": {"type": "array", "items": {"type": "string"}},
         "llm_subscore": {"type": "number"},
         "approved": {"type": "boolean"},

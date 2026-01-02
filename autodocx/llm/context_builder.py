@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Tuple
 
 
@@ -36,6 +37,16 @@ def sanitize_evidence_index(raw_index: Dict[str, Any]) -> Dict[str, Dict[str, st
     return sanitized
 
 
+def _artifact_identifier(item: Dict[str, Any]) -> str:
+    name = item.get("name")
+    if name:
+        return str(name)
+    repo_path = item.get("repo_path")
+    if repo_path:
+        return Path(str(repo_path)).stem or "artifact"
+    return "artifact"
+
+
 def sanitize_artifacts(items: Iterable[Any]) -> List[Dict[str, Any]]:
     sanitized: List[Dict[str, Any]] = []
     for item in items or []:
@@ -59,6 +70,8 @@ def sanitize_artifacts(items: Iterable[Any]) -> List[Dict[str, Any]]:
             steps_summary = workflows
 
         evidence = [_safe_anchor(ev) for ev in _as_list(item.get("evidence", []))]
+        artifact_id = _artifact_identifier(item)
+        evidence_ids = [f"artifact:{artifact_id}#e{idx}" for idx in range(len(evidence))]
         relationships = item.get("relationships") or []
         rel_matrix = item.get("relationship_matrix") or {}
         if relationships and len(relationships) > 50:
@@ -78,6 +91,7 @@ def sanitize_artifacts(items: Iterable[Any]) -> List[Dict[str, Any]]:
                 "confidence": item.get("confidence"),
                 "steps_summary": _shorten(steps_summary, 1000),
                 "evidence": evidence,
+                "evidence_ids": evidence_ids,
                 "relationships": relationships,
                 "relationship_matrix": rel_matrix,
                 "code_entities": code_entities,
@@ -92,6 +106,7 @@ def sanitize_artifacts(items: Iterable[Any]) -> List[Dict[str, Any]]:
                 "screenshots": item.get("screenshots") or [],
                 "data_examples": item.get("data_examples") or [],
                 "experience_pack": item.get("experience_pack") or {},
+                "artifact_id": artifact_id,
             }
         )
     return sanitized
@@ -105,6 +120,7 @@ def sanitize_sirs(items: Iterable[Any]) -> List[Dict[str, Any]]:
             continue
         sid = str(item.get("id") or item.get("name") or "")
         props = item.get("props") or {}
+        scaffold = item.get("business_scaffold") or props.get("business_scaffold") or {}
         triggers = props.get("triggers") or []
         steps = props.get("steps") or []
         relationships = props.get("relationships") or item.get("relationships") or []
@@ -121,6 +137,12 @@ def sanitize_sirs(items: Iterable[Any]) -> List[Dict[str, Any]]:
             single_name = props.get("step_display_name")
             if single_name:
                 display_names = [single_name]
+        sir_evidence = [_safe_anchor(ev) for ev in _as_list(item.get("evidence", []))]
+        evidence_ids = [f"{sid}#e{idx}" for idx in range(len(sir_evidence))]
+        interfaces = scaffold.get("interfaces") or []
+        invocations = scaffold.get("invocations") or []
+        logging = scaffold.get("logging") or props.get("logging") or []
+        errors = scaffold.get("errors") or []
         sanitized.append(
             {
                 "id": sid,
@@ -130,7 +152,8 @@ def sanitize_sirs(items: Iterable[Any]) -> List[Dict[str, Any]]:
                 "kind": str(item.get("kind") or props.get("kind") or ""),
                 "roles": _as_list(item.get("roles")),
                 "subscores": item.get("subscores") or {},
-                "evidence": [_safe_anchor(ev) for ev in _as_list(item.get("evidence", []))],
+                "evidence": sir_evidence,
+                "evidence_ids": evidence_ids,
                 "roles_evidence": {
                     str(role): [_safe_anchor(ev) for ev in _as_list(evs)]
                     for role, evs in (item.get("roles_evidence") or {}).items()
@@ -148,6 +171,17 @@ def sanitize_sirs(items: Iterable[Any]) -> List[Dict[str, Any]]:
                 "ui_snapshot": props.get("ui_snapshot"),
                 "screenshots": formatted_screenshots,
                 "data_samples": props.get("data_samples") or [],
+                "interfaces": interfaces,
+                "invocations": invocations,
+                "logging": logging,
+                "errors": errors,
+                "family": item.get("family") or props.get("family"),
+                "module": item.get("module_name") or props.get("module_name"),
+                "module_root": item.get("module_root") or props.get("module_root"),
+                "constellation": item.get("constellation_id") or props.get("constellation_id"),
+                "deterministic_explanation": item.get("deterministic_explanation") or {},
+                "extrapolations": item.get("extrapolations") or [],
+                "interdependencies": item.get("interdependencies_slice") or {},
             }
         )
     return sanitized
@@ -162,6 +196,9 @@ def build_group_context(group_id: str, group_obj: Dict[str, Any], evidence_index
     ui_snapshots = _collect_ui_snapshots(artifacts, sirs)
     payload_examples = _collect_payload_examples(artifacts, sirs)
     journey_blueprints_input = _build_journey_blueprints_input(sirs)
+    recent_changes = group_obj.get("recent_changes") or {}
+    traceability_inputs = _build_traceability_inputs(artifacts, sirs)
+    interdependency_inputs = _collect_interdependency_inputs(sirs)
     return {
         "group_id": group_id,
         "artifacts": artifacts,
@@ -174,7 +211,10 @@ def build_group_context(group_id: str, group_obj: Dict[str, Any], evidence_index
         "payload_examples": payload_examples,
         "stitched_timelines": journey_blueprints_input,
         "journey_blueprints_input": journey_blueprints_input,
+        "recent_changes": recent_changes,
         "raw": group_obj or {},
+        "traceability_inputs": traceability_inputs,
+        "interdependency_inputs": interdependency_inputs,
     }
 
 
@@ -202,6 +242,8 @@ def build_component_contexts(group_context: Dict[str, Any]) -> Dict[str, Dict[st
         ui_snapshots = _collect_ui_snapshots(payload.get("artifacts", []), payload.get("sirs", []))
         payload_examples = _collect_payload_examples(payload.get("artifacts", []), payload.get("sirs", []))
         journey_blueprints_input = _build_journey_blueprints_input(payload.get("sirs", []))
+        traceability_inputs = _build_traceability_inputs(payload.get("artifacts", []), payload.get("sirs", []))
+        interdependency_inputs = _collect_interdependency_inputs(payload.get("sirs", []))
         result[component] = {
             "group_id": group_context.get("group_id"),
             "component_id": component,
@@ -215,6 +257,9 @@ def build_component_contexts(group_context: Dict[str, Any]) -> Dict[str, Dict[st
             "payload_examples": payload_examples,
             "stitched_timelines": journey_blueprints_input,
             "journey_blueprints_input": journey_blueprints_input,
+            "recent_changes": group_context.get("recent_changes", {}),
+            "traceability_inputs": traceability_inputs,
+            "interdependency_inputs": interdependency_inputs,
         }
     return result
 
@@ -223,6 +268,11 @@ def summarize_context_for_prompt(context: Dict[str, Any], *, limit: int = 10) ->
     """Trim large context objects before serializing into prompts."""
     artifacts = context.get("artifacts", [])[:limit]
     sirs = context.get("sirs", [])[:limit]
+    for sir in sirs:
+        sir.setdefault("interfaces", sir.get("interfaces") or [])
+        sir.setdefault("invocations", sir.get("invocations") or [])
+        sir.setdefault("logging", sir.get("logging") or [])
+        sir.setdefault("errors", sir.get("errors") or [])
     return {
         "group_id": context.get("group_id"),
         "component_id": context.get("component_id"),
@@ -236,6 +286,9 @@ def summarize_context_for_prompt(context: Dict[str, Any], *, limit: int = 10) ->
         "payload_examples": context.get("payload_examples", [])[:limit],
         "stitched_timelines": context.get("stitched_timelines", [])[:limit],
         "journey_blueprints_input": context.get("journey_blueprints_input", [])[:limit],
+        "recent_changes": context.get("recent_changes", {}),
+        "traceability_inputs": context.get("traceability_inputs", [])[:limit],
+        "interdependency_inputs": context.get("interdependency_inputs", [])[:limit],
     }
 
 
@@ -442,3 +495,62 @@ def _summarize_integrations(artifacts: Iterable[Dict[str, Any]]) -> List[Dict[st
     ]
     summary.sort(key=lambda x: (-x["count"], x["integration_kind"]))
     return summary
+
+
+def _build_traceability_inputs(
+    artifacts: Iterable[Dict[str, Any]], sirs: Iterable[Dict[str, Any]], limit: int = 60
+) -> List[Dict[str, Any]]:
+    entries: List[Dict[str, Any]] = []
+    for art in artifacts or []:
+        evidence_ids = art.get("evidence_ids") or []
+        if not evidence_ids:
+            continue
+        entries.append(
+            {
+                "artifact": art.get("name") or art.get("artifact_type") or "artifact",
+                "signal_type": art.get("artifact_type") or "artifact",
+                "description": art.get("steps_summary") or "",
+                "evidence_ids": evidence_ids,
+            }
+        )
+        if len(entries) >= limit:
+            return entries
+    for sir in sirs or []:
+        evidence_ids = sir.get("evidence_ids") or []
+        if not evidence_ids:
+            continue
+        entries.append(
+            {
+                "artifact": sir.get("name") or sir.get("id"),
+                "signal_type": sir.get("kind") or "workflow",
+                "description": sir.get("user_story") or sir.get("file") or "",
+                "evidence_ids": evidence_ids,
+            }
+        )
+        if len(entries) >= limit:
+            break
+    return entries
+
+
+def _collect_interdependency_inputs(
+    sirs: Iterable[Dict[str, Any]], limit: int = 40
+) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for sir in sirs or []:
+        interdeps = sir.get("interdependencies") or {}
+        if not interdeps:
+            continue
+        rows.append(
+            {
+                "process": sir.get("name"),
+                "calls": interdeps.get("calls") or interdeps.get("calls", []),
+                "called_by": interdeps.get("called_by") or interdeps.get("called_by", []),
+                "shared_identifiers_with": interdeps.get("shared_identifiers_with") or [],
+                "shared_datastores_with": interdeps.get("shared_datastores_with") or [],
+                "component_peers": interdeps.get("component_peers") or [],
+                "family_peers": interdeps.get("family_peers") or [],
+            }
+        )
+        if len(rows) >= limit:
+            break
+    return rows
