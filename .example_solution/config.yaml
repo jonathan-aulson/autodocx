@@ -15,10 +15,10 @@ top_p: 1
 # Evidence shortlist / Qdrant (explicit values for tools that read cfg directly)
 qdrant:
   url: "https://de8d1b02-a6c3-4df7-a6d0-2e14c9b1ab47.us-east-1-1.aws.cloud.qdrant.io:6333"
-  api_key: "REPLACE_ME"
+  
   collection: "evidence_candidates_v1"
   embedding: "gemini"
-  google_api_key: "REPLACE_ME"   # Google Gemini key
+  
   top_k: 50
 
 # Pipeline switches
@@ -50,8 +50,3 @@ pricing:
 # Environment for child processes (Supervisor merges these into os.environ for watcher/loop)
 # You asked to keep the keys here so processes always see them without manual export.
 env:
-  OPENAI_API_KEY: "REDACTED_OPENAI_KEY"
-  QDRANT_URL: "https://de8d1b02-a6c3-4df7-a6d0-2e14c9b1ab47.us-east-1-1.aws.cloud.qdrant.io:6333"
-  QDRANT_API_KEY: "REPLACE_ME"
-  QDRANT_COLLECTION: "evidence_candidates_v1"
-  GOOGLE_API_KEY: "REPLACE_ME"
