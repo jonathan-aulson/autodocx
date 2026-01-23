@@ -93,11 +93,24 @@ def _make_compact_table_from_agg(agg: Dict[str, Any]) -> str:
     return "\n".join(rows)
 
 
+def _resolve_asset_path(path: str) -> str:
+    if not path:
+        return ""
+    path = path.replace("\\", "/")
+    if path.startswith("assets/"):
+        return "/" + path
+    if "assets/" in path:
+        idx = path.find("assets/")
+        return "/" + path[idx:]
+    return path
+
+
 def render_docs(out_base: Path, nodes: Sequence[Any], edges: Sequence[Any], artifacts: Sequence[Any], facets: Dict[str, Any]) -> None:
     """
     Render a minimal MkDocs-ready docs/ tree with:
       - docs/index.md summarizing facets
-      - per-component docs under docs/components/<group>/<component>.md
+      - component summaries under docs/<group>/<group>.md
+      - per-SIR details under docs/<group>/components/<sir>.md
       - assets copied under docs/assets (so SVGs produced earlier are available)
       - YAML front-matter is emitted at the top of each component page with facets/distance metadata
     """
@@ -129,13 +142,13 @@ def render_docs(out_base: Path, nodes: Sequence[Any], edges: Sequence[Any], arti
     index_lines.append("")
     for gid, sirs_in_group in sorted(groups.items()):
         gid_slug = _safe_slug(gid)
-        index_lines.append(f"- [{gid}](/components/{gid_slug}/{gid_slug}.md) — {len(sirs_in_group)} SIR(s)")
+        index_lines.append(f"- [{gid}](/{gid_slug}/{gid_slug}.md) — {len(sirs_in_group)} SIR(s)")
     _write_markdown_file(docs_dir / "index.md", "\n".join(index_lines))
 
     # Per-group and per-SIR pages
     for gid, sirs_in_group in groups.items():
         gid_slug = _safe_slug(gid)
-        group_dir = docs_dir / "components" / gid_slug
+        group_dir = docs_dir / gid_slug
         group_dir.mkdir(parents=True, exist_ok=True)
 
         # Aggregate graph_features for the whole group (component-level)
@@ -172,12 +185,14 @@ def render_docs(out_base: Path, nodes: Sequence[Any], edges: Sequence[Any], arti
             for svg in sorted(assets_root.rglob("*.svg")):
                 # svg is under docs/assets/... path already
                 rel = svg.relative_to(docs_dir).as_posix()
-                group_md.append(f"![Flow]({rel})")
+                group_md.append(f"![Flow]({_resolve_asset_path(rel)})")
                 group_md.append("")
 
         _write_markdown_file(group_dir / f"{gid_slug}.md", "\n".join(group_md))
 
         # Per-SIR pages
+        details_dir = group_dir / "components"
+        details_dir.mkdir(parents=True, exist_ok=True)
         for s in sirs_in_group:
             # Compose front-matter using SIR's graph_features (if present) and group facets
             sir_id = s.get("id") or s.get("name") or "sir"
@@ -240,12 +255,12 @@ def render_docs(out_base: Path, nodes: Sequence[Any], edges: Sequence[Any], arti
             if candidate_dir.exists():
                 for svg in sorted(candidate_dir.glob("*.svg")):
                     rel = svg.relative_to(docs_dir).as_posix()
-                    body_lines.append(f"![Flow]({rel})")
+                    body_lines.append(f"![Flow]({_resolve_asset_path(rel)})")
                     body_lines.append("")
 
             # Combine and write
             content = "\n".join(fm_lines + body_lines)
-            _write_markdown_file(group_dir / f"{sir_slug}.md", content)
+            _write_markdown_file(details_dir / f"{sir_slug}.md", content)
 
 
 def build_mkdocs_site(out_base: Path) -> None:

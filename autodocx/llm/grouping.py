@@ -6,6 +6,13 @@ from typing import Dict, Any, List, Optional
 
 from autodocx.utils.components import derive_component_from_path, normalize_component_name
 
+ROLLUP_SIGNAL_KINDS = {"workflow", "route"}
+
+
+def _is_rollup_candidate(sir: Dict[str, Any]) -> bool:
+    kind = (sir.get("kind") or sir.get("signal_kind") or "").lower()
+    return kind in ROLLUP_SIGNAL_KINDS
+
 def load_artifacts(out_dir: Path) -> List[Dict[str,Any]]:
     p = Path(out_dir) / "artifacts.json"
     if not p.exists():
@@ -15,16 +22,19 @@ def load_artifacts(out_dir: Path) -> List[Dict[str,Any]]:
     except Exception:
         return []
 
-def load_sirs(out_dir: Path) -> List[Dict[str,Any]]:
-    sirs = []
-    sir_dir = Path(out_dir) / "sir"
+def load_sirs(out_dir: Path) -> List[Dict[str, Any]]:
+    sirs: List[Dict[str, Any]] = []
+    sir_dir = Path(out_dir) / "signals" / "sir_v2"
+    if not sir_dir.exists():
+        sir_dir = Path(out_dir) / "sir"
     if sir_dir.exists():
         for f in sorted(sir_dir.glob("*.json")):
             try:
                 s = json.loads(f.read_text(encoding="utf-8"))
-                sirs.append(s)
             except Exception:
                 continue
+            if _is_rollup_candidate(s):
+                sirs.append(s)
     return sirs
 
 def group_by_component(out_dir: str | Path, repo_root: Optional[Path] = None) -> Dict[str, Dict[str, Any]]:

@@ -115,7 +115,7 @@ def generate_llm_workflow_diagrams(
     Returns component_name -> list of diagram relative paths.
     """
     out_base = Path(out_base)
-    diagrams_root = out_base / "assets" / "diagrams_llm"
+    diagrams_root = out_base / "diagrams" / "llm_svg"
     produced: Dict[str, List[str]] = {}
 
     for component_name, entry in (context.get("components") or {}).items():

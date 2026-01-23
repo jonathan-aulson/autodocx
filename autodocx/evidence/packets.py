@@ -59,8 +59,32 @@ def _slice_lines(lines: List[str], start: int, end: int) -> str:
 
 def _extract_snippet_from_evidence(
     repo_root: Path,
-    entry: str,
+    entry: str | Dict[str, Any],
 ) -> Dict[str, Any] | None:
+    if isinstance(entry, dict):
+        path_hint = entry.get("path") or entry.get("file")
+        start = entry.get("start_line") or entry.get("start") or entry.get("line")
+        end = entry.get("end_line") or entry.get("end")
+        if path_hint:
+            src_path = _resolve_path(repo_root, str(path_hint))
+            if not src_path:
+                return None
+            lines = _load_lines(src_path)
+            if not lines:
+                return None
+            start_i = int(start or 1)
+            end_i = int(end or start_i + MAX_SNIPPET_LINES)
+            start_i, end_i = _clamp_line_range(len(lines), start_i, end_i)
+            snippet = _slice_lines(lines, start_i, end_i)
+            if not snippet.strip():
+                return None
+            return {
+                "path": _rel_path(src_path, repo_root),
+                "start_line": start_i,
+                "end_line": end_i,
+                "text": snippet,
+            }
+        return None
     match = EVIDENCE_PATTERN.match(entry.strip())
     if not match:
         return None
@@ -129,6 +153,8 @@ def build_evidence_packets(
 ) -> Dict[str, str]:
     out_base = Path(out_base)
     repo_root = Path(repo_root)
+    if not constellations:
+        return {}
     packet_dir = out_base / "evidence" / "constellations"
     packet_dir.mkdir(parents=True, exist_ok=True)
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 from pathlib import Path
 from typing import Dict, Any, List, Optional
+import re
 
 from autodocx.visuals.graphviz_flows import (
     render_bw_process_flow_svg,
@@ -10,6 +11,7 @@ from autodocx.visuals.graphviz_flows import (
     render_relationship_sequence_svg,
     render_rollup_journey_svgs,
 )
+from autodocx.render.markdown_style import decorate_headings
 
 
 def _anchor_eid(eid: str) -> str:
@@ -28,11 +30,55 @@ def _safe_list(x: Any) -> List[Any]:
     return [x]
 
 
+def _dir_slug(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", (value or "").lower()).strip("-")
+    return slug or "doc"
+
+
 def _collect_relationships_from_sirs(sirs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     rels: List[Dict[str, Any]] = []
     for sir in sirs or []:
         rels.extend(sir.get("relationships") or (sir.get("props") or {}).get("relationships") or [])
     return rels
+
+
+def _hydrate_component_from_sirs(comp: Dict[str, Any], sirs: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Use SIR business_scaffold slices to backfill component sections when missing.
+    """
+    comp = dict(comp or {})
+    scaffold = {}
+    for sir in sirs or []:
+        bs = sir.get("business_scaffold") or (sir.get("props") or {}).get("business_scaffold") or {}
+        if bs:
+            scaffold = bs
+            break
+    if scaffold:
+        io = scaffold.get("io_summary") or {}
+        deps = scaffold.get("dependencies") or {}
+        interfaces = scaffold.get("interfaces") or []
+        invocations = scaffold.get("invocations") or []
+        if not invocations and deps:
+            for proc in deps.get("processes") or []:
+                invocations.append({"target": proc, "kind": "process", "operation": "calls"})
+            for svc in deps.get("services") or []:
+                invocations.append({"target": svc, "kind": "service", "operation": "calls"})
+        if not comp.get("interfaces"):
+            comp["interfaces"] = interfaces
+        if not comp.get("invokes"):
+            comp["invokes"] = invocations
+        if not comp.get("key_inputs"):
+            comp["key_inputs"] = [{"name": n} for n in io.get("inputs") or []]
+        if not comp.get("key_outputs"):
+            comp["key_outputs"] = [{"name": n} for n in io.get("outputs") or []]
+        if not comp.get("errors_and_logging"):
+            errors = scaffold.get("errors") or []
+            logging = scaffold.get("logging") or []
+            comp["errors_and_logging"] = {
+                "errors": [{"description": e.get("condition") or e.get("activity")} for e in errors],
+                "logging": [{"description": l.get("message_hint") or l.get("activity")} for l in logging],
+            }
+    return comp
 
 
 def _collect_scaffold_hints_from_sirs(sirs: List[Dict[str, Any]]) -> Dict[str, List[str]]:
@@ -51,6 +97,26 @@ def _collect_scaffold_hints_from_sirs(sirs: List[Dict[str, Any]]) -> Dict[str, L
         summary["processes"].update(props.get("process_calls") or props.get("calls_flows") or [])
         summary["identifiers"].update(props.get("identifier_hints") or [])
     return {k: sorted(v) for k, v in summary.items() if v}
+
+
+def _render_interdependency_map_section(hints: Dict[str, List[str]]) -> List[str]:
+    if not hints:
+        return []
+    lines: List[str] = []
+    lines.append("## Interdependency map")
+    if hints.get("processes"):
+        lines.append(f"- **Process calls:** {', '.join(hints['processes'][:10])}")
+    else:
+        lines.append("- **Process calls:** _Not captured yet_")
+    if hints.get("services"):
+        lines.append(f"- **External services:** {', '.join(hints['services'][:10])}")
+    else:
+        lines.append("- **External services:** _Not captured yet_")
+    if hints.get("datastores"):
+        lines.append(f"- **Datastores:** {', '.join(hints['datastores'][:10])}")
+    else:
+        lines.append("- **Datastores:** _Not captured yet_")
+    return lines
 
 
 def _render_scaffold_dependencies_section(hints: Dict[str, List[str]]) -> List[str]:
@@ -147,15 +213,48 @@ def _mermaid_diagram_from_relationships(rels: List[Dict[str, Any]], limit: int =
 
 
 def _process_flow_summary_lines(flows: List[Dict[str, Any]]) -> List[str]:
-    lines: List[str] = []
+    lines: List[str] = ["| Source | Operation | Target |", "|--------|-----------|--------|"]
+    any_row = False
     for flow in flows or []:
         source = flow.get("source")
         target = flow.get("target")
         if not source or not target:
             continue
+        any_row = True
         op = flow.get("operation") or "flows to"
-        lines.append(f"- {source} -> {target} ({op})")
+        lines.append(f"| {source} | {op} | {target} |")
+    if not any_row:
+        lines.append("| _Pending_ |  |  |")
     return lines
+
+
+def _normalize_slug_for_match(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "", (value or "").lower())
+
+
+def _match_assets_dir(out_docs_dir: Path, group_id: str) -> Optional[Path]:
+    assets_root = out_docs_dir / "assets" / "graphs"
+    if not assets_root.exists():
+        return None
+    target = _normalize_slug_for_match(group_id)
+    for child in sorted(assets_root.iterdir()):
+        if not child.is_dir():
+            continue
+        if _normalize_slug_for_match(child.name) == target:
+            return child
+    return None
+
+
+def _collect_group_diagram_svgs(out_docs_dir: Path, group_id: str, limit: int = 12) -> List[Path]:
+    matched = _match_assets_dir(out_docs_dir, group_id)
+    if not matched:
+        return []
+    svgs = []
+    for svg in sorted(matched.rglob("*.svg")):
+        svgs.append(svg)
+        if len(svgs) >= limit:
+            break
+    return svgs
 
 
 def _process_flow_mermaid(flows: List[Dict[str, Any]], limit: int = 12) -> str:
@@ -348,28 +447,47 @@ def _render_persona_lines(personas: List[Dict[str, str]]) -> List[str]:
     return lines
 
 
-def _render_screenshot_markdown(screenshots: List[Dict[str, str]]) -> List[str]:
+def _render_screenshot_markdown(
+    screenshots: List[Dict[str, str]],
+    *,
+    doc_path: Optional[Path] = None,
+    docs_root: Optional[Path] = None,
+) -> List[str]:
     lines: List[str] = []
     for shot in screenshots or []:
         path = shot.get("path")
         if not path:
             continue
         caption = shot.get("caption") or ""
-        rel = _resolve_asset_path(path)
+        rel = _resolve_asset_path(path, doc_path=doc_path, docs_root=docs_root)
         lines.append(f"![{caption}]({rel})")
     return lines
 
 
-def _resolve_asset_path(path: str) -> str:
+def _resolve_asset_path(
+    path: str,
+    *,
+    doc_path: Optional[Path] = None,
+    docs_root: Optional[Path] = None,
+) -> str:
     if not path:
         return ""
     path = path.replace("\\", "/")
-    if path.startswith("assets/"):
-        return "/" + path
+    if path.startswith("/"):
+        path = path.lstrip("/")
+    rel = path
     if "assets/" in path:
         idx = path.find("assets/")
-        return "/" + path[idx:]
-    return path
+        rel = path[idx:]
+    if doc_path and docs_root:
+        try:
+            target = (docs_root / rel).resolve()
+            return target.relative_to(doc_path.parent.resolve()).as_posix()
+        except Exception:
+            pass
+    if rel.startswith("assets/"):
+        return f"/{rel}"
+    return rel
 
 
 def _slug(value: str) -> str:
@@ -515,6 +633,33 @@ def _render_extrapolations_section(entries: Iterable[Dict[str, Any]]) -> List[st
     return lines
 
 
+def _render_packaging_section(packaging: Dict[str, Any], artifacts: Iterable[Dict[str, Any]]) -> List[str]:
+    lines: List[str] = ["## Packaging & Artifacts"]
+    pkg_rows = []
+    pkg_data = packaging or {}
+    for key in ("bundle", "module", "docker_image", "version", "entrypoint"):
+        if pkg_data.get(key):
+            pkg_rows.append(f"- **{key.replace('_', ' ').title()}:** {_safe(pkg_data.get(key), '-')}")
+    if pkg_rows:
+        lines.extend(pkg_rows)
+    art_rows = []
+    for art in artifacts or []:
+        if not isinstance(art, dict):
+            continue
+        name = art.get("name") or art.get("file") or art.get("path")
+        role = art.get("role") or art.get("artifact_type")
+        evidence = ", ".join(art.get("evidence_ids") or [])
+        art_rows.append(f"- {_safe(name, '-')}: {_safe(role, '-')}{_evidence_suffix(art.get('evidence_ids') or [])}")
+    if art_rows:
+        if pkg_rows:
+            lines.append("")
+        lines.append("### Artifacts")
+        lines.extend(art_rows)
+    if not pkg_rows and not art_rows:
+        lines.append("_No packaging details captured yet._")
+    return lines
+
+
 def _render_traceability_section(entries: Iterable[Dict[str, Any]]) -> List[str]:
     lines = ["## Traceability", "| Artifact | Type | Description | Evidence |", "|----------|------|-------------|----------|"]
     any_row = False
@@ -532,8 +677,8 @@ def _render_traceability_section(entries: Iterable[Dict[str, Any]]) -> List[str]
 
 def _render_related_documents_section(group_id: str, component_key: str, sirs: List[Dict[str, Any]]) -> List[str]:
     lines = ["## Related Documents"]
-    group_slug = group_id.replace(" ", "_")
-    related = [f"- [Group overview](../groups/{group_slug}.md)"]
+    group_slug = _dir_slug(group_id)
+    related = [f"- [Component brief](../{group_slug}.md)"]
     for sir in sirs or []:
         name = sir.get("name") or sir.get("id")
         if not name:
@@ -560,6 +705,8 @@ def _append_technical_appendix(
     ui_components: List[Dict[str, Any]],
     integrations: List[Dict[str, Any]],
     code_entities: List[Dict[str, Any]],
+    doc_path: Optional[Path] = None,
+    docs_root: Optional[Path] = None,
 ) -> None:
     md.append("## Technical appendix")
     md.append("")
@@ -571,7 +718,7 @@ def _append_technical_appendix(
         md.append("")
     if screenshots:
         md.append("### UI snapshots")
-        md.extend(_render_screenshot_markdown(screenshots))
+        md.extend(_render_screenshot_markdown(screenshots, doc_path=doc_path, docs_root=docs_root))
         md.append("")
     if rels:
         md.append("### Relationship highlights")
@@ -591,22 +738,24 @@ def _append_technical_appendix(
         md.append("")
     if sequence_svg:
         md.append("### Sequence snapshot")
-        md.append(f"![Sequence]({sequence_svg})")
+        md.append(f"![Sequence]({_resolve_asset_path(sequence_svg, doc_path=doc_path, docs_root=docs_root)})")
         md.append("")
     if journey_svgs:
         md.append("### Generated journey maps")
         for journey in journey_svgs:
             md.append(f"#### {journey.get('title')}")
-            md.append(f"![Journey]({journey.get('path')})")
+            md.append(
+                f"![Journey]({_resolve_asset_path(journey.get('path') or '', doc_path=doc_path, docs_root=docs_root)})"
+            )
         md.append("")
     if overview_svg:
         md.append("### Component overview")
-        md.append(f"![Component overview]({overview_svg})")
+        md.append(f"![Component overview]({_resolve_asset_path(overview_svg, doc_path=doc_path, docs_root=docs_root)})")
         md.append("")
     if svg_paths:
         md.append("### Process diagrams")
         for svg in svg_paths:
-            md.append(f"![Process]({svg})")
+            md.append(f"![Process]({_resolve_asset_path(svg, doc_path=doc_path, docs_root=docs_root)})")
         md.append("")
     if ui_components:
         md.append("### UI entry points")
@@ -711,7 +860,8 @@ def render_repo_overview(out_docs_dir: Path, interdeps: Dict[str, Any]) -> None:
     else:
         lines.append("_No shared identifiers or datastores detected._")
     lines.append("")
-    overview_path.write_text("\n".join(fm + lines), encoding="utf-8")
+    content = decorate_headings(fm + lines)
+    overview_path.write_text("\n".join(content), encoding="utf-8")
 
 
 def _render_family_page(out_dir: Path, family: str, members: List[str], interdeps: Dict[str, Any]) -> None:
@@ -776,7 +926,8 @@ def _render_family_page(out_dir: Path, family: str, members: List[str], interdep
     else:
         lines.append("_No outbound cross-family calls detected._")
     lines.append("")
-    path.write_text("\n".join(fm + lines), encoding="utf-8")
+    content = decorate_headings(fm + lines)
+    path.write_text("\n".join(content), encoding="utf-8")
 
 
 def _interdependencies_block(sirs: List[Dict[str, Any]]) -> List[str]:
@@ -1018,10 +1169,10 @@ def render_business_component_page(
     settings: Optional[Dict[str, Any]] = None,
 ) -> None:
     """Render the business-facing component page following the reference layout."""
-    gid = group_id.replace(" ", "_")
+    gid = _dir_slug(group_id)
     cid = component_key.replace(" ", "_").replace("/", "_")
 
-    page_dir = out_docs_dir / "components" / gid
+    page_dir = out_docs_dir / gid / "components"
     page_dir.mkdir(parents=True, exist_ok=True)
     page_path = page_dir / f"{cid}.md"
 
@@ -1038,6 +1189,8 @@ def render_business_component_page(
     agg = _aggregate_graph_features(sirs) or {}
 
     comp = c_json.get("component", {}) or {}
+    comp = _hydrate_component_from_sirs(comp, sirs)
+    comp = _hydrate_component_from_sirs(comp, sirs)
     provenance = c_json.get("provenance") or {}
     traceability = comp.get("traceability") or []
     rels = _collect_relationships_from_sirs(sirs)
@@ -1070,12 +1223,18 @@ def render_business_component_page(
     md.extend(_render_key_io_section(comp.get("key_inputs"), comp.get("key_outputs")))
     md.append("")
     scaffold_hints = _collect_scaffold_hints_from_sirs(sirs)
+    interdep_section = _render_interdependency_map_section(scaffold_hints)
+    if interdep_section:
+        md.extend(interdep_section)
+        md.append("")
     if scaffold_hints:
         md.extend(_render_scaffold_dependencies_section(scaffold_hints))
         md.append("")
     md.extend(_render_errors_logging_section(comp.get("errors_and_logging")))
     md.append("")
     md.extend(_render_extrapolations_section(comp.get("extrapolations")))
+    md.append("")
+    md.extend(_render_packaging_section(comp.get("packaging") or {}, comp.get("artifacts") or []))
     md.append("")
     md.extend(_render_traceability_section(traceability))
     md.append("")
@@ -1096,6 +1255,8 @@ def render_business_component_page(
         ui_components=_collect_ui_components_from_sirs(sirs),
         integrations=_collect_integrations_from_sirs(sirs),
         code_entities=_collect_code_entities(sirs),
+        doc_path=page_path,
+        docs_root=out_docs_dir,
     )
 
     if evidence_md_filename:
@@ -1103,6 +1264,7 @@ def render_business_component_page(
         md.append("## Evidence appendix")
         md.append(f"See [{evidence_md_filename}]({evidence_md_filename}) for the raw evidence snippets referenced above.")
 
+    md = decorate_headings(md)
     page_path.write_text("\n".join(md), encoding="utf-8")
 def render_business_group_page(
     out_docs_dir: Path,
@@ -1115,10 +1277,10 @@ def render_business_group_page(
     """
     Render the group-level (component) page with YAML front-matter mirroring mkdocs output.
     """
-    gid = group_id.replace(" ", "_")
-    page_dir = out_docs_dir
+    gid = _dir_slug(group_id)
+    page_dir = out_docs_dir / gid / "components"
     page_dir.mkdir(parents=True, exist_ok=True)
-    page_path = page_dir / f"{gid}.md"
+    page_path = page_dir / "overview.md"
 
     title = resp_json.get("title") or f"Group: {group_id}"
     llm_sub = resp_json.get("llm_subscore")
@@ -1166,6 +1328,14 @@ def render_business_group_page(
         name = comp.get("name") if isinstance(comp, dict) else str(comp)
         md.append(f"- {name}")
     md.append("")
+
+    group_diagrams = _collect_group_diagram_svgs(out_docs_dir, group_id)
+    if group_diagrams:
+        md.append("## Workflow diagrams")
+        for svg in group_diagrams:
+            rel = svg.relative_to(out_docs_dir).as_posix()
+            md.append(f"![Workflow diagram]({_resolve_asset_path(rel, doc_path=page_path, docs_root=out_docs_dir)})")
+        md.append("")
 
     extras = extras or {}
     process_flows = extras.get("process_flows") or []
@@ -1229,4 +1399,5 @@ def render_business_group_page(
             md.append(f"- {entry.get('name')}")
         md.append("")
 
+    md = decorate_headings(md)
     page_path.write_text("\n".join(md), encoding="utf-8")

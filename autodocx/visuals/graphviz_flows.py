@@ -104,7 +104,7 @@ def label_for_step(step: Dict[str, Any]) -> str:
     Produce a human-friendly label for a step.
     Prefer specific activity names, otherwise use BW type hints from evidence snippets.
     """
-    name = step.get("name") or ""
+    name = step.get("friendly_display") or step.get("name") or ""
     typ = (step.get("type") or "") or ""
     # evidence snippet may contain richer hints
     ev = step.get("evidence") or {}
@@ -128,6 +128,37 @@ def label_for_step(step: Dict[str, Any]) -> str:
 
     # Fallback
     return name or "step"
+
+
+def _is_wrapper_step(step: Dict[str, Any]) -> bool:
+    name = str(step.get("name") or "").lower()
+    typ = str(step.get("type") or "").lower()
+    if name in {"extensionactivity", "bwactivity", "activityconfig"}:
+        return True
+    if typ in {"extensionactivity", "bwactivity", "activityconfig"}:
+        return True
+    if name.startswith("extensionactivity") or name.startswith("bwactivity") or name.startswith("activityconfig"):
+        return True
+    return False
+
+
+def _step_fill_color(step: Dict[str, Any], label: str) -> str:
+    tokens = " ".join(
+        [
+            str(step.get("connector") or ""),
+            str(step.get("type") or ""),
+            str(label or ""),
+        ]
+    ).lower()
+    if "http" in tokens or "rest" in tokens:
+        return "#D3F9D8"
+    if "jdbc" in tokens or "sql" in tokens or "db" in tokens:
+        return "#FFE8CC"
+    if "json" in tokens or "parse" in tokens or "render" in tokens or "mapper" in tokens:
+        return "#C3DAFE"
+    if "log" in tokens or "audit" in tokens or "trace" in tokens:
+        return "#FDE2E4"
+    return "#E8F0FE"
 
 
 def bw_detect_trigger_label(sir: Dict[str, Any]) -> Optional[str]:
@@ -299,8 +330,13 @@ def render_bw_process_flow_svg(
     if Digraph is None:
         return None
 
+    props = sir.get("props") if isinstance(sir.get("props"), dict) else {}
     steps: List[Dict[str, Any]] = list(sir.get("steps") or [])
+    if not steps:
+        steps = list(props.get("steps") or [])
     triggers = list(sir.get("triggers") or [])
+    if not triggers:
+        triggers = list(props.get("triggers") or [])
     if not steps and not triggers:
         return None  # nothing to draw
 
@@ -319,13 +355,12 @@ def render_bw_process_flow_svg(
     marker_ids = _collect_marker_ids_from_sirs([sir])
 
     # Also include markers from sir.props if present (compat)
-    if isinstance(sir.get("props", {}), dict):
-        for key in ("marker_names", "markers"):
-            cand = sir["props"].get(key)
-            if cand:
-                for c in (cand if isinstance(c, list) else [cand]):
-                    if c and c not in marker_ids:
-                        marker_ids.append(str(c))
+    for key in ("marker_names", "markers"):
+        cand = props.get(key)
+        if cand:
+            for c in (cand if isinstance(c, list) else [cand]):
+                if c and c not in marker_ids:
+                    marker_ids.append(str(c))
 
     # Trigger node (optional)
     trigger_label = bw_detect_trigger_label(sir)
@@ -341,11 +376,15 @@ def render_bw_process_flow_svg(
         if highlight:
             dot.node(trig_id, trigger_label, style="filled,rounded", fillcolor=mh_cfg.get("color", "#FFD700"))
         else:
-            dot.node(trig_id, trigger_label)
+            dot.node(trig_id, trigger_label, style="filled,rounded", fillcolor="#D3F9D8")
         prev_id = trig_id
 
+    filtered_steps = [st for st in steps if not _is_wrapper_step(st)]
+    if not filtered_steps:
+        filtered_steps = steps
+
     # Steps in order (until formal transitions are available)
-    for idx, st in enumerate(steps, start=1):
+    for idx, st in enumerate(filtered_steps, start=1):
         sid = _safe_slug(st.get("name") or st.get("type") or f"step-{idx}")
         label = label_for_step(st)
         highlight = False
@@ -357,7 +396,7 @@ def render_bw_process_flow_svg(
         if highlight:
             dot.node(sid, label, style="filled,rounded", fillcolor=mh_cfg.get("color", "#FFD700"))
         else:
-            dot.node(sid, label)
+            dot.node(sid, label, style="filled,rounded", fillcolor=_step_fill_color(st, label))
         if prev_id:
             dot.edge(prev_id, sid)
         prev_id = sid
@@ -496,13 +535,12 @@ def render_rollup_journey_svgs(
         dot.attr("node", shape="box", style="rounded,filled", fontname="Helvetica", color="#273142")
         dot.attr("edge", color="#7C8FB5", penwidth="1.4", arrowsize="0.8")
 
+        palette = ["#D3F9D8", "#E8F0FE", "#C3DAFE", "#FFE8CC", "#FDE2E4"]
         node_ids: List[str] = []
         for step_idx, label in enumerate(steps, start=1):
             node_id = f"journey_{idx}_{step_idx}"
-            fill = "#E8F0FE"
-            if step_idx == 1:
-                fill = "#D3F9D8"
-            elif step_idx == len(steps):
+            fill = palette[(step_idx - 1) % len(palette)]
+            if step_idx == len(steps):
                 fill = "#FFE8CC"
             dot.node(node_id, f"{step_idx}. {label}", fillcolor=fill)
             node_ids.append(node_id)

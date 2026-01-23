@@ -25,6 +25,18 @@ def _safe_list(x: Any) -> List[Any]:
     return [x]
 
 
+def _resolve_asset_path(path: str) -> str:
+    if not path:
+        return ""
+    path = path.replace("\\", "/")
+    if path.startswith("assets/"):
+        return "/" + path
+    if "assets/" in path:
+        idx = path.find("assets/")
+        return "/" + path[idx:]
+    return path
+
+
 def _component_title(c_json: Dict[str, Any], component_key: str) -> str:
     title = c_json.get("title") or c_json.get("component", {}).get("name") or component_key
     return str(title)
@@ -385,14 +397,14 @@ def render_business_component_page(
 
     if overview_svg:
         md.append("## Module Overview")
-        md.append(f"![Flow]({overview_svg})")
+        md.append(f"![Flow]({_resolve_asset_path(overview_svg)})")
         md.append("")
 
     if svg_paths:
         md.append("## Visual Flow Diagrams")
         for rel in svg_paths:
             md.append("")
-            md.append(f"![Flow]({rel})")
+            md.append(f"![Flow]({_resolve_asset_path(rel)})")
         md.append("")
 
     # Details with evidence links

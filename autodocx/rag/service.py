@@ -153,6 +153,15 @@ class EmbeddingService:
         if not lines:
             return []
         overlap = overlap if overlap is not None else _default_overlap(chunk_size)
+        try:
+            rel_path = path.relative_to(self.repo_root).as_posix()
+        except Exception:
+            # If the file lives outside the repo root (e.g., unpacked archives under out/tmp),
+            # fall back to an out-relative path or just the filename to avoid hard failures.
+            try:
+                rel_path = path.relative_to(self.out_dir).as_posix()
+            except Exception:
+                rel_path = path.name
         chunks: List[ChunkRecord] = []
         start = 0
         while start < len(lines):
@@ -161,7 +170,7 @@ class EmbeddingService:
             if snippet:
                 chunk = ChunkRecord(
                     id=str(uuid.uuid4()),
-                    path=str(path.relative_to(self.repo_root)),
+                    path=rel_path,
                     text=snippet[:4000],
                     start_line=start + 1,
                     end_line=end,

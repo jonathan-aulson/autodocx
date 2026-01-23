@@ -16,6 +16,7 @@ except Exception:  # pragma: no cover
 
 from autodocx.render import business_renderer
 from autodocx.render.business_renderer import _aggregate_graph_features
+from autodocx.render.markdown_style import decorate_markdown
 from autodocx.visuals.graphviz_flows import ensure_assets_dir
 
 # Helpers
@@ -28,11 +29,11 @@ def _safe_slug(s: str) -> str:
 
 def _copy_assets_into_docs(out_base: Path, docs_dir: Path) -> None:
     """
-    Copy the repo-level assets (out_base/assets) into docs/ so MkDocs will include them.
+    Copy diagram assets into docs/ so MkDocs will include them.
     Overwrites destination if present.
     """
-    src = out_base / "assets"
-    dst = docs_dir / "assets"
+    src = out_base / "diagrams"
+    dst = docs_dir / "assets" / "diagrams"
     if not src.exists():
         return
     # Remove existing dst and copy tree
@@ -67,7 +68,7 @@ def _read_optional_json(path: Path) -> Any:
 
 
 def _render_coverage_page(out_base: Path, docs_dir: Path) -> bool:
-    coverage = _read_optional_json(out_base / "coverage.json")
+    coverage = _read_optional_json(out_base / "manifests" / "coverage.json")
     if not coverage:
         return False
     entries = coverage.get("extractors") or []
@@ -111,7 +112,7 @@ def _render_coverage_page(out_base: Path, docs_dir: Path) -> bool:
 
 
 def _render_changelog_page(out_base: Path, docs_dir: Path) -> bool:
-    data = _read_optional_json(out_base / "changelog.json")
+    data = _read_optional_json(out_base / "reports" / "changelog.json")
     if not data:
         return False
     lines: List[str] = []
@@ -138,16 +139,22 @@ def _render_changelog_page(out_base: Path, docs_dir: Path) -> bool:
 
 
 def _read_sirs(out_base: Path) -> List[Dict[str, Any]]:
-    sir_dir = out_base / "sir"
-    if not sir_dir.exists():
-        return []
-    out = []
-    for f in sorted(sir_dir.glob("*.json")):
-        try:
-            j = json.loads(f.read_text(encoding="utf-8"))
-            out.append(j)
-        except Exception:
+    sir_dirs = [
+        out_base / "signals" / "sir_v2",
+        out_base / "signals" / "sir_v1",
+    ]
+    out: List[Dict[str, Any]] = []
+    for sir_dir in sir_dirs:
+        if not sir_dir.exists():
             continue
+        for f in sorted(sir_dir.glob("*.json")):
+            try:
+                j = json.loads(f.read_text(encoding="utf-8"))
+                out.append(j)
+            except Exception:
+                continue
+        if out:
+            break
     return out
 
 
@@ -160,8 +167,7 @@ def _group_sirs_by_component(sirs: Sequence[Dict[str, Any]]) -> Dict[str, List[D
 
 
 def _read_interdeps(out_base: Path) -> Dict[str, Any]:
-    sir_dir = out_base / "sir"
-    interdeps_path = sir_dir / "_interdeps.json"
+    interdeps_path = out_base / "signals" / "interdeps.json"
     if not interdeps_path.exists():
         return {}
     try:
@@ -454,12 +460,12 @@ def _render_repo_overview(docs_dir: Path, family_insights: Dict[str, Dict[str, A
             lines.append(f"| {fams} | {identifiers} | {datastores} |")
     else:
         lines.append("_No cross-family data overlaps detected._")
-    _write_markdown_file(docs_dir / "repo_overview.md", "\n".join(lines))
+    _write_markdown_file(docs_dir / "repo_comprehensive.md", "\n".join(lines))
     return True
 
 
 def _load_component_changes(out_base: Path) -> Dict[str, Any]:
-    data = _read_optional_json(out_base / "component_changes.json")
+    data = _read_optional_json(out_base / "reports" / "component_changes.json")
     return data if isinstance(data, dict) else {}
 
 
@@ -577,6 +583,7 @@ def _collect_flow_diagrams(doc_base: Path, component_slug: str) -> List[str]:
 
 def _write_markdown_file(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    content = decorate_markdown(content)
     path.write_text(content, encoding="utf-8")
 
 
@@ -839,28 +846,47 @@ def _render_data_examples(examples: Sequence[Dict[str, Any]]) -> List[str]:
     return out
 
 
-def _render_screenshots_section(screenshots: Sequence[Dict[str, Any]]) -> List[str]:
+def _render_screenshots_section(
+    screenshots: Sequence[Dict[str, Any]],
+    *,
+    doc_path: Optional[Path] = None,
+    docs_root: Optional[Path] = None,
+) -> List[str]:
     lines: List[str] = []
     for shot in screenshots or []:
         path = shot.get("path")
         if not path:
             continue
         caption = shot.get("caption") or ""
-        rel_path = _resolve_asset_path(path)
+        rel_path = _resolve_asset_path(path, doc_path=doc_path, docs_root=docs_root)
         lines.append(f"![{caption}]({rel_path})")
     return lines
 
 
-def _resolve_asset_path(path: str) -> str:
+def _resolve_asset_path(
+    path: str,
+    *,
+    doc_path: Optional[Path] = None,
+    docs_root: Optional[Path] = None,
+) -> str:
     if not path:
         return ""
     path = path.replace("\\", "/")
-    if path.startswith("assets/"):
-        return f"/{path}"
+    if path.startswith("/"):
+        path = path.lstrip("/")
+    rel = path
     if "assets/" in path:
         idx = path.find("assets/")
-        return "/" + path[idx:]
-    return path
+        rel = path[idx:]
+    if doc_path and docs_root:
+        try:
+            target = (docs_root / rel).resolve()
+            return target.relative_to(doc_path.parent.resolve()).as_posix()
+        except Exception:
+            pass
+    if rel.startswith("assets/"):
+        return f"/{rel}"
+    return rel
 
 
 def _relationships_mermaid(rels: Sequence[Dict[str, Any]]) -> str:
@@ -887,7 +913,8 @@ def render_docs(out_base: Path, nodes: Sequence[Any], edges: Sequence[Any], arti
     """
     Render a minimal MkDocs-ready docs/ tree with:
       - docs/index.md summarizing facets
-      - per-component docs under docs/components/<group>/<component>.md
+      - component summaries under docs/<group>/<group>.md
+      - per-SIR details under docs/<group>/components/<sir>.md
       - assets copied under docs/assets (so SVGs produced earlier are available)
       - YAML front-matter is emitted at the top of each component page with facets/distance metadata
     """
@@ -929,12 +956,12 @@ def render_docs(out_base: Path, nodes: Sequence[Any], edges: Sequence[Any], arti
     index_lines.append("")
     for gid, sirs_in_group in sorted(groups.items()):
         gid_slug = _safe_slug(gid)
-        index_lines.append(f"- [{gid}](/components/{gid_slug}/{gid_slug}.md) - {len(sirs_in_group)} SIR(s)")
+        index_lines.append(f"- [{gid}](/{gid_slug}/{gid_slug}.md) - {len(sirs_in_group)} SIR(s)")
     if families_written:
         index_lines.append("")
         index_lines.append("- [Domain Families](/families/index.md)")
     if repo_overview_written:
-        index_lines.append("- [Repository Overview](/repo_overview.md)")
+        index_lines.append("- [Repository Overview](/repo_comprehensive.md)")
     if coverage_written:
         index_lines.append("")
         index_lines.append("- [Coverage Audit](/coverage.md)")
@@ -949,8 +976,9 @@ def render_docs(out_base: Path, nodes: Sequence[Any], edges: Sequence[Any], arti
         component_artifacts = artifacts_by_component.get(gid, [])
         narrative = _collect_narrative_from_artifacts(component_artifacts, sirs_in_group)
         gid_slug = _safe_slug(gid)
-        group_dir = docs_dir / "components" / gid_slug
+        group_dir = docs_dir / gid_slug
         group_dir.mkdir(parents=True, exist_ok=True)
+        group_doc_path = group_dir / f"{gid_slug}.md"
 
         # Aggregate graph_features for the whole group (component-level)
         agg = _aggregate_graph_features(sirs_in_group) or {}
@@ -1002,7 +1030,11 @@ def render_docs(out_base: Path, nodes: Sequence[Any], edges: Sequence[Any], arti
         if http_table:
             group_md.append(http_table)
             group_md.append("")
-        screen_lines = _render_screenshots_section(narrative.get("screenshots"))
+        screen_lines = _render_screenshots_section(
+            narrative.get("screenshots"),
+            doc_path=group_doc_path,
+            docs_root=docs_dir,
+        )
         if screen_lines:
             group_md.extend(screen_lines)
             group_md.append("")
@@ -1032,7 +1064,9 @@ def render_docs(out_base: Path, nodes: Sequence[Any], edges: Sequence[Any], arti
             group_md.append("## Comprehensive Workflow Diagrams")
             group_md.append("")
             for diagram in flow_diagrams:
-                group_md.append(f"![Workflow diagram]({diagram})")
+                group_md.append(
+                    f"![Workflow diagram]({_resolve_asset_path(diagram, doc_path=group_doc_path, docs_root=docs_dir)})"
+                )
                 group_md.append("")
 
         # Embed component overview SVG (if any)
@@ -1045,12 +1079,14 @@ def render_docs(out_base: Path, nodes: Sequence[Any], edges: Sequence[Any], arti
             for svg in sorted(assets_root.rglob("*.svg")):
                 # svg is under docs/assets/... path already
                 rel = svg.relative_to(docs_dir).as_posix()
-                group_md.append(f"![Flow]({rel})")
+                group_md.append(f"![Flow]({_resolve_asset_path(rel, doc_path=group_doc_path, docs_root=docs_dir)})")
                 group_md.append("")
 
-        _write_markdown_file(group_dir / f"{gid_slug}.md", "\n".join(group_md))
+        _write_markdown_file(group_doc_path, "\n".join(group_md))
 
         # Per-SIR pages
+        details_dir = group_dir / "components"
+        details_dir.mkdir(parents=True, exist_ok=True)
         for s in sirs_in_group:
             # Compose front-matter using SIR's graph_features (if present) and group facets
             sir_id = s.get("id") or s.get("name") or "sir"
@@ -1169,13 +1205,26 @@ def render_docs(out_base: Path, nodes: Sequence[Any], edges: Sequence[Any], arti
                 body_lines.append("")
 
             sir_screens = (s.get("props") or {}).get("screenshots") or []
+            sir_doc_path = details_dir / f"{sir_slug}.md"
             if isinstance(sir_screens, list) and sir_screens:
                 body_lines.append("## Screenshots")
-                body_lines.extend(_render_screenshots_section([{"path": p, "caption": s.get("name")} for p in sir_screens if isinstance(p, str)]))
+                body_lines.extend(
+                    _render_screenshots_section(
+                        [{"path": p, "caption": s.get("name")} for p in sir_screens if isinstance(p, str)],
+                        doc_path=sir_doc_path,
+                        docs_root=docs_dir,
+                    )
+                )
                 body_lines.append("")
             elif (s.get("props") or {}).get("ui_snapshot"):
                 body_lines.append("## Screenshots")
-                body_lines.extend(_render_screenshots_section([{"path": (s.get("props") or {}).get("ui_snapshot"), "caption": s.get("name")}]))
+                body_lines.extend(
+                    _render_screenshots_section(
+                        [{"path": (s.get("props") or {}).get("ui_snapshot"), "caption": s.get("name")}],
+                        doc_path=sir_doc_path,
+                        docs_root=docs_dir,
+                    )
+                )
                 body_lines.append("")
 
             # Embed any SVGs produced for this SIR
@@ -1185,12 +1234,12 @@ def render_docs(out_base: Path, nodes: Sequence[Any], edges: Sequence[Any], arti
             if candidate_dir.exists():
                 for svg in sorted(candidate_dir.glob("*.svg")):
                     rel = svg.relative_to(docs_dir).as_posix()
-                    body_lines.append(f"![Flow]({rel})")
+                    body_lines.append(f"![Flow]({_resolve_asset_path(rel, doc_path=sir_doc_path, docs_root=docs_dir)})")
                     body_lines.append("")
 
             # Combine and write
             content = "\n".join(fm_lines + body_lines)
-            _write_markdown_file(group_dir / f"{sir_slug}.md", content)
+            _write_markdown_file(sir_doc_path, content)
 
 
 def build_mkdocs_site(out_base: Path) -> None:

@@ -16,7 +16,7 @@ TARGET_SIRS = [
 
 
 def main() -> None:
-    sir_dir = Path("out/sir_v2")
+    sir_dir = Path("out/signals/sir_v2")
     rows = []
     for name in TARGET_SIRS:
         path = sir_dir / name

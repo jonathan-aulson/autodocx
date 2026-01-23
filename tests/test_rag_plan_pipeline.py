@@ -52,4 +52,4 @@ def test_generate_xml_plan_and_rag_docs(tmp_path: Path) -> None:
 
     generated = build_rag_docs(plan_path, DummyEmbed(), out_dir, doc_context, llm_callable=fake_rag_llm)
     assert generated
-    assert (out_dir / "docs" / "curated" / "rag" / "demo-overview.md").exists()
+    assert (out_dir / "docs" / "rag" / "demo-overview.md").exists()

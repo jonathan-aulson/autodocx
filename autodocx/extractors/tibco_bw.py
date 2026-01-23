@@ -369,6 +369,29 @@ def _derive_identifier_tokens(values: List[str]) -> List[str]:
                 tokens.add(token)
     return sorted(tokens)
 
+
+def _infer_component_family_from_path(path: Path) -> Dict[str, Optional[str]]:
+    """
+    Best-effort ownership inference:
+    - component: nearest parent folder that looks like a module or contains "module" in name
+    - module_name: same as component when module-like
+    - family: derive from component or process name (fallback)
+    """
+    comp = None
+    module_name = None
+    parents = list(path.parts)
+    for part in reversed(parents):
+        if "." in part and "module" in part.lower():
+            comp = part
+            module_name = part
+            break
+    if comp is None and len(parents) >= 2:
+        comp = parents[-2]
+    family = None
+    if comp and "." in comp:
+        family = comp.split(".")[0]
+    return {"component": comp, "module_name": module_name, "family": family}
+
 # Main extractor ----------------------------------------------------------
 
 class TibcoBWExtractor:
@@ -699,6 +722,14 @@ class TibcoBWExtractor:
         ) if transition_edges else True
         transition_integrity = 1.0 if transitions_ok else 0.0
 
+        # Gather mapper/XPath field hints for IO and identifiers
+        mapper_field_tokens: Set[str] = set()
+        for step in steps:
+            for path_hint in step.get("mapper_paths") or []:
+                for token in _derive_identifier_tokens([path_hint]):
+                    mapper_field_tokens.add(token)
+                    identifier_hints.add(token)
+
         subs = {
             "parsed": 0.9 if steps else 0.2,
             "schema_evidence": 0.4 if sqls else 0.1,
@@ -711,11 +742,16 @@ class TibcoBWExtractor:
         }
 
         # Compose workflow Signal
+        ownership = _infer_component_family_from_path(path)
         wf_props = {
             "name": proc_name,
             "file": str(path),
             "engine": "tibco_bw",
             "wf_kind": "tibco_bw",
+            "component_or_service": ownership.get("component"),
+            "component": ownership.get("component"),
+            "family": ownership.get("family"),
+            "module_name": ownership.get("module_name"),
             "triggers": triggers,
             "steps": steps,
             "calls_flows": calls,
@@ -729,6 +765,8 @@ class TibcoBWExtractor:
             "identifier_hints": sorted(identifier_hints),
             "process_calls": calls,
             "service_dependencies": sorted(service_dependencies),
+            "inputs": sorted(mapper_field_tokens)[:15],
+            "outputs": sorted(mapper_field_tokens)[:15],
         }
         wf_props.update(self._augment_narrative_props(proc_name, triggers, steps, sqls, path))
 
@@ -754,7 +792,15 @@ class TibcoBWExtractor:
         for s in sqls:
             signals.append(Signal(
                 kind="db",
-                props={"table": "", "sql_sample": s.get("sql")[:200], "file": str(path)},
+                props={
+                    "table": "",
+                    "sql_sample": s.get("sql")[:200],
+                    "file": str(path),
+                    "component_or_service": ownership.get("component"),
+                    "component": ownership.get("component"),
+                    "family": ownership.get("family"),
+                    "module_name": ownership.get("module_name"),
+                },
                 evidence=[s.get("evidence")],
                 subscores={"parsed": 0.6, "schema_evidence": 0.4}
             ))
@@ -764,7 +810,16 @@ class TibcoBWExtractor:
                 method = (t.get("method") or "").upper() or "POST"
                 signals.append(Signal(
                     kind="route",
-                    props={"service": proc_name, "method": method, "path": t.get("path") or "", "file": str(path)},
+                    props={
+                        "service": proc_name,
+                        "method": method,
+                        "path": t.get("path") or "",
+                        "file": str(path),
+                        "component_or_service": ownership.get("component"),
+                        "component": ownership.get("component"),
+                        "family": ownership.get("family"),
+                        "module_name": ownership.get("module_name"),
+                    },
                     evidence=[t.get("evidence")],
                     subscores={"parsed": 0.9, "endpoint_or_op_coverage": 0.8}
                 ))

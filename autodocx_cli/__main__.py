@@ -56,7 +56,7 @@ def clean_out_dir_preserve_site_and_mkdocs(out_dir: str | Path) -> None:
     """
     Reset the output directory before each scan:
       - Remove primary pipeline subdirectories (docs/site/flows/etc.).
-      - Recreate empty docs/ and assets/ directories.
+      - Recreate empty docs/ directory.
       - Write a minimal mkdocs.yml stub so nav regeneration starts fresh.
       - Preserve metrics/llm_usage.csv for long-running telemetry.
     """
@@ -67,8 +67,7 @@ def clean_out_dir_preserve_site_and_mkdocs(out_dir: str | Path) -> None:
     for sub in targets:
         shutil.rmtree(p / sub, ignore_errors=True)
 
-    for required in ("docs", "assets"):
-        (p / required).mkdir(parents=True, exist_ok=True)
+    (p / "docs").mkdir(parents=True, exist_ok=True)
 
     mkdocs_stub = {"site_name": "AutoDocX", "theme": {"name": "material"}, "nav": []}
     mkdocs_path = p / "mkdocs.yml"
@@ -97,74 +96,100 @@ def _humanize_title(stem: str) -> str:
 
 def regenerate_mkdocs_config(out_dir: Path, debug: bool = False) -> None:
     """
-    Build a mkdocs.yml file whose navigation mirrors the curated LLM docs.
+    Build a mkdocs.yml file whose navigation mirrors the unified docs layout.
     """
     docs_dir = Path(out_dir) / "docs"
-    curated_dir = docs_dir / "curated"
     docs_dir.mkdir(parents=True, exist_ok=True)
-    curated_dir.mkdir(parents=True, exist_ok=True)
 
-    def _collect_entries(folder: Path) -> List[Dict[str, Any]]:
+    index_path = docs_dir / "index.md"
+    if not index_path.exists():
+        repo_doc = docs_dir / "repo_comprehensive.md"
+        index_lines = [
+            "# AutoDocX Documentation",
+            "",
+            "Use the navigation to browse generated docs by component, quality, and RAG topics.",
+            "",
+        ]
+        if repo_doc.exists():
+            index_lines.append(f"- Start with [Repository Overview]({repo_doc.relative_to(docs_dir).as_posix()})")
+        index_path.write_text(decorate_markdown("\n".join(index_lines) + "\n"), encoding="utf-8")
+
+    def _nav_for_folder(folder: Path) -> List[Dict[str, Any]]:
         entries: List[Dict[str, Any]] = []
         if not folder.exists():
             return entries
-        for child in sorted(folder.iterdir()):
-            if child.is_file() and child.suffix.lower() == ".md":
-                rel_path = child.relative_to(docs_dir).as_posix()
-                entries.append({_humanize_title(child.stem): rel_path})
-            elif child.is_dir():
-                child_entries = _collect_entries(child)
-                if child_entries:
-                    entries.append({_humanize_title(child.name): child_entries})
+
+        md_files = [p for p in folder.iterdir() if p.is_file() and p.suffix.lower() == ".md"]
+
+        def _file_rank(path: Path) -> tuple:
+            stem = path.stem.lower()
+            if stem in {"index", "readme", folder.name.lower()}:
+                return (0, stem)
+            return (1, stem)
+
+        for md_file in sorted(md_files, key=_file_rank):
+            rel_path = md_file.relative_to(docs_dir).as_posix()
+            entries.append({_humanize_title(md_file.stem): rel_path})
+
+        skip_dirs = {"assets", "__pycache__", ".git", ".github", ".idea", ".vscode"}
+        for child in sorted([p for p in folder.iterdir() if p.is_dir() and p.name not in skip_dirs]):
+            child_entries = _nav_for_folder(child)
+            if child_entries:
+                entries.append({_humanize_title(child.name): child_entries})
         return entries
 
-    nav: List[Dict[str, Any]] = []
-    repo_doc = curated_dir / "repo_overview.md"
-    if repo_doc.exists():
-        nav.append({"Repository Overview": repo_doc.relative_to(docs_dir).as_posix()})
-
-    component_entries = _collect_entries(curated_dir / "components")
-    if component_entries:
-        nav.append({"Components": component_entries})
-
-    family_entries = _collect_entries(curated_dir / "families")
-    if family_entries:
-        nav.append({"Families": family_entries})
-
-    constellation_entries = _collect_entries(curated_dir / "constellations")
-    if constellation_entries:
-        nav.append({"Constellations": constellation_entries})
-
-    quality_entries = _collect_entries(curated_dir / "quality")
-    if quality_entries:
-        nav.append({"Quality & Risks": quality_entries})
-
-    evidence_entries = _collect_entries(curated_dir / "evidence")
-    if evidence_entries:
-        nav.append({"Evidence Packets": evidence_entries})
-
-    rag_entries = _collect_entries(curated_dir / "rag")
-    if rag_entries:
-        nav.append({"RAG Docs": rag_entries})
-
-    for md in sorted(curated_dir.glob("*.md")):
-        if repo_doc.exists() and md == repo_doc:
-            continue
-        nav.append({_humanize_title(md.stem): md.relative_to(docs_dir).as_posix()})
+    nav: List[Dict[str, Any]] = _nav_for_folder(docs_dir)
 
     if not nav:
-        placeholder = curated_dir / "README.md"
+        placeholder = docs_dir / "README.md"
         if not placeholder.exists():
-            placeholder.write_text("# AutoDocX\n\nCurated documentation will appear here after the next scan.\n", encoding="utf-8")
+            placeholder.write_text("# AutoDocX\n\nDocumentation will appear here after the next scan.\n", encoding="utf-8")
         nav.append({"Home": placeholder.relative_to(docs_dir).as_posix()})
 
     mkdocs_cfg = {
         "site_name": "AutoDocX",
-        "theme": {"name": "material"},
+        "theme": {
+            "name": "material",
+            "palette": [
+                {"scheme": "default", "primary": "blue grey", "accent": "teal"},
+            ],
+            "features": [
+                "navigation.instant",
+                "navigation.tabs",
+                "navigation.sections",
+                "navigation.top",
+                "content.code.copy",
+                "content.tabs.link",
+                "search.highlight",
+                "search.share",
+            ],
+        },
+        "plugins": ["search"],
+        "markdown_extensions": [
+            "admonition",
+            "attr_list",
+            "footnotes",
+            "md_in_html",
+            "tables",
+            "pymdownx.details",
+            "pymdownx.emoji",
+            "pymdownx.superfences",
+            "pymdownx.tabbed",
+            {"pymdownx.tasklist": {"custom_checkbox": True}},
+            {"pymdownx.highlight": {"anchor_linenums": True}},
+            "pymdownx.inlinehilite",
+        ],
         "nav": nav,
     }
     mkdocs_path = Path(out_dir) / "mkdocs.yml"
-    mkdocs_path.write_text(yaml.safe_dump(mkdocs_cfg, sort_keys=False), encoding="utf-8")
+    mkdocs_text = yaml.safe_dump(mkdocs_cfg, sort_keys=False)
+    mkdocs_text = mkdocs_text.replace(
+        "- pymdownx.emoji\n",
+        "- pymdownx.emoji:\n"
+        "    emoji_index: !!python/name:material.extensions.emoji.twemoji\n"
+        "    emoji_generator: !!python/name:material.extensions.emoji.to_svg\n",
+    )
+    mkdocs_path.write_text(mkdocs_text, encoding="utf-8")
     if debug:
         rprint(f"[blue]Regenerated mkdocs.yml with {len(nav)} nav entries[/blue]")
 
@@ -175,16 +200,15 @@ def sync_docs_assets(out_dir: Path) -> None:
     """
     out_dir = Path(out_dir)
 
-    def _copy_tree(name: str) -> None:
+    def _copy_tree(name: str, *, dst_suffix: str | None = None) -> None:
         src = out_dir / name
-        dst = out_dir / "docs" / name
+        dst = out_dir / "docs" / (dst_suffix or name)
         shutil.rmtree(dst, ignore_errors=True)
         if src.exists():
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copytree(src, dst)
 
-    for subdir in ("assets", "evidence"):
-        _copy_tree(subdir)
+    _copy_tree("evidence", dst_suffix="evidence/packets")
 
 
 def write_evidence_manifest_doc(
@@ -195,7 +219,7 @@ def write_evidence_manifest_doc(
     """
     Generate a curated Markdown page linking to every evidence packet.
     """
-    manifest_dir = out_dir / "docs" / CURATED_DIR / "evidence"
+    manifest_dir = out_dir / "docs" / "evidence"
     manifest_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = manifest_dir / "index.md"
     lines = [
@@ -225,14 +249,18 @@ def write_evidence_manifest_doc(
             components = ", ".join(record.get("components", [])) or "-"
             packet_rel = packet_index.get(cid)
             if packet_rel:
-                # manifest sits under docs/curated/evidence, so walk up two levels
-                rel_link = (Path("../../") / Path(packet_rel)).as_posix()
+                packet_path = Path(packet_rel)
+                try:
+                    packet_rel_path = packet_path.relative_to("evidence")
+                except ValueError:
+                    packet_rel_path = packet_path
+                rel_link = (Path("packets") / packet_rel_path).as_posix()
                 display = Path(packet_rel).name
                 lines.append(f"| {record.get('slug') or cid} | {components} | [{display}]({rel_link}) |")
             else:
                 lines.append(f"| {record.get('slug') or cid} | {components} | _pending_ |")
 
-    manifest_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    manifest_path.write_text(decorate_markdown("\n".join(lines) + "\n"), encoding="utf-8")
 
 
 def _log_environment_readiness(repo: Path, out_base: Path, archive_manifest: Dict[str, Any]) -> None:
@@ -392,6 +420,7 @@ from autodocx.config_loader import load_config, get_all_settings
 from autodocx.llm.evidence_index import build_evidence_index
 from autodocx.llm.grouping import group_by_component
 from autodocx.llm.rollup import rollup_group_and_persist
+from autodocx.render.markdown_style import decorate_markdown
 
 # scoring helper (ensure this exists in your repo)
 try:
@@ -440,7 +469,6 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 ANALYSIS_DIR = PROJECT_ROOT / "analysis"
 SNAPSHOT_PATH = ANALYSIS_DIR / "scan_snapshot.json"
 DEFAULT_MIN_WORDS = 50
-CURATED_DIR = "curated"
 COMPONENT_SUBDIR = "components"
 MAX_SOURCE_CHARS = 6000
 
@@ -514,10 +542,44 @@ def _ensure_scaffold_stats(entry: Dict[str, Any]) -> Dict[str, Any]:
         "with_identifiers": 0,
         "with_datastores": 0,
         "with_processes": 0,
+        "with_calls": 0,
+        "with_logging": 0,
+        "with_errors": 0,
         "missing_samples": [],
     }
     entry["business_scaffold"] = stats
     return stats
+
+
+def _summarize_scaffold_stats(rows: List[Dict[str, Any]]) -> Dict[str, int]:
+    """
+    Build lightweight metrics from audit rows (each row is a missing-fields record).
+    This is a best-effort summary to drive thresholds; signals without missing rows
+    are not represented here, so "with_*" counts are conservative.
+    """
+    metrics = {
+        "missing_scaffold": 0,
+        "with_io": 0,
+        "with_calls": 0,
+        "with_logging": 0,
+        "with_errors": 0,
+    }
+    for row in rows:
+        missing = set(row.get("missing") or [])
+        if not missing:
+            continue
+        # If everything is missing, treat as missing scaffold
+        if missing.issuperset({"identifiers", "datastores", "processes", "calls", "logging", "errors"}):
+            metrics["missing_scaffold"] += 1
+        if not missing.intersection({"identifiers", "datastores", "processes"}):
+            metrics["with_io"] += 1
+        if "calls" not in missing:
+            metrics["with_calls"] += 1
+        if "logging" not in missing:
+            metrics["with_logging"] += 1
+        if "errors" not in missing:
+            metrics["with_errors"] += 1
+    return metrics
 
 
 def _append_missing_scaffold_sample(samples: List[Dict[str, Any]], sig: Any, missing: List[str], limit: int = 5) -> None:
@@ -545,12 +607,21 @@ def _record_scaffold_coverage(entry: Dict[str, Any], sig: Any, scaffold: Dict[st
     identifiers = list(io_summary.get("identifiers") or [])
     datastores = list(dependencies.get("datastores") or [])
     processes = list(dependencies.get("processes") or [])
+    calls = list(dependencies.get("services") or []) + list(dependencies.get("processes") or [])
+    logging_entries = list(scaffold.get("logging") or [])
+    error_entries = list(scaffold.get("errors") or [])
     if identifiers:
         stats["with_identifiers"] += 1
     if datastores:
         stats["with_datastores"] += 1
     if processes:
         stats["with_processes"] += 1
+    if calls:
+        stats["with_calls"] += 1
+    if logging_entries:
+        stats["with_logging"] += 1
+    if error_entries:
+        stats["with_errors"] += 1
     missing: List[str] = []
     if not identifiers:
         missing.append("identifiers")
@@ -558,6 +629,12 @@ def _record_scaffold_coverage(entry: Dict[str, Any], sig: Any, scaffold: Dict[st
         missing.append("datastores")
     if not processes:
         missing.append("processes")
+    if not calls:
+        missing.append("calls")
+    if not logging_entries:
+        missing.append("logging")
+    if not error_entries:
+        missing.append("errors")
     if missing:
         props = {}
         if hasattr(sig, "props") and isinstance(sig.props, dict):
@@ -579,19 +656,47 @@ def _record_scaffold_coverage(entry: Dict[str, Any], sig: Any, scaffold: Dict[st
         _append_missing_scaffold_sample(stats["missing_samples"], sig, missing)
 
 
-def _write_scaffold_gap_reports(out_base: Path, audit_rows: List[Dict[str, Any]]) -> None:
-    if not audit_rows:
-        data = {"gaps_recorded": 0, "rows": []}
-    else:
-        data = {"gaps_recorded": len(audit_rows), "rows": audit_rows}
-    report_path = out_base / "scaffold_coverage.json"
+def _write_scaffold_gap_reports(out_base: Path, audit_rows: List[Dict[str, Any]]) -> int:
+    gaps = len(audit_rows or [])
+    data = {"gaps_recorded": gaps, "rows": audit_rows or []}
+    manif_dir = out_base / "manifests"
+    manif_dir.mkdir(parents=True, exist_ok=True)
+    report_path = manif_dir / "scaffold_coverage.json"
     report_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
-    csv_path = out_base / "scaffold_coverage.csv"
+    csv_path = manif_dir / "scaffold_coverage.csv"
     with csv_path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(["extractor", "kind", "name", "file", "missing_fields"])
         for row in audit_rows:
             writer.writerow([row.get("extractor"), row.get("kind"), row.get("name"), row.get("file"), ",".join(row.get("missing") or [])])
+    # Optional thresholds
+    thresholds = {
+        "min_io": int(os.getenv("AUTODOCX_MIN_IO_WITH_DETAILS", "5")),
+        "max_no_scaffold": int(os.getenv("AUTODOCX_MAX_MISSING_SCAFFOLD", "5")),
+        "min_calls": int(os.getenv("AUTODOCX_MIN_WITH_CALLS", "3")),
+        "min_logging": int(os.getenv("AUTODOCX_MIN_WITH_LOGGING", "1")),
+        "min_errors": int(os.getenv("AUTODOCX_MIN_WITH_ERRORS", "1")),
+    }
+    metrics = _summarize_scaffold_stats(data.get("rows") or [])
+    coverage_report = {
+        "gaps": gaps,
+        "metrics": metrics,
+        "thresholds": thresholds,
+        "failures": [],
+    }
+    # Evaluate thresholds
+    if metrics["missing_scaffold"] > thresholds["max_no_scaffold"]:
+        coverage_report["failures"].append(f"missing_scaffold>{thresholds['max_no_scaffold']}")
+    if metrics["with_io"] < thresholds["min_io"]:
+        coverage_report["failures"].append(f"with_io<{thresholds['min_io']}")
+    if metrics["with_calls"] < thresholds["min_calls"]:
+        coverage_report["failures"].append(f"with_calls<{thresholds['min_calls']}")
+    if metrics["with_logging"] < thresholds["min_logging"]:
+        coverage_report["failures"].append(f"with_logging<{thresholds['min_logging']}")
+    if metrics["with_errors"] < thresholds["min_errors"]:
+        coverage_report["failures"].append(f"with_errors<{thresholds['min_errors']}")
+    (manif_dir / "scaffold_coverage_meta.json").write_text(json.dumps(coverage_report, indent=2), encoding="utf-8")
+    return gaps
 
 
 def _write_coverage_report(out_base: Path, coverage_entries: List[Dict[str, Any]], repo: Path, scan_roots: List[Path]) -> None:
@@ -601,7 +706,9 @@ def _write_coverage_report(out_base: Path, coverage_entries: List[Dict[str, Any]
         "scan_roots": [str(root) for root in scan_roots],
         "extractors": coverage_entries,
     }
-    (out_base / "coverage.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+    manif_dir = out_base / "manifests"
+    manif_dir.mkdir(parents=True, exist_ok=True)
+    (manif_dir / "coverage.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
 
 
 def _summarize_artifacts_for_snapshot(artifacts: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
@@ -854,6 +961,7 @@ def run_scan(
     include_archives: Optional[bool] = None,
     rag_docs: Optional[bool] = None,
     settings: Optional[Dict[str, Any]] = None,
+    scan_timeout: Optional[int] = None,
 ):
     if settings is None:
         settings = get_all_settings()
@@ -875,6 +983,7 @@ def run_scan(
     env_llm_rollup = pipeline_cfg.get("llm_rollup", False)
     env_plan_refresh = pipeline_cfg.get("doc_plan_refresh", True)
     env_plan_fulfill = pipeline_cfg.get("doc_plan_fulfill", True)
+    timeout_seconds = scan_timeout or pipeline_cfg.get("timeout_seconds") or 0
 
     archives_enabled = env_include_archives if include_archives is None else include_archives
     rag_docs_enabled = env_rag_docs if rag_docs is None else rag_docs
@@ -962,7 +1071,11 @@ def run_scan(
     signal_origin: Dict[int, str] = {}
     scaffold_gap_rows: List[Dict[str, Any]] = []
 
+    deadline = time.time() + timeout_seconds if timeout_seconds else None
+
     for file_path in sorted(assignments.keys()):
+        if deadline and time.time() > deadline:
+            raise SystemExit(f"Scan timeout exceeded ({timeout_seconds}s); last file processed: {file_path}")
         assigned_extractors = assignments[file_path]
         if debug:
             rprint(f"[magenta]Router assignment:[/magenta] {file_path} -> {assigned_extractors or ['(none)']}")
@@ -1050,7 +1163,8 @@ def run_scan(
 
     # Central SIR writer (now with graph_features)
     out_base = Path(out).resolve()
-    sir_v2_dir = out_base / "sir_v2"
+    signals_dir = out_base / "signals"
+    sir_v2_dir = signals_dir / "sir_v2"
     sir_v2_dir.mkdir(parents=True, exist_ok=True)
 
     project_enrichment = enrich_project_artifacts(repo)
@@ -1167,7 +1281,9 @@ def run_scan(
                 rprint(f"[yellow]SIR write failed: {e}[/yellow]")
 
     interdeps = build_interdependencies([sir for sir, _ in sir_records])
-    (sir_v2_dir / "_interdeps.json").write_text(json.dumps(interdeps, indent=2), encoding="utf-8")
+    interdeps_path = signals_dir / "interdeps.json"
+    interdeps_path.parent.mkdir(parents=True, exist_ok=True)
+    interdeps_path.write_text(json.dumps(interdeps, indent=2), encoding="utf-8")
 
     for sir_obj, sir_path in sir_records:
         process_name = sir_obj.get("name") or sir_obj.get("process_name")
@@ -1179,28 +1295,40 @@ def run_scan(
         sir_obj["business_scaffold"] = sir_obj.get("business_scaffold") or {}
         sir_path.write_text(json.dumps(sir_obj, indent=2), encoding="utf-8")
 
-    _write_scaffold_gap_reports(out_base, scaffold_gap_rows)
+    gaps = _write_scaffold_gap_reports(out_base, scaffold_gap_rows)
+    if os.getenv("AUTODOCX_FAIL_ON_SCAFFOLD_GAPS", "0").lower() in {"1", "true", "yes"}:
+        if gaps:
+            raise SystemExit(f"Scaffold coverage gaps detected: {gaps}")
+        # Also honor detailed failures in scaffold_coverage_meta.json
+        meta_path = out_base / "manifests" / "scaffold_coverage_meta.json"
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            failures = meta.get("failures") or []
+            if failures:
+                raise SystemExit(f"Scaffold coverage thresholds failed: {', '.join(failures)}")
+        except FileNotFoundError:
+            pass
 
     try:
         flow_graph_paths = export_workflow_graphs(signals, out_base)
         if debug:
-            rprint(f"[green]Exported workflow graphs to {out_base / 'flows'} ({len(flow_graph_paths)} files)[/green]")
+            rprint(f"[green]Exported workflow graphs to {out_base / 'diagrams' / 'flows_json'} ({len(flow_graph_paths)} files)[/green]")
         if flow_graph_paths:
             render_flow_diagrams(flow_graph_paths, out_base)
             if debug:
-                rprint(f"[green]Rendered workflow diagrams under {out_base / 'assets' / 'diagrams'}[/green]")
+                rprint(f"[green]Rendered workflow diagrams under {out_base / 'diagrams' / 'deterministic_svg'}[/green]")
     except Exception as e:
         rprint(f"[yellow]Workflow graph export/render failed: {e}[/yellow]")
 
     # Persist graph to disk (reuse the transient graph)
     out_base.mkdir(parents=True, exist_ok=True)
-    (out_base / "graph.json").write_text(json.dumps({
+    (signals_dir / "graph.json").write_text(json.dumps({
         "nodes": [n.__dict__ for n in nodes],
         "edges": [e.__dict__ for e in edges],
         "generated_at": time.time()
     }, indent=2), encoding="utf-8")
     if debug:
-        rprint(f"[green]Wrote graph.json ({len(nodes)} nodes, {len(edges)} edges)[/green]")
+        rprint(f"[green]Wrote graph.json ({len(nodes)} nodes, {len(edges)} edges) to {signals_dir / 'graph.json'}[/green]")
 
     # Facets
     try:
@@ -1237,30 +1365,35 @@ def run_scan(
     except Exception as e:
         rprint(f"[yellow]Failed to compute changelog: {e}[/yellow]")
 
-    # Constellations, evidence packets, and anti-pattern scaffolding
-    constellations = build_constellations(nodes, edges, sir_records, out_base)
-    constellation_manifest = persist_constellations(out_base, constellations)
-    manifest_lookup = {entry["id"]: entry for entry in constellation_manifest}
+    # Constellations, evidence packets, and anti-pattern scaffolding (optional)
+    enable_constellations = os.getenv("AUTODOCX_ENABLE_CONSTELLATIONS", "").lower() in {"1", "true", "yes", "on"}
     constellations_for_context: List[Dict[str, Any]] = []
-    for record in constellations:
-        entry = dict(record)
-        manifest_entry = manifest_lookup.get(record["id"])
-        if manifest_entry:
-            entry["slug"] = manifest_entry.get("slug")
-            entry["graph_file"] = manifest_entry.get("path")
-        constellations_for_context.append(entry)
+    if enable_constellations:
+        constellations = build_constellations(nodes, edges, sir_records, out_base)
+        constellation_manifest = persist_constellations(out_base, constellations)
+        manifest_lookup = {entry["id"]: entry for entry in constellation_manifest}
+        for record in constellations:
+            entry = dict(record)
+            manifest_entry = manifest_lookup.get(record["id"])
+            if manifest_entry:
+                entry["slug"] = manifest_entry.get("slug")
+                entry["graph_file"] = manifest_entry.get("path")
+            constellations_for_context.append(entry)
 
     anti_patterns_by_constellation, anti_patterns_rel_path = run_anti_pattern_scans(
         out_base, repo, constellations_for_context, sir_records
     )
-    evidence_packets = build_evidence_packets(
-        out_base,
-        repo,
-        constellations_for_context,
-        sir_records,
-        anti_patterns_by_constellation,
-    )
-    write_evidence_manifest_doc(out_base, evidence_packets, constellations_for_context)
+    evidence_packets: Dict[str, str] = {}
+    if enable_constellations:
+        evidence_packets = build_evidence_packets(
+            out_base,
+            repo,
+            constellations_for_context,
+            sir_records,
+            anti_patterns_by_constellation,
+        )
+        if evidence_packets:
+            write_evidence_manifest_doc(out_base, evidence_packets, constellations_for_context)
 
     # Build doc-context for LLM-authored docs
     doc_context = build_doc_context(
@@ -1274,7 +1407,8 @@ def run_scan(
         anti_patterns=anti_patterns_by_constellation,
         anti_patterns_file=anti_patterns_rel_path,
     )
-    context_path = out_base / "doc_context.json"
+    context_path = out_base / "signals" / "doc_context.json"
+    context_path.parent.mkdir(parents=True, exist_ok=True)
     context_path.write_text(json.dumps(doc_context, indent=2), encoding="utf-8")
     if debug:
         rprint(f"[green]Doc context saved to {context_path}[/green]")
@@ -1347,24 +1481,11 @@ def run_scan(
             except Exception as rag_err:
                 rprint(f"[yellow]RAG pipeline failed: {rag_err}[/yellow]")
 
-    try:
-        sync_docs_assets(out_base)
-        regenerate_mkdocs_config(out_base, debug=debug)
-    except Exception as cfg_err:
-        rprint(f"[yellow]MkDocs nav regeneration failed: {cfg_err}[/yellow]")
-
-    if mkdocs_build:
-        try:
-            build_mkdocs_site(out_base)
-            rprint("[green]MkDocs site built at out/site[/green]")
-        except Exception as e:
-            rprint(f"[yellow]MkDocs build failed: {e}[/yellow]")
-
     if llm_rollup_enabled:
         if not openai_key_present:
             rprint("[yellow]OPENAI_API_KEY not set — skipping LLM rollup[/yellow]")
         else:
-            docs_root = out_base / "docs" / CURATED_DIR
+            docs_root = out_base / "docs"
             for gid, gobj in groups.items():
                 if not isinstance(gobj, dict):
                     if isinstance(gobj, list):
@@ -1376,7 +1497,7 @@ def run_scan(
                         continue
                 gobj = normalize_group_obj(gobj, debug=debug)
                 slug = _slugify(gid)
-                curated_doc = docs_root / COMPONENT_SUBDIR / f"{slug}.md"
+                curated_doc = docs_root / slug / f"{slug}.md"
                 if curated_doc.exists():
                     snippets = gobj.setdefault("curated_docs", [])
                     snippets.append(
@@ -1399,6 +1520,19 @@ def run_scan(
                     except Exception:
                         sample = {"note": "failed to extract sample"}
                     rprint(f"[yellow]LLM rollup failed for group {gid}: {e} — sample={sample}[/yellow]")
+
+    try:
+        sync_docs_assets(out_base)
+        regenerate_mkdocs_config(out_base, debug=debug)
+    except Exception as cfg_err:
+        rprint(f"[yellow]MkDocs nav regeneration failed: {cfg_err}[/yellow]")
+
+    if mkdocs_build:
+        try:
+            build_mkdocs_site(out_base)
+            rprint("[green]MkDocs site built at out/site[/green]")
+        except Exception as e:
+            rprint(f"[yellow]MkDocs build failed: {e}[/yellow]")
 
     _apply_out_layout(out_base)
     rprint(f"[green]Done.[/green] Outputs in: {out_base}")
@@ -1431,6 +1565,12 @@ def main():
         dest="include_archives",
         action="store_false",
         help="Skip archive extraction (archives will not be unpacked or required).",
+    )
+    s1.add_argument(
+        "--scan-timeout",
+        type=int,
+        default=None,
+        help="Maximum scan duration in seconds (default: unlimited or YAML pipeline.timeout_seconds).",
     )
     s1.add_argument(
         "--rag-docs",
@@ -1489,6 +1629,7 @@ def main():
             include_archives=getattr(args, "include_archives", None),
             rag_docs=args.rag_docs,
             settings=SETTINGS,
+            scan_timeout=args.scan_timeout,
         )
     else:
         p.print_help()
@@ -1513,7 +1654,7 @@ def run_rag_pipeline(
     plan_path = generate_xml_doc_plan(repo_root, out_base, doc_context)
     generated = build_rag_docs(plan_path, rag_service, out_base, doc_context)
     if generated:
-        rprint(f"[green]RAG docs generated ({len(generated)} page(s)) under docs/curated/rag.[/green]")
+        rprint(f"[green]RAG docs generated ({len(generated)} page(s)) under docs/rag.[/green]")
     elif debug:
         rprint("[yellow]RAG plan parsed but produced no pages.[/yellow]")
 
@@ -1532,8 +1673,8 @@ def _slugify(value: str) -> str:
 
 def _gather_diagram_paths(out_base: Path) -> Dict[str, List[str]]:
     mapping: Dict[str, set] = defaultdict(set)
-    diagrams_root = out_base / "assets"
-    for sub in ("diagrams", "diagrams_llm"):
+    diagrams_root = out_base / "diagrams"
+    for sub in ("deterministic_svg", "llm_svg"):
         root = diagrams_root / sub
         if not root.exists():
             continue
@@ -1590,8 +1731,13 @@ def _compute_process_quality(sir_obj: Dict[str, Any]) -> Dict[str, Any]:
     scaffold = _extract_business_scaffold(sir_obj)
     io_summary = (scaffold.get("io_summary") or {}) if scaffold else {}
     dependencies = (scaffold.get("dependencies") or {}) if scaffold else {}
-    resources = (scaffold.get("resources") or {}) if scaffold else {}
     props = sir_obj.get("props") or {}
+    resources = (scaffold.get("resources") or {}) if scaffold else {}
+    if not resources:
+        resources = {
+            "triggers": props.get("triggers") or [],
+            "steps": props.get("steps") or [],
+        }
 
     metrics = {
         "identifiers": len(io_summary.get("identifiers") or []),
@@ -1636,6 +1782,17 @@ def _compute_process_quality(sir_obj: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+DOC_SIGNAL_KINDS = {"workflow", "route"}
+
+
+def _is_docworthy_sir(sir_obj: Dict[str, Any]) -> bool:
+    kind = (sir_obj.get("kind") or sir_obj.get("signal_kind") or "").lower()
+    if kind not in DOC_SIGNAL_KINDS:
+        return False
+    quality = _compute_process_quality(sir_obj)
+    return bool(quality.get("has_workflow_details"))
+
+
 def build_doc_context(
     out_base: Path,
     sir_records: List[tuple],
@@ -1657,7 +1814,14 @@ def build_doc_context(
     }
     components: Dict[str, Dict[str, Any]] = {}
     processes: Dict[str, Dict[str, Any]] = {}
+    seen_sirs: set[str] = set()
     for sir_obj, sir_path in sir_records:
+        if not _is_docworthy_sir(sir_obj):
+            continue
+        rel = sir_path.relative_to(out_base).as_posix()
+        if rel in seen_sirs:
+            continue
+        seen_sirs.add(rel)
         comp = sir_obj.get("component_or_service") or "ungrouped"
         slug = _slugify(comp)
         entry = components.setdefault(
@@ -1672,7 +1836,6 @@ def build_doc_context(
                 "family_slugs": set(),
             },
         )
-        rel = sir_path.relative_to(out_base).as_posix()
         entry["sir_files"].append(rel)
         fam = process_family.get(sir_obj.get("name"))
         if fam:
@@ -1788,18 +1951,13 @@ def build_doc_context(
         "facets": facets,
         "constellations": constellation_entries,
         "quality": quality_block,
-        "interdeps_path": "sir_v2/_interdeps.json",
-        "graph_path": "graph.json",
-        "artifacts_file": "artifacts.json",
+        "interdeps_path": "signals/interdeps.json",
+        "graph_path": "signals/graph.json",
+        "artifacts_file": "artifacts/artifacts.json",
     }
     return context
 
 
-if __name__ == "__main__":
-    main()
-
-
-# Out layout helper (appended for compatibility)
 def _copy_path(src: Path, dst: Path) -> None:
     if not src.exists():
         return
@@ -1812,54 +1970,95 @@ def _copy_path(src: Path, dst: Path) -> None:
         _shutil.copy2(src, dst)
 
 
+def _move_path(src: Path, dst: Path) -> None:
+    """
+    Move a file/dir if it exists, replacing any existing target.
+    """
+    if not src.exists():
+        return
+    import shutil as _shutil
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    if dst.exists():
+        if dst.is_dir():
+            _shutil.rmtree(dst, ignore_errors=True)
+        else:
+            dst.unlink(missing_ok=True)
+    _shutil.move(str(src), str(dst))
+
+
 def _apply_out_layout(out_base: Path) -> None:
     out_base = Path(out_base)
     docs_dir = out_base / "docs"
-    _copy_path(docs_dir / "dox_draft_plan.md", docs_dir / "plan" / "dox_draft_plan.md")
+    _move_path(out_base / "README_LAYOUT.md", docs_dir / "README_LAYOUT.md")
+    _move_path(docs_dir / "dox_draft_plan.md", docs_dir / "plan" / "dox_draft_plan.md")
+
     signals_dir = out_base / "signals"
-    _copy_path(out_base / "sir_v2", signals_dir / "sir_v2")
-    _copy_path(out_base / "sir", signals_dir / "sir_v1")
-    _copy_path(out_base / "sir_v2" / "_interdeps.json", signals_dir / "interdeps.json")
-    _copy_path(out_base / "constellations", signals_dir / "constellations")
-    _copy_path(out_base / "graph.json", signals_dir / "graph.json")
+    legacy_sir = out_base / "sir_v2"
+    # Clean up any legacy SIR outputs at the root; prefer signals/ structure
+    if legacy_sir.exists():
+        legacy_interdeps = legacy_sir / "_interdeps.json"
+        target = signals_dir / "sir_v2"
+        if not target.exists():
+            _move_path(legacy_sir, target)
+        else:
+            import shutil as _shutil
+            _shutil.rmtree(legacy_sir, ignore_errors=True)
+        if legacy_interdeps.exists():
+            _move_path(legacy_interdeps, signals_dir / "interdeps.json")
+
+    _move_path(out_base / "sir", signals_dir / "sir_v1")
+    _move_path(out_base / "graph.json", signals_dir / "graph.json")
+    _move_path(out_base / "doc_context.json", signals_dir / "doc_context.json")
+    _move_path(out_base / "rollup", signals_dir / "rollup")
+
     artifacts_dir = out_base / "artifacts"
-    _copy_path(out_base / "artifacts.json", artifacts_dir / "artifacts.json")
-    _copy_path(out_base / "artifacts.jsonl", artifacts_dir / "artifacts.jsonl")
+    _move_path(out_base / "artifacts.json", artifacts_dir / "artifacts.json")
+    _move_path(out_base / "artifacts.jsonl", artifacts_dir / "artifacts.jsonl")
+
     diagrams_dir = out_base / "diagrams"
-    _copy_path(out_base / "flows", diagrams_dir / "flows_json")
-    _copy_path(out_base / "assets" / "diagrams", diagrams_dir / "deterministic_svg")
-    _copy_path(out_base / "assets" / "diagrams_llm", diagrams_dir / "llm_svg")
+    _move_path(out_base / "flows", diagrams_dir / "flows_json")
+
     manifests_dir = out_base / "manifests"
-    _copy_path(out_base / "scan_manifest.json", manifests_dir / "scan_manifest.json")
-    _copy_path(out_base / "packaging_manifest.json", manifests_dir / "packaging_manifest.json")
-    _copy_path(out_base / "assignment_manifest.json", manifests_dir / "assignment_manifest.json")
-    _copy_path(out_base / "coverage.json", manifests_dir / "coverage.json")
-    _copy_path(out_base / "scaffold_coverage.csv", manifests_dir / "scaffold_coverage.csv")
-    _copy_path(out_base / "scaffold_coverage.json", manifests_dir / "scaffold_coverage.json")
+    for name in ("scan_manifest.json", "packaging_manifest.json", "assignment_manifest.json"):
+        _move_path(out_base / name, manifests_dir / name)
+    _move_path(out_base / "coverage.json", manifests_dir / "coverage.json")
+    _move_path(out_base / "scaffold_coverage.csv", manifests_dir / "scaffold_coverage.csv")
+    _move_path(out_base / "scaffold_coverage.json", manifests_dir / "scaffold_coverage.json")
+    for p in out_base.glob("file_classifier*.jsonl"):
+        _move_path(p, manifests_dir / p.name)
+
     reports_dir = out_base / "reports"
-    _copy_path(out_base / "quality", reports_dir / "quality")
-    _copy_path(out_base / "metrics", reports_dir / "metrics")
-    _copy_path(out_base / "changelog.json", reports_dir / "changelog.json")
-    _copy_path(out_base / "component_changes.json", reports_dir / "component_changes.json")
+    _move_path(out_base / "quality", reports_dir / "quality")
+    _move_path(out_base / "metrics", reports_dir / "metrics")
+    _move_path(out_base / "changelog.json", reports_dir / "changelog.json")
+    _move_path(out_base / "component_changes.json", reports_dir / "component_changes.json")
+
     fixtures_dir = out_base / "fixtures"
-    _copy_path(out_base / "bw-golden", fixtures_dir / "bw-golden")
-    layout_readme = out_base / "README_LAYOUT.md"
-    layout_readme.write_text(
-        "\n".join(
-            [
-                "# Out Directory Layout",
-                "",
-                "docs/         - curated markdown and plan/",
-                "signals/      - sir_v2, interdeps.json, constellations, graph.json",
-                "artifacts/    - artifacts.json + artifacts.jsonl",
-                "evidence/     - evidence packets/index",
-                "diagrams/     - flows_json (graph JSON) + deterministic_svg + llm_svg",
-                "manifests/    - scan/packaging/assignment manifests, coverage reports",
-                "reports/      - quality findings, metrics, changelog",
-                "fixtures/     - golden baselines (e.g., bw-golden)",
-                "logs/, tmp/   - runtime logs and scratch space",
-            ]
+    _move_path(out_base / "bw-golden", fixtures_dir / "bw-golden")
+
+    layout_readme = docs_dir / "README_LAYOUT.md"
+    if not layout_readme.exists():
+        layout_readme.write_text(
+            "\n".join(
+                [
+                    "# Out Directory Layout",
+                    "",
+                    "docs/         - unified markdown (component parents + children) and plan/",
+                    "signals/      - sir_v2, interdeps.json, graph.json, doc_context, rollup",
+                    "artifacts/    - artifacts.json + artifacts.jsonl",
+                    "evidence/     - evidence packets/index",
+                    "diagrams/     - flows_json (graph JSON) + deterministic_svg + llm_svg",
+                    "manifests/    - scan/packaging/assignment manifests, coverage reports, file_classifier*.jsonl",
+                    "reports/      - quality findings, metrics, changelog/component_changes",
+                    "fixtures/     - golden baselines (e.g., bw-golden)",
+                    "site/         - built MkDocs portal (when enabled)",
+                    "logs/, tmp/   - runtime logs and scratch space",
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
         )
-        + "\n",
-        encoding="utf-8",
-    )
+
+
+if __name__ == "__main__":
+    main()

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import re
 import textwrap
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from autodocx.llm.provider import call_openai_meta
+from autodocx.render.markdown_style import decorate_markdown
 
 PLAN_PROMPT = textwrap.dedent(
     """
@@ -34,6 +36,8 @@ RAG_PROMPT = textwrap.dedent(
     Follow these rules:
     - Start with "# {page.title}".
     - Create sections matching `page.sections` in the provided order (use level-2 headings).
+    - Prefix every heading with a mkdocs-material icon shortcode, e.g. `## :material-book: Section`.
+    - Prefer Markdown tables for multi-column facts (endpoints, metrics, dependencies).
     - Use the `retrieved_context` entries as primary evidence. When referencing one, cite `(source: {cite})`.
     - When referencing an evidence packet, cite `(evidence: path/to/packet.json)`.
     - Keep the tone business-friendly and explain *why* facts matter.
@@ -59,13 +63,17 @@ def generate_xml_doc_plan(
     }
     responder = llm_callable or call_openai_meta
     response = responder(PLAN_PROMPT, payload)
-    xml_text = response.get("text", "").strip()
+    xml_text = _extract_xml_fragment(response.get("text", "")).strip()
     if not xml_text.startswith("<"):
         xml_text = f"<docPlan>\n{xml_text}\n</docPlan>"
+    xml_text = _sanitize_xml_text(xml_text)
     plan_path = out_dir / "doc_draft_plan.xml"
+    # ensure it parses (fallback to a deterministic plan if malformed)
+    try:
+        ET.fromstring(xml_text)
+    except ET.ParseError:
+        xml_text = _build_fallback_plan_xml(repo_root, payload)
     plan_path.write_text(xml_text, encoding="utf-8")
-    # ensure it parses (raise early if malformed)
-    ET.fromstring(xml_text)
     return plan_path
 
 
@@ -81,7 +89,7 @@ def build_rag_docs(
     pages = _parse_plan(plan_path)
     if not pages:
         return []
-    rag_dir = out_dir / "docs" / CURATED_DIR / "rag"
+    rag_dir = out_dir / "docs" / "rag"
     rag_dir.mkdir(parents=True, exist_ok=True)
     generated_paths: List[Path] = []
     constellations = doc_context.get("constellations", {})
@@ -105,7 +113,7 @@ def build_rag_docs(
             "evidence_packets": packet_refs,
         }
         response = responder(RAG_PROMPT, payload)
-        body = response.get("text", "").strip()
+        body = decorate_markdown(response.get("text", "").strip())
         md_path = rag_dir / f"{page['slug']}.md"
         fm = [
             "---",
@@ -122,7 +130,6 @@ def build_rag_docs(
 # ---------------------------------------------------------------------- #
 # Helpers
 # ---------------------------------------------------------------------- #
-CURATED_DIR = "curated"
 
 
 def _read_file(path: Path, *, max_chars: int) -> str:
@@ -159,6 +166,68 @@ def _parse_plan(plan_path: Path) -> List[Dict[str, Any]]:
             continue
         pages.append({"title": title, "slug": slug, "sections": sections})
     return pages
+
+
+def _extract_xml_fragment(raw_text: str) -> str:
+    text = raw_text.strip()
+    if text.startswith("```"):
+        parts = text.split("```", 2)
+        if len(parts) >= 3:
+            text = parts[1] if parts[1].strip() else parts[2]
+    start = text.find("<docPlan")
+    end = text.rfind("</docPlan>")
+    if start != -1 and end != -1 and end > start:
+        return text[start : end + len("</docPlan>")]
+    return text
+
+
+def _sanitize_xml_text(xml_text: str) -> str:
+    if not xml_text:
+        return xml_text
+    # Remove control chars not allowed in XML 1.0.
+    cleaned = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F]", "", xml_text)
+    # Escape bare ampersands.
+    cleaned = re.sub(r"&(?!(?:[a-zA-Z]+|#\d+|#x[0-9A-Fa-f]+);)", "&amp;", cleaned)
+    return cleaned
+
+
+def _build_fallback_plan_xml(repo_root: Path, payload: Dict[str, Any]) -> str:
+    components = [str(c) for c in (payload.get("components") or []) if str(c)]
+    constellations = [str(c) for c in (payload.get("constellations") or []) if str(c)]
+    pages: List[Dict[str, Any]] = []
+    for name in constellations[:2]:
+        pages.append(
+            {
+                "title": f"{name} Overview",
+                "slug": _slug(name),
+                "sections": ["Current workflows", "Interfaces", "Dependencies", "Risks"],
+            }
+        )
+    for name in components[:3]:
+        pages.append(
+            {
+                "title": f"{name} Overview",
+                "slug": _slug(name),
+                "sections": ["Responsibilities", "Key workflows", "Interfaces", "Risks"],
+            }
+        )
+    if not pages:
+        pages.append(
+            {
+                "title": "Repository Overview",
+                "slug": "repository-overview",
+                "sections": ["Architecture", "Key workflows", "Interfaces", "Risks"],
+            }
+        )
+    repo_name = repo_root.name or "repo"
+    lines = [f'<docPlan repo="{repo_name}">']
+    for page in pages:
+        lines.append(f'  <page slug="{page["slug"]}" title="{page["title"]}">')
+        for section in page["sections"]:
+            lines.append(f'    <section title="{section}" />')
+        lines.append("  </page>")
+    lines.append("</docPlan>")
+    return "\n".join(lines)
 
 
 def _slug(value: str) -> str:

@@ -37,7 +37,7 @@ Day-to-day, you only touch 3 places:
 - Create venv and install: `pip install -e .`
 - Run: `autodocx scan /path/to/repo --out out`
 - Eg: autodocx scan ./repos/Towne-Park-Billing-Source-Code --out out --debug --mkdocs-build --llm-rollup
-- Review: curated docs live under `out/docs/curated/**` (components/, families/, repo_overview.md). Run `mkdocs serve -f out/mkdocs.yml -a 127.0.0.1:8000` to browse the regenerated navigation.
+- Review: curated parent docs live under `out/docs/<component>/<component>.md` with detailed component docs under `out/docs/<component>/components/`. Run `mkdocs serve -f out/mkdocs.yml -a 127.0.0.1:8000` to browse the regenerated navigation.
 
 > `--llm-rollup` is now an additive option; the base scan always invokes the LLM to fulfill the standard doc plan.
 
@@ -47,8 +47,8 @@ Day-to-day, you only touch 3 places:
 - `--include-archives` — Unpack `.zip/.ear/.par` files under the repo root before scanning (helpful for Logic Apps exports).
 - `--mkdocs-build` — After regenerating `mkdocs.yml`, run `mkdocs build` so `out/site` is ready for publishing.
 - `--llm-rollup` — Ask the LLM to generate additional executive rollups once the standard doc plan finishes.
-- `--rag-docs` — Enable the embeddings/RAG pipeline described below; produces `docs/curated/rag/*.md` alongside the curated constellation docs.
-- `scripts/check_scaffold_coverage.py` — Reads `out/scaffold_coverage.json` after a scan and highlights which extractors still emit signals without identifiers/datastore/process hints. Treat any non-zero rows as a regression.
+- `--rag-docs` — Enable the embeddings/RAG pipeline described below; produces `docs/rag/*.md` alongside the curated constellation docs.
+- `scripts/check_scaffold_coverage.py` — Reads `out/manifests/scaffold_coverage.json` after a scan and highlights which extractors still emit signals without identifiers/datastore/process hints. Treat any non-zero rows as a regression.
 - `scripts/run_fixture_scans.py` — Runs deterministic scans against the bundled BW/PowerBuilder sample repos (writes to `out/fixtures/<name>`). Use this when tuning extractors so you can diff scaffold coverage between iterations.
 
 ### Running inside WSL Ubuntu
@@ -87,7 +87,7 @@ Add `--rag-docs` to your scan command when you want AI-authored wiki articles th
 
 1. **Chunk + embed artifacts** — The embeddings service walks every artifact emitted by the mapper, chunks source files, and embeds them with the configured `AUTODOCX_EMBED_MODEL`. Chunks are persisted to `out/rag/chunks.jsonl`, and (optionally) pushed into Qdrant via `AUTODOCX_QDRANT_URL`/`AUTODOCX_QDRANT_API_KEY`.
 2. **Autogenerate an XML plan** — `doc_draft_plan.xml` is created with 3‑5 suggested knowledge base pages by prompting against the repo tree + README + current constellation/component roster.
-3. **Retrieve + author Markdown** — For each plan entry, the pipeline retrieves the top matching chunks, links the relevant evidence packets, and streams Markdown outputs under `out/docs/curated/rag/<slug>.md` with citation callouts.
+3. **Retrieve + author Markdown** — For each plan entry, the pipeline retrieves the top matching chunks, links the relevant evidence packets, and streams Markdown outputs under `out/docs/rag/<slug>.md` with citation callouts.
 
 Running `--rag-docs` is additive: you still get the standard curated docs, MkDocs nav (now including “RAG Docs”), and optional rollups. Pair it with `--mkdocs-build` to publish the expanded portal in one pass.
 
@@ -180,7 +180,7 @@ Our **autodoc engine** delivers documentation in 7 streamlined steps:
 1. **Discover** repositories and locate every supported file type.
 2. **Extract** structured facts (SIR + SIRv2), graphs, interdependencies, and baseline SVG assets from code, configs, and workflows.
 3. **Build doc context** that aggregates artifacts, diagram paths, facets, and evidence per process/component/family plus the repo overview.
-4. **Synthesize LLM diagrams** that merge related workflows into comprehensive Graphviz SVGs (stored under `out/assets/diagrams_llm`).
+4. **Synthesize LLM diagrams** that merge related workflows into comprehensive Graphviz SVGs (stored under `out/diagrams/llm_svg`).
 5. **Draft a documentation plan** that deterministically lists each process/family/component/repo deliverable in bottom-up order.
 6. **Fulfill the plan via LLMs**: prompts synthesize compacted SIR/SIRv2/interdeps/graphs/assets (automatically trimmed to ~60k characters per doc), enforce the `AUTODOCX_SECTION_MIN_WORDS` floor, and emit curated Markdown with traceable citations.
 7. **Regenerate MkDocs navigation** (and optionally `mkdocs build`) so the published portal immediately reflects the new curated docs; `--llm-rollup` can be added for extra high-level summaries.

@@ -11,14 +11,16 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 import yaml
 
 from autodocx.llm.provider import call_openai_meta
+from autodocx.render.markdown_style import decorate_markdown
 
 PLAN_FILENAME = "dox_draft_plan.md"
-CURATED_DIR = "curated"
 PROCESS_SUBDIR = "processes"
 FAMILY_SUBDIR = "families"
 COMPONENT_SUBDIR = "components"
 CONSTELLATION_SUBDIR = "constellations"
 QUALITY_SUBDIR = "quality"
+EVIDENCE_SUBDIR = "evidence"
+DISALLOWED_COMPONENT_NAMES = {"dockerfile", "manifest", "manifest.mf", "readme", "issue_template"}
 ROLLUP_FILENAME = "repo_comprehensive.md"
 MAX_SOURCE_CHARS = 6000
 SOURCE_CHAR_BUDGET = 60000
@@ -34,6 +36,8 @@ CURATION_PROMPT_TEMPLATE = textwrap.dedent(
     - Each section must contain at least {min_words} words.
     - Preserve every concrete fact from the sources; do not invent new systems, data, or personas.
     - Keep evidence wording but smooth the narration so it reads naturally for business stakeholders.
+    - Prefix every section heading with a mkdocs-material icon shortcode, e.g. `## :material-clipboard-text: Executive summary`.
+    - Use Markdown tables whenever listing multiple attributes (interfaces, dependencies, risks, inputs/outputs).
     - Required sections (Markdown, in this order):
       1. ## Executive summary (what/why in 2–4 bullets)
       2. ## Workflow narrative (inputs → activities → outputs, referencing the exact system names)
@@ -52,6 +56,8 @@ CONSTELLATION_PROMPT_TEMPLATE = textwrap.dedent(
     """
     You produce constellation briefs that stitch together multiple components, workflows, and shared data paths.
     - Each section must contain at least {min_words} words.
+    - Prefix every section heading with a mkdocs-material icon shortcode, e.g. `## :material-map: End-to-end workflow`.
+    - Prefer Markdown tables when listing entry points, interfaces, or risks.
     - Required sections:
       1. ## Executive summary – describe the business outcome, participating components, and why this constellation matters.
       2. ## End-to-end workflow – narrate the step-by-step flow (inputs → activities → outputs) citing evidence snippets.
@@ -69,6 +75,8 @@ ANTI_PATTERN_PROMPT_TEMPLATE = textwrap.dedent(
     """
     You compile an evidence-backed anti-pattern register for the repository.
     - Each section must contain at least {min_words} words.
+    - Prefix every section heading with a mkdocs-material icon shortcode, e.g. `## :material-alert-circle: Overview`.
+    - Use Markdown tables for findings where possible.
     - Required sections:
       1. ## Overview – summarize scanning coverage, tools (Semgrep/heuristics), and key risk themes.
       2. ## Findings by severity – separate subsections for High/Medium/Low; enumerate rule id, file:line, impacted component, and remediation guidance.
@@ -101,6 +109,42 @@ def _safe_slug(value: str) -> str:
     slug = "".join(ch if ch.isalnum() or ch in "-_" else "_" for ch in (value or ""))
     slug = slug.strip("_")
     return slug or "doc"
+
+
+def _component_doc_path(component_slug: str) -> str:
+    return f"{component_slug}/{component_slug}.md"
+
+
+def _component_detail_path(component_slug: str, doc_slug: str) -> str:
+    return f"{component_slug}/{COMPONENT_SUBDIR}/{doc_slug}.md"
+
+
+def _component_process_path(component_slug: str, process_slug: str) -> str:
+    return f"{component_slug}/{PROCESS_SUBDIR}/{process_slug}.md"
+
+
+def _family_doc_path(family_slug: str) -> str:
+    return f"{FAMILY_SUBDIR}/{family_slug}.md"
+
+
+def _constellation_doc_path(constellation_slug: str) -> str:
+    return f"{CONSTELLATION_SUBDIR}/{constellation_slug}.md"
+
+
+def _quality_doc_path() -> str:
+    return f"{QUALITY_SUBDIR}/anti_pattern_register.md"
+
+
+def _evidence_index_path() -> str:
+    return f"{EVIDENCE_SUBDIR}/index.md"
+
+
+def _process_doc_path_from_context(context: Dict[str, Any], process_slug: str) -> str:
+    for proc in (context.get("processes") or {}).values():
+        if proc.get("slug") == process_slug:
+            comp_slug = _safe_slug(proc.get("component") or "component")
+            return _component_process_path(comp_slug, process_slug)
+    return ""
 
 
 def _ensure_logger(out_dir: Path) -> logging.Logger:
@@ -153,7 +197,8 @@ def _render_plan_text(plan: Dict[str, Any]) -> str:
 
 def _write_plan(plan_path: Path, plan: Dict[str, Any]) -> None:
     plan_path.parent.mkdir(parents=True, exist_ok=True)
-    plan_path.write_text(_render_plan_text(plan), encoding="utf-8")
+    content = decorate_markdown(_render_plan_text(plan))
+    plan_path.write_text(content, encoding="utf-8")
 
 
 def _parse_plan(plan_path: Path) -> Dict[str, Any]:
@@ -170,6 +215,69 @@ def _parse_plan(plan_path: Path) -> Dict[str, Any]:
     }
 
 
+def _normalize_slug_for_match(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "", (value or "").lower())
+
+
+def _match_assets_dir(docs_dir: Path, component_slug: str) -> Optional[Path]:
+    assets_root = docs_dir / "assets" / "graphs"
+    if not assets_root.exists():
+        return None
+    target = _normalize_slug_for_match(component_slug)
+    for child in sorted(assets_root.iterdir()):
+        if child.is_dir() and _normalize_slug_for_match(child.name) == target:
+            return child
+    return None
+
+
+def _collect_diagram_paths(docs_dir: Path, spec: Dict[str, Any]) -> List[Path]:
+    doc_type = spec.get("doc_type") or spec.get("category") or ""
+    target = spec.get("target") or {}
+    if doc_type not in {"component", "process"}:
+        return []
+    filename = spec.get("filename") or ""
+    parts = Path(filename).parts
+    if not parts:
+        return []
+    component_slug = parts[0]
+    group_dir = _match_assets_dir(docs_dir, component_slug)
+    if not group_dir:
+        return []
+    if doc_type == "component":
+        return list(group_dir.rglob("*.svg"))[:8]
+    process_key = target.get("process") or (parts[-1].replace(".md", "") if parts else "")
+    if not process_key:
+        return []
+    target_norm = _normalize_slug_for_match(process_key)
+    for subdir in sorted(group_dir.iterdir()):
+        if subdir.is_dir() and _normalize_slug_for_match(subdir.name) == target_norm:
+            return list(subdir.rglob("*.svg"))[:6]
+    return []
+
+
+def _relative_asset_path(doc_path: Path, docs_dir: Path, asset_path: Path) -> str:
+    try:
+        rel = asset_path.resolve().relative_to(docs_dir.resolve())
+        return (docs_dir / rel).resolve().relative_to(doc_path.parent.resolve()).as_posix()
+    except Exception:
+        try:
+            return asset_path.relative_to(docs_dir).as_posix()
+        except Exception:
+            return asset_path.as_posix()
+
+
+def _append_diagram_section(body: str, doc_path: Path, docs_dir: Path, spec: Dict[str, Any]) -> str:
+    diagrams = _collect_diagram_paths(docs_dir, spec)
+    if not diagrams:
+        return body
+    lines = [body.rstrip(), "", "## Workflow diagrams", ""]
+    for svg in diagrams:
+        rel = _relative_asset_path(doc_path, docs_dir, svg)
+        caption = svg.stem.replace("-", " ")
+        lines.append(f"![{caption}]({rel})")
+    return "\n".join(lines).rstrip() + "\n"
+
+
 def _write_curated_doc(docs_dir: Path, spec: Dict[str, Any], body: str) -> Path:
     out_path = docs_dir / spec["filename"]
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -180,14 +288,16 @@ def _write_curated_doc(docs_dir: Path, spec: Dict[str, Any], body: str) -> Path:
         "generated_at": _now_iso(),
     }
     fm_block = yaml.safe_dump(fm, sort_keys=False).strip()
-    out_path.write_text(f"---\n{fm_block}\n---\n\n{body.strip()}\n", encoding="utf-8")
+    decorated = decorate_markdown(body.strip())
+    decorated = _append_diagram_section(decorated, out_path, docs_dir, spec)
+    out_path.write_text(f"---\n{fm_block}\n---\n\n{decorated}", encoding="utf-8")
     return out_path
 
 
 def _load_context(out_dir: Path, meta: Dict[str, Any], context_override: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     if context_override is not None:
         return context_override
-    ctx_file = meta.get("context_file") or "doc_context.json"
+    ctx_file = meta.get("context_file") or "signals/doc_context.json"
     ctx_path = Path(out_dir) / ctx_file
     if not ctx_path.exists():
         raise FileNotFoundError(f"Context file not found: {ctx_path}")
@@ -367,12 +477,12 @@ def _component_sources(out_dir: Path, context: Dict[str, Any], component: str) -
         path = base / rel
         sources.append(_make_source_entry(rel, f"Diagram available at {rel}", path.exists()))
     for proc_slug in data.get("process_slugs", []):
-        rel = f"{CURATED_DIR}/{PROCESS_SUBDIR}/{proc_slug}.md"
+        rel = _component_process_path(data.get("slug") or _safe_slug(component), proc_slug)
         path = docs_root / rel
         if path.exists():
             sources.append(_make_source_entry(str(path.relative_to(base)), _read_text_slice(path), True))
     for fam_slug in data.get("family_slugs", []):
-        rel = f"{CURATED_DIR}/{FAMILY_SUBDIR}/{fam_slug}.md"
+        rel = _family_doc_path(fam_slug)
         path = docs_root / rel
         if path.exists():
             sources.append(_make_source_entry(str(path.relative_to(base)), _read_text_slice(path), True))
@@ -391,6 +501,14 @@ def _family_sources(out_dir: Path, context: Dict[str, Any], family: str) -> Tupl
     data = context.get("families", {}).get(family)
     if not data:
         raise KeyError(f"Family '{family}' missing from context.")
+    # Guard: require some evidence of IO/calls/errors before generating family docs
+    scaffold = data.get("business_scaffold") or {}
+    io = scaffold.get("io_summary") or {}
+    deps = scaffold.get("dependencies") or {}
+    errors = scaffold.get("errors") or []
+    logging = scaffold.get("logging") or []
+    if not ((io.get("inputs") or io.get("outputs") or io.get("identifiers")) and (deps.get("processes") or deps.get("services") or deps.get("datastores")) and (errors or logging)):
+        return [], {}
     sources: List[Dict[str, Any]] = []
     for rel in data.get("sir_files", []):
         path = base / rel
@@ -399,12 +517,13 @@ def _family_sources(out_dir: Path, context: Dict[str, Any], family: str) -> Tupl
         path = base / rel
         sources.append(_make_source_entry(rel, f"Diagram available at {rel}", path.exists()))
     for proc_slug in data.get("process_slugs", []):
-        rel = f"{CURATED_DIR}/{PROCESS_SUBDIR}/{proc_slug}.md"
-        path = docs_root / rel
-        if path.exists():
-            sources.append(_make_source_entry(str(path.relative_to(base)), _read_text_slice(path), True))
+        rel = _process_doc_path_from_context(context, proc_slug)
+        if rel:
+            path = docs_root / rel
+            if path.exists():
+                sources.append(_make_source_entry(str(path.relative_to(base)), _read_text_slice(path), True))
     for comp_slug in data.get("component_slugs", []):
-        rel = f"{CURATED_DIR}/{COMPONENT_SUBDIR}/{comp_slug}.md"
+        rel = _component_doc_path(comp_slug)
         path = docs_root / rel
         if path.exists():
             sources.append(_make_source_entry(str(path.relative_to(base)), _read_text_slice(path), True))
@@ -469,6 +588,13 @@ def _repo_sources(out_dir: Path, context: Dict[str, Any]) -> Tuple[List[Dict[str
     base = Path(out_dir)
     docs_root = base / "docs"
     repo = context.get("repo", {})
+    scaffold = repo.get("business_scaffold") or {}
+    io = scaffold.get("io_summary") or {}
+    deps = scaffold.get("dependencies") or {}
+    errors = scaffold.get("errors") or []
+    logging = scaffold.get("logging") or []
+    if not ((io.get("inputs") or io.get("outputs") or io.get("identifiers")) and (deps.get("processes") or deps.get("services") or deps.get("datastores")) and (errors or logging)):
+        return [], {}
     sources: List[Dict[str, Any]] = []
     for rel in repo.get("sir_files", []):
         path = base / rel
@@ -479,20 +605,21 @@ def _repo_sources(out_dir: Path, context: Dict[str, Any]) -> Tuple[List[Dict[str
     facets = context.get("facets", {})
     sources.append(_make_source_entry("facets", json.dumps(facets, indent=2), True))
     for comp_slug in repo.get("component_slugs", []):
-        rel = f"{CURATED_DIR}/{COMPONENT_SUBDIR}/{comp_slug}.md"
+        rel = _component_doc_path(comp_slug)
         path = docs_root / rel
         if path.exists():
             sources.append(_make_source_entry(str(path.relative_to(base)), _read_text_slice(path), True))
     for fam_slug in repo.get("family_slugs", []):
-        rel = f"{CURATED_DIR}/{FAMILY_SUBDIR}/{fam_slug}.md"
+        rel = _family_doc_path(fam_slug)
         path = docs_root / rel
         if path.exists():
             sources.append(_make_source_entry(str(path.relative_to(base)), _read_text_slice(path), True))
     for proc_slug in repo.get("process_slugs", []):
-        rel = f"{CURATED_DIR}/{PROCESS_SUBDIR}/{proc_slug}.md"
-        path = docs_root / rel
-        if path.exists():
-            sources.append(_make_source_entry(str(path.relative_to(base)), _read_text_slice(path), True))
+        rel = _process_doc_path_from_context(context, proc_slug)
+        if rel:
+            path = docs_root / rel
+            if path.exists():
+                sources.append(_make_source_entry(str(path.relative_to(base)), _read_text_slice(path), True))
     context_summary = {
         "components": repo.get("components", []),
         "families": repo.get("families", []),
@@ -524,14 +651,14 @@ def _process_sources(out_dir: Path, context: Dict[str, Any], process_key: str) -
 
 def _repo_final_sources(out_dir: Path) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     base = Path(out_dir)
-    curated_root = base / "docs" / CURATED_DIR
+    docs_root = base / "docs"
     sources: List[Dict[str, Any]] = []
-    if curated_root.exists():
-        for md in sorted(curated_root.rglob("*.md")):
+    if docs_root.exists():
+        for md in sorted(docs_root.rglob("*.md")):
             rel = md.relative_to(base).as_posix()
             sources.append(_make_source_entry(rel, _read_text_slice(md), True))
     diag_manifest: List[str] = []
-    diag_root = base / "assets" / "diagrams_llm"
+    diag_root = base / "diagrams" / "llm_svg"
     if diag_root.exists():
         for svg in sorted(diag_root.rglob("*.svg")):
             diag_manifest.append(svg.relative_to(base).as_posix())
@@ -540,7 +667,7 @@ def _repo_final_sources(out_dir: Path) -> Tuple[List[Dict[str, Any]], Dict[str, 
     context_summary = {
         "curated_docs": len(sources),
         "diagram_count": len(diag_manifest),
-        "note": "Final repo doc synthesizes all curated Markdown outputs.",
+        "note": "Final repo doc synthesizes all Markdown outputs.",
     }
     return _apply_source_budget(sources), context_summary
 
@@ -600,7 +727,29 @@ def _generate_with_retries(
 
 def _build_plan_entries_from_context(context: Dict[str, Any]) -> List[Dict[str, Any]]:
     entries: List[Dict[str, Any]] = []
+    processes = context.get("processes") or {}
+
+    def _component_has_quality_process(component_name: str) -> bool:
+        for proc in processes.values():
+            if proc.get("component") != component_name:
+                continue
+            if proc.get("has_workflow_details"):
+                return True
+        return False
     process_items = list((context.get("processes") or {}).items())
+
+    def _has_minimum_evidence(data: Dict[str, Any]) -> bool:
+        scaffold = data.get("business_scaffold") or {}
+        io = scaffold.get("io_summary") or {}
+        interfaces = scaffold.get("interfaces") or []
+        invocations = scaffold.get("invocations") or []
+        deps = scaffold.get("dependencies") or {}
+        errors = scaffold.get("errors") or []
+        logging = scaffold.get("logging") or []
+        has_io = bool(io.get("inputs") or io.get("outputs") or io.get("identifiers"))
+        has_calls = bool(invocations or deps.get("processes") or deps.get("services") or deps.get("datastores"))
+        has_errors = bool(errors or logging)
+        return has_io and has_calls and has_errors
     def _richness(kv: Tuple[str, Dict[str, Any]]) -> int:
         data = kv[1] or {}
         scaffold = data.get("business_scaffold") or {}
@@ -613,12 +762,15 @@ def _build_plan_entries_from_context(context: Dict[str, Any]) -> List[Dict[str, 
         key=lambda kv: (-_richness(kv), (kv[1].get("name") or "").lower())
     )
     for proc_key, data in process_items:
+        if not _has_minimum_evidence(data):
+            continue
         score = _richness((proc_key, data))
         priority, band = _process_priority_from_score(score)
+        comp_slug = _safe_slug(data.get("component") or "component")
         entries.append(
             {
                 "title": f"{data['name']} – Process Brief",
-                "filename": f"{CURATED_DIR}/{PROCESS_SUBDIR}/{data['slug']}.md",
+                "filename": _component_process_path(comp_slug, data["slug"]),
                 "status": "pending",
                 "category": "process",
                 "doc_type": "process",
@@ -629,10 +781,14 @@ def _build_plan_entries_from_context(context: Dict[str, Any]) -> List[Dict[str, 
             }
         )
     for comp, data in sorted((context.get("components") or {}).items(), key=lambda kv: kv[0].lower()):
+        if (data.get("slug") or comp).lower() in DISALLOWED_COMPONENT_NAMES:
+            continue
+        if not _component_has_quality_process(comp):
+            continue
         entries.append(
             {
                 "title": f"{comp} – Component Brief",
-                "filename": f"{CURATED_DIR}/{COMPONENT_SUBDIR}/{data['slug']}.md",
+                "filename": _component_doc_path(data["slug"]),
                 "status": "pending",
                 "category": "component",
                 "doc_type": "component",
@@ -641,10 +797,12 @@ def _build_plan_entries_from_context(context: Dict[str, Any]) -> List[Dict[str, 
             }
         )
     for fam, data in sorted((context.get("families") or {}).items(), key=lambda kv: kv[0].lower()):
+        if not any(_component_has_quality_process(comp) for comp in (data.get("components") or [])):
+            continue
         entries.append(
             {
                 "title": f"{fam} – Family Brief",
-                "filename": f"{CURATED_DIR}/{FAMILY_SUBDIR}/{data['slug']}.md",
+                "filename": _family_doc_path(data["slug"]),
                 "status": "pending",
                 "category": "family",
                 "doc_type": "family",
@@ -657,7 +815,7 @@ def _build_plan_entries_from_context(context: Dict[str, Any]) -> List[Dict[str, 
         entries.append(
             {
                 "title": f"{slug.replace('-', ' ').title()} – Constellation Brief",
-                "filename": f"{CURATED_DIR}/{CONSTELLATION_SUBDIR}/{slug}.md",
+                "filename": _constellation_doc_path(slug),
                 "status": "pending",
                 "category": "constellation",
                 "doc_type": "constellation",
@@ -669,7 +827,7 @@ def _build_plan_entries_from_context(context: Dict[str, Any]) -> List[Dict[str, 
         entries.append(
             {
                 "title": "Anti-Pattern Register",
-                "filename": f"{CURATED_DIR}/{QUALITY_SUBDIR}/anti_pattern_register.md",
+                "filename": _quality_doc_path(),
                 "status": "pending",
                 "category": "quality",
                 "doc_type": "quality",
@@ -680,19 +838,8 @@ def _build_plan_entries_from_context(context: Dict[str, Any]) -> List[Dict[str, 
     if context.get("repo"):
         entries.append(
             {
-                "title": "Repository Overview – Portfolio Rollup",
-                "filename": f"{CURATED_DIR}/repo_overview.md",
-                "status": "pending",
-                "category": "repo",
-                "doc_type": "repo",
-                "target": {"repo": True},
-                "priority": 4,
-            }
-        )
-        entries.append(
-            {
                 "title": "Repository Comprehensive Narrative",
-                "filename": f"{CURATED_DIR}/{ROLLUP_FILENAME}",
+                "filename": ROLLUP_FILENAME,
                 "status": "pending",
                 "category": "repo_final",
                 "doc_type": "repo_final",
@@ -713,8 +860,7 @@ def draft_doc_plan(
     """
     out_dir = Path(out_dir)
     docs_dir = out_dir / "docs"
-    curated_dir = docs_dir / CURATED_DIR
-    curated_dir.mkdir(parents=True, exist_ok=True)
+    docs_dir.mkdir(parents=True, exist_ok=True)
 
     entries = _build_plan_entries_from_context(context)
     if not entries:
@@ -725,7 +871,7 @@ def draft_doc_plan(
         "meta": {
             "generated_at": _now_iso(),
             "doc_count": total_docs,
-            "context_file": "doc_context.json",
+            "context_file": "signals/doc_context.json",
         },
         "docs": entries,
     }
@@ -785,6 +931,11 @@ def fulfill_doc_plan(
                 sources, ctx_summary = _repo_final_sources(out_dir)
             else:
                 sources, ctx_summary = _repo_sources(out_dir, ctx)
+            if not sources:
+                spec["status"] = "skipped"
+                spec["error"] = "no_sources"
+                logger.info("Curated doc skipped for %s: no sources", spec.get("title"))
+                continue
             payload = {
                 "request_title": spec.get("title"),
                 "doc_type": doc_type,

@@ -22,7 +22,7 @@ def persist_group_outputs(
     group_sirs: Optional[Iterable[Dict[str, Any]]] = None,
 ) -> Path:
     out_dir = Path(out_dir)
-    rollup_dir = out_dir / "rollup" / "groups"
+    rollup_dir = out_dir / "signals" / "rollup" / "groups"
     rollup_dir.mkdir(parents=True, exist_ok=True)
     json_path = rollup_dir / f"{_safe_slug(group_id)}.json"
     json_path.write_text(json.dumps(response, indent=2), encoding="utf-8")
@@ -47,7 +47,7 @@ def persist_component_outputs(
     sirs: Iterable[Dict[str, Any]],
 ) -> Path:
     out_dir = Path(out_dir)
-    rollup_dir = out_dir / "rollup" / "components"
+    rollup_dir = out_dir / "signals" / "rollup" / "components"
     rollup_dir.mkdir(parents=True, exist_ok=True)
     json_path = rollup_dir / f"{_safe_slug(group_id)}__{_safe_slug(component_id)}.json"
     json_path.write_text(json.dumps(component_payload, indent=2), encoding="utf-8")
@@ -104,11 +104,13 @@ def _collect_group_extras(group_sirs: Iterable[Dict[str, Any]]) -> Dict[str, Lis
         "business_entities": [],
         "process_flows": [],
         "integration_summary": [],
+        "shared_datastores": [],
     }
     seen_ui = set()
     seen_integ = set()
     seen_diagram = set()
     seen_entity = set()
+    seen_datastore = set()
     flow_edges: List[Dict[str, Any]] = []
     flow_seen = set()
     integration_counts: Dict[Tuple[str, str], int] = {}
@@ -118,6 +120,8 @@ def _collect_group_extras(group_sirs: Iterable[Dict[str, Any]]) -> Dict[str, Lis
         props = sir.get("props") or sir
         kind = (sir.get("kind") or props.get("kind") or "").lower()
         relationships = sir.get("relationships") or props.get("relationships") or []
+        scaffold = sir.get("business_scaffold") or props.get("business_scaffold") or {}
+        deps = scaffold.get("dependencies") or {}
         for rel in relationships:
             source = (rel.get("source") or {}).get("name") or (rel.get("source") or {}).get("type")
             target = (rel.get("target") or {}).get("display") or (rel.get("target") or {}).get("ref")
@@ -180,6 +184,12 @@ def _collect_group_extras(group_sirs: Iterable[Dict[str, Any]]) -> Dict[str, Lis
                         "source": props.get("source") or "",
                     }
                 )
+        for ds in deps.get("datastores") or []:
+            if ds in seen_datastore:
+                continue
+            seen_datastore.add(ds)
+            extras["shared_datastores"].append({"name": ds})
+
     extras["process_flows"] = flow_edges
     summary = [
         {"integration_kind": kind, "library": library, "count": count}

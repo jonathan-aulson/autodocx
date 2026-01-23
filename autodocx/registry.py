@@ -134,6 +134,7 @@ def _filter_instances(instances: List[object]) -> List[object]:
     """
     include = set(_parse_list_env("AUTODOCX_EXTRACTORS_INCLUDE"))
     exclude = set(_parse_list_env("AUTODOCX_EXTRACTORS_EXCLUDE"))
+    disable_repo_inventory = os.getenv("AUTODOCX_ENABLE_REPO_INVENTORY", "0").lower() not in {"1", "true", "yes"}
 
     def keys(inst: object) -> List[str]:
         mod = inst.__class__.__module__
@@ -144,6 +145,8 @@ def _filter_instances(instances: List[object]) -> List[object]:
         instances = [inst for inst in instances if any(k in include for k in keys(inst))]
     if exclude:
         instances = [inst for inst in instances if not any(k in exclude for k in keys(inst))]
+    if disable_repo_inventory and not include:
+        instances = [inst for inst in instances if inst.__class__.__name__ != "RepoInventoryExtractor"]
     return instances
 
 def load_extractors() -> List[object]:

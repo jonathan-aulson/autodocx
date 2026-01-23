@@ -6,4 +6,17 @@ dist/
 build/
 *.pyc
 .env
+.env.*
+!.env.example
+!.env.sample
+**/Credentials.local.json
+/.example_solution/*.local.yaml
+**/*connectionparameters*.local.json
+**/*connectionparametersets*.local.json
+*.pem
+*.key
+*.pfx
+*.p12
+*.jks
+*.keystore
 .example_solution/config.yaml

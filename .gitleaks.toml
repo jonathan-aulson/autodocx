@@ -1,0 +1,8 @@
+[allowlist]
+description = "Local-only secrets and environments"
+paths = [
+  '''^\\.env$''',
+  '''^\\.env\\..*''',
+  '''^\\.venv/''',
+  '''\\.local\\.(json|yaml|yml|env|toml)$'''
+]

@@ -16,7 +16,7 @@ def test_build_evidence_packets_emits_snippets(tmp_path):
         encoding="utf-8",
     )
 
-    sir_dir = out_dir / "sir_v2"
+    sir_dir = out_dir / "signals" / "sir_v2"
     sir_dir.mkdir(parents=True)
     sir_obj = {
         "id": "workflow:orders",
@@ -35,11 +35,11 @@ def test_build_evidence_packets_emits_snippets(tmp_path):
             "slug": "constellation-1",
             "components": ["orders"],
             "entry_points": [],
-            "sir_files": ["sir_v2/orders.json"],
+            "sir_files": ["signals/sir_v2/orders.json"],
             "score": 0.5,
             "node_count": 2,
             "edge_count": 1,
-            "graph_file": "constellations/constellation-1.json",
+            "graph_file": "signals/constellations/constellation-1.json",
         }
     ]
     anti_patterns = {"constellation_1": [{"rule_id": "missing_logging"}]}

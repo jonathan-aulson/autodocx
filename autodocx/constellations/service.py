@@ -230,7 +230,7 @@ def build_constellations(
 
 def persist_constellations(out_base: Path, constellations: Sequence[Dict[str, Any]]) -> List[Dict[str, Any]]:
     out_base = Path(out_base)
-    const_dir = out_base / "constellations"
+    const_dir = out_base / "signals" / "constellations"
     const_dir.mkdir(parents=True, exist_ok=True)
     manifest: List[Dict[str, Any]] = []
     for record in constellations:
@@ -238,7 +238,7 @@ def persist_constellations(out_base: Path, constellations: Sequence[Dict[str, An
         slug = record.get("slug") or _slugify(slug_hint or record["id"])
         payload = dict(record)
         payload["slug"] = slug
-        payload["graph_file"] = f"constellations/{slug}.json"
+        payload["graph_file"] = f"signals/constellations/{slug}.json"
         target = const_dir / f"{slug}.json"
         target.write_text(json.dumps(payload, indent=2), encoding="utf-8")
         manifest.append(

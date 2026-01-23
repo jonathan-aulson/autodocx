@@ -411,19 +411,36 @@ def _collect_experience_packs(
 
 def _build_journey_blueprints_input(sirs: Iterable[Dict[str, Any]], limit: int = 10) -> List[Dict[str, Any]]:
     blueprints: List[Dict[str, Any]] = []
+    wrapper_names = {"extensionactivity", "bwactivity", "activityconfig"}
+
+    def _is_wrapper_step(step: Dict[str, Any]) -> bool:
+        name = str(step.get("name") or "").lower()
+        typ = str(step.get("type") or "").lower()
+        if name in wrapper_names or typ in wrapper_names:
+            return True
+        if name.startswith("extensionactivity") or name.startswith("bwactivity") or name.startswith("activityconfig"):
+            return True
+        return False
+
     for sir in sirs or []:
         steps = sir.get("steps") or []
         if not steps:
             continue
+        filtered = [step for step in steps if not _is_wrapper_step(step)]
+        if not filtered:
+            filtered = steps
         labels: List[str] = []
-        for step in steps:
-            name = str(step.get("name") or "").strip() or "Step"
+        seen = set()
+        for step in filtered:
+            name = str(step.get("friendly_display") or step.get("name") or "").strip() or "Step"
             connector = str(step.get("connector") or step.get("type") or "").strip()
-            if connector:
-                labels.append(f"{name} ({connector})")
-            else:
-                labels.append(name)
-            if len(labels) >= 20:
+            label = f"{name} ({connector})" if connector else name
+            key = label.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            labels.append(label)
+            if len(labels) >= 8:
                 break
         if len(labels) < 2:
             continue
@@ -431,7 +448,7 @@ def _build_journey_blueprints_input(sirs: Iterable[Dict[str, Any]], limit: int =
         connector_set = sorted(
             {
                 str(step.get("connector") or step.get("type") or "").strip()
-                for step in steps
+                for step in filtered
                 if (step.get("connector") or step.get("type"))
             }
         )

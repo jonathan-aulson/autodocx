@@ -67,6 +67,6 @@ def test_family_and_repo_docs_written(tmp_path: Path):
     assert "## Cross-family calls" in text
 
     assert mkdocs._render_repo_overview(docs_dir, insights, interdeps) is True
-    overview = (docs_dir / "repo_overview.md").read_text(encoding="utf-8")
+    overview = (docs_dir / "repo_comprehensive.md").read_text(encoding="utf-8")
     assert "Repository Overview" in overview
     assert "| orders | 2" in overview

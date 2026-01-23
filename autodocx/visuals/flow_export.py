@@ -11,15 +11,31 @@ DEFAULT_IN_PORT = "in_main"
 DEFAULT_OUT_PORT = "out_default"
 EXTERNAL_IN_PORT = "in_external"
 EXTERNAL_OUT_PORT = "out_external"
+WRAPPER_STEP_NAMES = {"extensionactivity", "bwactivity", "activityconfig"}
+
+
+def _is_wrapper_step(step: Dict[str, Any]) -> bool:
+    name = str(step.get("name") or "").lower()
+    typ = str(step.get("type") or "").lower()
+    if name in WRAPPER_STEP_NAMES or typ in WRAPPER_STEP_NAMES:
+        return True
+    if name.startswith("extensionactivity") or name.startswith("bwactivity") or name.startswith("activityconfig"):
+        return True
+    return False
+
+
+def _prune_steps(steps: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    filtered = [step for step in steps if not _is_wrapper_step(step)]
+    return filtered or steps
 
 
 def export_workflow_graphs(signals: Sequence[Signal], out_dir: Path) -> List[Path]:
     """
     Export workflow signals into lightweight graph JSON files that can be consumed
     by downstream diagram renderers. Files are written under
-    out/flows/<component>/<workflow>.json.
+    out/diagrams/flows_json/<component>/<workflow>.json.
     """
-    base = Path(out_dir) / "flows"
+    base = Path(out_dir) / "diagrams" / "flows_json"
     base.mkdir(parents=True, exist_ok=True)
     exported: List[Path] = []
     for sig in signals:
@@ -50,7 +66,8 @@ def export_workflow_graphs(signals: Sequence[Signal], out_dir: Path) -> List[Pat
 
 def _build_workflow_graph(sig: Signal, props: Dict[str, Any], component: str) -> Dict[str, Any]:
     triggers: List[Dict[str, Any]] = list(props.get("triggers") or [])
-    steps: List[Dict[str, Any]] = list(props.get("steps") or [])
+    raw_steps: List[Dict[str, Any]] = list(props.get("steps") or [])
+    steps: List[Dict[str, Any]] = _prune_steps(raw_steps)
     relationships: List[Dict[str, Any]] = list(props.get("relationships") or [])
 
     nodes: List[Dict[str, Any]] = []
@@ -87,15 +104,29 @@ def _build_workflow_graph(sig: Signal, props: Dict[str, Any], component: str) ->
         )
 
     step_ids: Dict[str, str] = {}
+    seen_step_keys: Set[Tuple[str, str]] = set()
+    used_node_ids: Set[str] = set()
     for idx, step in enumerate(steps, start=1):
-        label = step.get("name") or step.get("type") or f"Step {idx}"
-        sid = _node_id("step", label)
-        step_ids[label] = sid
+        display_label = step.get("friendly_display") or step.get("name") or step.get("type") or f"Step {idx}"
+        connector_hint = step.get("connector") or step.get("type") or ""
+        dedupe_key = (str(display_label), str(connector_hint))
+        if dedupe_key in seen_step_keys:
+            continue
+        seen_step_keys.add(dedupe_key)
+        base_id = _node_id("step", str(display_label))
+        sid = base_id
+        counter = 1
+        while sid in used_node_ids:
+            counter += 1
+            sid = f"{base_id}_{counter}"
+        used_node_ids.add(sid)
+        label_key = step.get("name") or step.get("type") or display_label
+        step_ids.setdefault(str(label_key), sid)
         nodes.append(
             {
                 "id": sid,
                 "kind": "control" if step.get("control_type") else "step",
-                "name": label,
+                "name": display_label,
                 "type": step.get("type"),
                 "connector": step.get("connector"),
                 "metadata": {
@@ -113,9 +144,9 @@ def _build_workflow_graph(sig: Signal, props: Dict[str, Any], component: str) ->
                     "friendly_display": step.get("friendly_display"),
                     "connection_display": step.get("connection_display"),
                     "operation_detail": step.get("operation_detail"),
-                    "relationship_summaries": _summarize_relationships(rel_map.get(label) or []),
+                    "relationship_summaries": _summarize_relationships(rel_map.get(label_key) or []),
                 },
-                "ports": _default_ports(_branch_ports(branch_map.get(label) or [])),
+                "ports": _default_ports(_branch_ports(branch_map.get(label_key) or [])),
             }
         )
 
@@ -183,6 +214,7 @@ def _build_workflow_graph(sig: Signal, props: Dict[str, Any], component: str) ->
             )
 
     external_nodes_added: Dict[str, str] = {}
+    has_non_wrapper = any(not _is_wrapper_step(step) for step in raw_steps)
     for rel in relationships:
         target = (rel.get("target") or {}).get("display") or (rel.get("target") or {}).get("ref") or "external"
         external_id = external_nodes_added.setdefault(target, _node_id("external", target))
@@ -199,6 +231,9 @@ def _build_workflow_graph(sig: Signal, props: Dict[str, Any], component: str) ->
             )
         source_meta = rel.get("source") or {}
         source_name = source_meta.get("name") or source_meta.get("step_id") or source_meta.get("type")
+        if has_non_wrapper and isinstance(source_name, str):
+            if _is_wrapper_step({"name": source_name}):
+                continue
         source_id = step_ids.get(source_name or "")
         if not source_id and source_meta.get("step_id"):
             source_id = step_ids.get(source_meta.get("step_id"))

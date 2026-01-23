@@ -25,14 +25,50 @@ DEFAULT_PIPELINE_SWITCHES = {
 }
 
 
+def _search_upwards(start: Path, relative_path: Path) -> Path | None:
+    if relative_path.is_absolute():
+        return None
+    for base in [start, *start.parents]:
+        candidate = (base / relative_path).resolve()
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def load_config(path: str | None = None) -> Dict[str, Any]:
     """
     Single source of truth: read config YAML only.
     No code defaults. If keys are missing, validation will raise.
     """
-    cfg_path = Path(os.getenv("AUTODOCX_CONFIG") or (path or "autodocx.yaml")).resolve()
-    if not cfg_path.exists():
-        raise ConfigError(f"Config file not found: {cfg_path}. Create autodocx.yaml at project root.")
+    env_path = os.getenv("AUTODOCX_CONFIG")
+    if env_path:
+        cfg_path = Path(env_path).expanduser()
+        if not cfg_path.is_absolute():
+            cfg_path = (Path.cwd() / cfg_path).resolve()
+        if not cfg_path.exists():
+            raise ConfigError(
+                f"Config file not found: {cfg_path} (from AUTODOCX_CONFIG)."
+            )
+    else:
+        requested = path or "autodocx.yaml"
+        requested_path = Path(requested).expanduser()
+        did_search = False
+        if requested_path.is_absolute():
+            cfg_path = requested_path
+        else:
+            cfg_path = (Path.cwd() / requested_path).resolve()
+            if not cfg_path.exists():
+                did_search = True
+                found = _search_upwards(Path.cwd(), requested_path)
+                if found:
+                    cfg_path = found
+        if not cfg_path.exists():
+            extra = (
+                f" Searched parent directories for {requested_path} from {Path.cwd()}."
+                if did_search
+                else ""
+            )
+            raise ConfigError(f"Config file not found: {cfg_path}.{extra}")
     try:
         with cfg_path.open("r", encoding="utf-8") as fh:
             cfg = yaml.safe_load(fh) or {}

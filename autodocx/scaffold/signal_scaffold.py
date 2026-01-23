@@ -110,6 +110,16 @@ def _collect_interfaces(
                 "evidence": rest.get("evidence") or rest.get("operationId"),
             }
         )
+    for svc in enrichment.get("bw_services") or []:
+        interfaces.append(
+            {
+                "kind": svc.get("kind") or svc.get("connector") or "interface",
+                "endpoint": svc.get("endpoint"),
+                "method": svc.get("method"),
+                "operation": svc.get("operation"),
+                "evidence": svc.get("evidence"),
+            }
+        )
     return _dedupe_dicts(interfaces, ("kind", "endpoint", "method"))[:12]
 
 
@@ -167,6 +177,16 @@ def _collect_invocations(steps: Sequence[Dict[str, Any]], enrichment: Dict[str, 
                 "operation": entry.get("sql"),
                 "connector": "jdbc",
                 "evidence": entry.get("activity"),
+            }
+        )
+    for entry in enrichment.get("bw_invocations") or []:
+        invocations.append(
+            {
+                "kind": entry.get("kind") or entry.get("connector"),
+                "target": entry.get("target"),
+                "operation": entry.get("operation"),
+                "connector": entry.get("connector"),
+                "evidence": entry.get("evidence"),
             }
         )
     return _dedupe_dicts(invocations, ("kind", "target", "operation"))[:20]
@@ -258,6 +278,16 @@ def _collect_dependencies(
             deps["datastores"].append(jdbc["datasource"])
         if jdbc.get("table"):
             deps["datastores"].append(jdbc["table"])
+    for svc in enrichment.get("bw_services") or []:
+        if svc.get("endpoint"):
+            deps["services"].append(svc["endpoint"])
+    for ds in enrichment.get("datastores") or []:
+        deps["datastores"].append(ds)
+    for jdbc in enrichment.get("jdbc_sql") or []:
+        if jdbc.get("datasource"):
+            deps["datastores"].append(jdbc["datasource"])
+        if jdbc.get("table"):
+            deps["datastores"].append(jdbc["table"])
     for rel in (props.get("relationships") or []):
         target_name = (rel.get("target") or {}).get("name") if isinstance(rel.get("target"), dict) else rel.get("target")
         if rel.get("type") in {"calls", "invokes"} and target_name:
@@ -281,9 +311,9 @@ def _collect_dependencies(
 
 
 def _collect_io_summary(props: Dict[str, Any], enrichment: Dict[str, Any], identifier_hints: Sequence[str]) -> Dict[str, List[str]]:
-    inputs = _ensure_list(props.get("inputs_example") or props.get("inputs"))
-    outputs = _ensure_list(props.get("outputs_example") or props.get("outputs"))
-    identifiers = set(identifier_hints or [])
+    inputs = _ensure_list(props.get("inputs") or props.get("inputs_example") or enrichment.get("inputs"))
+    outputs = _ensure_list(props.get("outputs") or props.get("outputs_example") or enrichment.get("outputs"))
+    identifiers = set(identifier_hints or enrichment.get("identifiers") or [])
     return {
         "inputs": inputs[:10],
         "outputs": outputs[:10],
@@ -311,6 +341,18 @@ def _collect_errors(steps: Sequence[Dict[str, Any]], enrichment: Dict[str, Any])
                 "evidence": transition.get("evidence"),
             }
         )
+    if not errors:
+        # Observability taxonomy defaults by connector
+        for step in steps:
+            connector = (step.get("connector") or "").lower()
+            if connector in {"http", "rest", "soap"}:
+                errors.append({"activity": step.get("name"), "condition": "http_error_handling", "evidence": step.get("evidence")})
+            elif connector in {"jdbc", "sql", "db"}:
+                errors.append({"activity": step.get("name"), "condition": "db_error_handling", "evidence": step.get("evidence")})
+            elif connector in {"jms", "queue", "topic"}:
+                errors.append({"activity": step.get("name"), "condition": "messaging_error_handling", "evidence": step.get("evidence")})
+            if len(errors) >= 3:
+                break
     return _dedupe_dicts(errors, ("activity", "condition"))[:10]
 
 

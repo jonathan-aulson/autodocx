@@ -128,7 +128,7 @@ def run_anti_pattern_scans(
 ) -> Tuple[Dict[str, List[Dict[str, Any]]], str | None]:
     out_base = Path(out_base)
     repo_root = Path(repo_root)
-    quality_dir = out_base / "quality"
+    quality_dir = out_base / "reports" / "quality"
     quality_dir.mkdir(parents=True, exist_ok=True)
 
     findings: List[Dict[str, Any]] = []

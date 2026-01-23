@@ -8,12 +8,12 @@ from autodocx.utils.environment import load_project_dotenv
 
 load_project_dotenv()
 
-REPORT_PATH = Path("out/scaffold_coverage.json")
+REPORT_PATH = Path("out/manifests/scaffold_coverage.json")
 
 
 def main() -> None:
     if not REPORT_PATH.exists():
-        print("scaffold_coverage.json not found under out/. Run autodocx scan first.")
+        print("scaffold_coverage.json not found under out/manifests/. Run autodocx scan first.")
         return
     data = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
     rows: List[Dict[str, object]] = data.get("rows") or []

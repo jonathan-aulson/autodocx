@@ -43,9 +43,9 @@ def test_bw_invoke_emits_relationship(tmp_path: Path) -> None:
     workflow = next(sig for sig in signals if sig.kind == "workflow")
     rels = workflow.props.get("relationships") or []
     assert rels, "Expected HTTP relationship from partner link invoke"
-    rel = rels[0]
-    assert rel["target"]["kind"] == "http"
-    assert rel["operation"]["type"] in {"writes", "calls"}
+    http_rels = [r for r in rels if (r.get("target") or {}).get("kind") == "http"]
+    assert http_rels, "Expected at least one HTTP relationship"
+    assert any(r.get("operation", {}).get("type") in {"writes", "calls"} for r in http_rels)
     steps = workflow.props.get("steps") or []
     step = next(step for step in steps if step["name"] == "CallEquifax")
     assert step["friendly_display"].startswith("POST")

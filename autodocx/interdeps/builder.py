@@ -20,6 +20,8 @@ def build_interdependencies(sirs: List[Dict[str, Any]]) -> Dict[str, Any]:
         deps = scaffold.get("dependencies") or {}
         identifiers = io.get("identifiers") or []
         datastores = deps.get("datastores") or []
+        interfaces = scaffold.get("interfaces") or []
+        invocations = scaffold.get("invocations") or []
         props = sir.get("props") or {}
         component = sir.get("component_or_service") or props.get("component") or "ungrouped"
         family = (
@@ -38,7 +40,8 @@ def build_interdependencies(sirs: List[Dict[str, Any]]) -> Dict[str, Any]:
             "module_root": module_root,
             "identifiers": identifiers,
             "datastores": datastores,
-            "interfaces": scaffold.get("interfaces") or [],
+            "interfaces": interfaces,
+            "invocations": invocations,
         }
         component_groups[component].append(name)
         family_groups[family].append(name)
@@ -46,6 +49,10 @@ def build_interdependencies(sirs: List[Dict[str, Any]]) -> Dict[str, Any]:
             module_groups[module].append(name)
         for proc in deps.get("processes") or []:
             edges.append({"from": name, "to": proc, "kind": "calls"})
+        for svc in deps.get("services") or []:
+            edges.append({"from": name, "to": svc, "kind": "service_dep"})
+        for ds in datastores:
+            edges.append({"from": name, "to": ds, "kind": "datastore_dep"})
     _append_shared_edges(nodes, edges, "identifiers", "shared_identifier")
     _append_shared_edges(nodes, edges, "datastores", "shared_datastore")
     for comp, procs in component_groups.items():
@@ -101,6 +108,11 @@ def slice_interdependencies(interdeps: Dict[str, Any], process_name: str) -> Dic
             if process_name in interdeps.get("families", {}).get(fam, []):
                 peers = [p for p in interdeps["families"][fam] if p != process_name]
                 related["family_peers"].extend(peers)
+        if edge.get("kind") == "module_member" and edge.get("module"):
+            mod = edge["module"]
+            if process_name in interdeps.get("modules", {}).get(mod, []):
+                peers = [p for p in interdeps["modules"][mod] if p != process_name]
+                related.setdefault("module_peers", []).extend(peers)
     for key in related:
         related[key] = sorted({item for item in related[key] if item})
     return related

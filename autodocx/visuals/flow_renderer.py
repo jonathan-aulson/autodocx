@@ -36,7 +36,7 @@ def _warn_graphviz_missing() -> None:
 def render_flow_diagrams(exported_paths: Sequence[Path], out_dir: Path) -> None:
     """
     Render SVG diagrams for each exported workflow graph JSON.
-    Outputs are stored in out/assets/diagrams/<component>/<workflow>.svg.
+    Outputs are stored in out/diagrams/deterministic_svg/<component>/<workflow>.svg.
     """
     if Digraph is None:
         _warn_graphviz_missing()
@@ -48,7 +48,7 @@ def render_flow_diagrams(exported_paths: Sequence[Path], out_dir: Path) -> None:
             continue
         component = data.get("component") or "ungrouped"
         workflow = data.get("workflow_id") or json_path.stem
-        assets_dir = Path(out_dir) / "assets" / "diagrams" / _safe_slug(component)
+        assets_dir = Path(out_dir) / "diagrams" / "deterministic_svg" / _safe_slug(component)
         assets_dir.mkdir(parents=True, exist_ok=True)
         svg_path = assets_dir / f"{_safe_slug(workflow)}.svg"
         dot = _build_graphviz_diagram(data)

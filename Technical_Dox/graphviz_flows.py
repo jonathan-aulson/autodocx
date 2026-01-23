@@ -297,6 +297,7 @@ def render_bw_process_flow_svg(
     if Digraph is None:
         return None
 
+    props = sir.get("props") if isinstance(sir.get("props"), dict) else {}
     steps: List[Dict[str, Any]] = list(sir.get("steps") or [])
     triggers = list(sir.get("triggers") or [])
     if not steps and not triggers:
@@ -317,13 +318,12 @@ def render_bw_process_flow_svg(
     marker_ids = _collect_marker_ids_from_sirs([sir])
 
     # Also include markers from sir.props if present (compat)
-    if isinstance(sir.get("props", {}), dict):
-        for key in ("marker_names", "markers"):
-            cand = sir["props"].get(key)
-            if cand:
-                for c in (cand if isinstance(c, list) else [cand]):
-                    if c and c not in marker_ids:
-                        marker_ids.append(str(c))
+    for key in ("marker_names", "markers"):
+        cand = props.get(key)
+        if cand:
+            for c in (cand if isinstance(c, list) else [cand]):
+                if c and c not in marker_ids:
+                    marker_ids.append(str(c))
 
     # Trigger node (optional)
     trigger_label = bw_detect_trigger_label(sir)
