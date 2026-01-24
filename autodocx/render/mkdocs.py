@@ -567,18 +567,37 @@ def _recent_change_lines(changes: Dict[str, Any]) -> List[str]:
     return lines
 
 
+def _svg_is_stub(path: Path) -> bool:
+    try:
+        content = path.read_text(encoding="utf-8", errors="ignore")
+    except Exception:
+        return False
+    lowered = content.lower()
+    if "llm diagram unavailable" in lowered:
+        return True
+    return len(content.strip()) < 800
+
+
 def _collect_flow_diagrams(doc_base: Path, component_slug: str) -> List[str]:
-    diagram_dir = doc_base / "assets" / "diagrams" / component_slug
-    if not diagram_dir.exists():
-        return []
-    diagrams = []
-    for svg in sorted(diagram_dir.glob("*.svg")):
-        try:
-            rel = svg.relative_to(doc_base).as_posix()
-            diagrams.append(rel)
-        except Exception:
+    candidates = [
+        doc_base / "assets" / "diagrams" / "llm_svg" / component_slug,
+        doc_base / "assets" / "diagrams" / "deterministic_svg" / component_slug,
+    ]
+    for diagram_dir in candidates:
+        if not diagram_dir.exists():
             continue
-    return diagrams
+        diagrams = []
+        for svg in sorted(diagram_dir.rglob("*.svg")):
+            if "llm_svg" in diagram_dir.parts and _svg_is_stub(svg):
+                continue
+            try:
+                rel = svg.relative_to(doc_base).as_posix()
+                diagrams.append(rel)
+            except Exception:
+                continue
+        if diagrams:
+            return diagrams
+    return []
 
 
 def _write_markdown_file(path: Path, content: str) -> None:

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Tuple
+import os
 
 
 def _shorten(text: Any, limit: int = 800) -> str:
@@ -10,6 +11,132 @@ def _shorten(text: Any, limit: int = 800) -> str:
     if len(value) <= limit:
         return value
     return value[: limit - 3] + "..."
+
+
+def _int_env(name: str, default: int) -> int:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        return default
+
+
+def _rollup_limits() -> Dict[str, int]:
+    return {
+        "context_limit": _int_env("AUTODOCX_LLM_ROLLUP_CONTEXT_LIMIT", 6),
+        "max_evidence_index": _int_env("AUTODOCX_LLM_ROLLUP_EVIDENCE_MAX", 300),
+        "max_evidence_per_item": _int_env("AUTODOCX_LLM_ROLLUP_EVIDENCE_PER_ITEM", 8),
+        "max_steps": _int_env("AUTODOCX_LLM_ROLLUP_MAX_STEPS", 40),
+        "max_relationships": _int_env("AUTODOCX_LLM_ROLLUP_MAX_RELATIONSHIPS", 40),
+        "max_interfaces": _int_env("AUTODOCX_LLM_ROLLUP_MAX_INTERFACES", 10),
+        "max_invocations": _int_env("AUTODOCX_LLM_ROLLUP_MAX_INVOCATIONS", 10),
+        "max_logging": _int_env("AUTODOCX_LLM_ROLLUP_MAX_LOGGING", 10),
+        "max_errors": _int_env("AUTODOCX_LLM_ROLLUP_MAX_ERRORS", 10),
+        "max_artifact_relationships": _int_env("AUTODOCX_LLM_ROLLUP_MAX_ARTIFACT_RELS", 30),
+        "max_code_entities": _int_env("AUTODOCX_LLM_ROLLUP_MAX_CODE_ENTITIES", 30),
+        "max_integrations": _int_env("AUTODOCX_LLM_ROLLUP_MAX_INTEGRATIONS", 20),
+        "max_ui_components": _int_env("AUTODOCX_LLM_ROLLUP_MAX_UI_COMPONENTS", 20),
+        "max_process_diagrams": _int_env("AUTODOCX_LLM_ROLLUP_MAX_PROCESS_DIAGRAMS", 10),
+        "max_business_entities": _int_env("AUTODOCX_LLM_ROLLUP_MAX_BUSINESS_ENTITIES", 15),
+        "max_extrapolations": _int_env("AUTODOCX_LLM_ROLLUP_MAX_EXTRAPOLATIONS", 10),
+    }
+
+
+def _compact_step(step: Any) -> Dict[str, Any]:
+    if isinstance(step, dict):
+        return {
+            "name": step.get("name") or step.get("friendly_display") or step.get("id"),
+            "type": step.get("type"),
+            "role_hints": step.get("role_hints"),
+        }
+    return {"name": str(step)}
+
+
+def _compact_artifact(item: Dict[str, Any], limits: Dict[str, int]) -> Dict[str, Any]:
+    evidence = item.get("evidence") or []
+    ev_ids = item.get("evidence_ids") or []
+    return {
+        "name": item.get("name"),
+        "artifact_type": item.get("artifact_type"),
+        "repo_path": item.get("repo_path"),
+        "component_or_service": item.get("component_or_service"),
+        "confidence": item.get("confidence"),
+        "steps_summary": item.get("steps_summary"),
+        "evidence": evidence[: limits["max_evidence_per_item"]],
+        "evidence_ids": ev_ids[: limits["max_evidence_per_item"]],
+        "relationships": (item.get("relationships") or [])[: limits["max_artifact_relationships"]],
+        "code_entities": (item.get("code_entities") or [])[: limits["max_code_entities"]],
+        "ui_components": (item.get("ui_components") or [])[: limits["max_ui_components"]],
+        "integrations": (item.get("integrations") or [])[: limits["max_integrations"]],
+        "process_diagrams": (item.get("process_diagrams") or [])[: limits["max_process_diagrams"]],
+        "business_entities": (item.get("business_entities") or [])[: limits["max_business_entities"]],
+        "personas": (item.get("personas") or [])[:10],
+        "primary_journeys": (item.get("primary_journeys") or [])[:10],
+        "ux_summaries": (item.get("ux_summaries") or [])[:10],
+        "before_after": (item.get("before_after") or [])[:10],
+        "screenshots": (item.get("screenshots") or [])[:10],
+        "data_examples": (item.get("data_examples") or [])[:10],
+        "experience_pack": item.get("experience_pack") or {},
+        "artifact_id": item.get("artifact_id"),
+    }
+
+
+def _compact_sir(item: Dict[str, Any], limits: Dict[str, int]) -> Dict[str, Any]:
+    evidence = item.get("evidence") or []
+    ev_ids = item.get("evidence_ids") or []
+    roles_evidence = {}
+    for role, evs in (item.get("roles_evidence") or {}).items():
+        roles_evidence[role] = (evs or [])[: limits["max_evidence_per_item"]]
+    steps = [_compact_step(s) for s in (item.get("steps") or [])[: limits["max_steps"]]]
+    return {
+        "id": item.get("id"),
+        "name": item.get("name"),
+        "file": item.get("file"),
+        "component_or_service": item.get("component_or_service"),
+        "kind": item.get("kind"),
+        "roles": item.get("roles") or [],
+        "subscores": item.get("subscores") or {},
+        "evidence": evidence[: limits["max_evidence_per_item"]],
+        "evidence_ids": ev_ids[: limits["max_evidence_per_item"]],
+        "roles_evidence": roles_evidence,
+        "triggers": (item.get("triggers") or [])[: limits["max_steps"]],
+        "steps": steps,
+        "relationships": (item.get("relationships") or [])[: limits["max_relationships"]],
+        "user_story": item.get("user_story"),
+        "inputs_example": item.get("inputs_example"),
+        "outputs_example": item.get("outputs_example"),
+        "latency_hints": item.get("latency_hints"),
+        "journey_touchpoints": item.get("journey_touchpoints"),
+        "step_display_names": (item.get("step_display_names") or [])[: limits["max_steps"]],
+        "ui_snapshot": item.get("ui_snapshot"),
+        "screenshots": (item.get("screenshots") or [])[:10],
+        "data_samples": (item.get("data_samples") or [])[:10],
+        "interfaces": (item.get("interfaces") or [])[: limits["max_interfaces"]],
+        "invocations": (item.get("invocations") or [])[: limits["max_invocations"]],
+        "logging": (item.get("logging") or [])[: limits["max_logging"]],
+        "errors": (item.get("errors") or [])[: limits["max_errors"]],
+        "family": item.get("family"),
+        "module": item.get("module"),
+        "module_root": item.get("module_root"),
+        "constellation": item.get("constellation"),
+        "deterministic_explanation": item.get("deterministic_explanation") or {},
+        "extrapolations": (item.get("extrapolations") or [])[: limits["max_extrapolations"]],
+        "interdependencies": item.get("interdependencies") or {},
+    }
+
+
+def _collect_evidence_ids(artifacts: List[Dict[str, Any]], sirs: List[Dict[str, Any]]) -> List[str]:
+    seen = set()
+    ordered: List[str] = []
+    for item in artifacts + sirs:
+        for eid in (item.get("evidence_ids") or []):
+            if eid in seen:
+                continue
+            seen.add(eid)
+            ordered.append(str(eid))
+    return ordered
 
 
 def _as_list(value: Any) -> List[Any]:
@@ -266,19 +393,26 @@ def build_component_contexts(group_context: Dict[str, Any]) -> Dict[str, Dict[st
 
 def summarize_context_for_prompt(context: Dict[str, Any], *, limit: int = 10) -> Dict[str, Any]:
     """Trim large context objects before serializing into prompts."""
-    artifacts = context.get("artifacts", [])[:limit]
-    sirs = context.get("sirs", [])[:limit]
-    for sir in sirs:
-        sir.setdefault("interfaces", sir.get("interfaces") or [])
-        sir.setdefault("invocations", sir.get("invocations") or [])
-        sir.setdefault("logging", sir.get("logging") or [])
-        sir.setdefault("errors", sir.get("errors") or [])
+    limits = _rollup_limits()
+    limit = max(1, min(limit, limits["context_limit"]))
+    artifacts_raw = context.get("artifacts", [])[:limit]
+    sirs_raw = context.get("sirs", [])[:limit]
+    artifacts = [_compact_artifact(a, limits) for a in artifacts_raw if isinstance(a, dict)]
+    sirs = [_compact_sir(s, limits) for s in sirs_raw if isinstance(s, dict)]
+
+    evidence_index = context.get("evidence_index") or {}
+    allowed_ids = _collect_evidence_ids(artifacts, sirs)
+    trimmed_index: Dict[str, Dict[str, str]] = {}
+    for eid in allowed_ids[: limits["max_evidence_index"]]:
+        entry = evidence_index.get(eid)
+        if entry:
+            trimmed_index[eid] = entry
     return {
         "group_id": context.get("group_id"),
         "component_id": context.get("component_id"),
         "artifacts": artifacts,
         "sirs": sirs,
-        "evidence_index": context.get("evidence_index"),
+        "evidence_index": trimmed_index,
         "process_flows": context.get("process_flows", [])[:limit],
         "integration_summary": context.get("integration_summary", [])[:limit],
         "experience_packs": context.get("experience_packs", [])[:limit],

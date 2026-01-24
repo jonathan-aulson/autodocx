@@ -63,6 +63,10 @@ def clean_out_dir_preserve_site_and_mkdocs(out_dir: str | Path) -> None:
     p = Path(out_dir).resolve()
     p.mkdir(parents=True, exist_ok=True)
 
+    nested_out = p / "out"
+    if nested_out.exists():
+        shutil.rmtree(nested_out, ignore_errors=True)
+
     targets = ["docs", "site", "flows", "assets", "sir_v2", "rollup", "logs", "graphs"]
     for sub in targets:
         shutil.rmtree(p / sub, ignore_errors=True)
@@ -101,6 +105,42 @@ def regenerate_mkdocs_config(out_dir: Path, debug: bool = False) -> None:
     docs_dir = Path(out_dir) / "docs"
     docs_dir.mkdir(parents=True, exist_ok=True)
 
+    def _load_mkdocs_primary_color() -> str:
+        env_color = os.getenv("AUTODOCX_MKDOCS_PRIMARY_COLOR")
+        if env_color:
+            return env_color.strip()
+        cfg_path = Path(out_dir).parent / "autodocx.yaml"
+        if cfg_path.exists():
+            try:
+                cfg = yaml.safe_load(cfg_path.read_text(encoding="utf-8")) or {}
+                return (
+                    (cfg.get("docs") or {})
+                    .get("mkdocs", {})
+                    .get("primary_color")
+                    or "#36464e"
+                )
+            except Exception:
+                return "#36464e"
+        return "#36464e"
+
+    primary_color = _load_mkdocs_primary_color()
+    styles_dir = docs_dir / "assets" / "styles"
+    styles_dir.mkdir(parents=True, exist_ok=True)
+    theme_css = styles_dir / "theme.css"
+    theme_css.write_text(
+        "\n".join(
+            [
+                ":root {",
+                f"  --md-primary-fg-color: {primary_color};",
+                f"  --md-primary-fg-color--dark: {primary_color};",
+                f"  --md-primary-fg-color--light: {primary_color};",
+                "}",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
     index_path = docs_dir / "index.md"
     if not index_path.exists():
         repo_doc = docs_dir / "repo_comprehensive.md"
@@ -113,6 +153,44 @@ def regenerate_mkdocs_config(out_dir: Path, debug: bool = False) -> None:
         if repo_doc.exists():
             index_lines.append(f"- Start with [Repository Overview]({repo_doc.relative_to(docs_dir).as_posix()})")
         index_path.write_text(decorate_markdown("\n".join(index_lines) + "\n"), encoding="utf-8")
+
+    def _infer_repo_name(path_str: str) -> str | None:
+        if not path_str:
+            return None
+        parts = Path(path_str).parts
+        for marker in ("repos", "archives"):
+            if marker in parts:
+                idx = parts.index(marker)
+                if idx + 1 < len(parts):
+                    return parts[idx + 1]
+        return None
+
+    def _load_component_repo_map() -> Dict[str, str]:
+        ctx_path = Path(out_dir) / "signals" / "doc_context.json"
+        if not ctx_path.exists():
+            return {}
+        try:
+            context = json.loads(ctx_path.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
+        mapping: Dict[str, str] = {}
+        for comp_name, entry in (context.get("components") or {}).items():
+            slug = entry.get("slug") or _slugify(comp_name)
+            repo_name = entry.get("repo_name")
+            if not repo_name:
+                for rel in entry.get("sir_files", []):
+                    sir_path = Path(out_dir) / rel
+                    if not sir_path.exists():
+                        continue
+                    try:
+                        sir = json.loads(sir_path.read_text(encoding="utf-8"))
+                    except Exception:
+                        continue
+                    repo_name = _infer_repo_name(sir.get("file") or (sir.get("props") or {}).get("file") or "")
+                    if repo_name:
+                        break
+            mapping[slug] = repo_name or "workspace"
+        return mapping
 
     def _nav_for_folder(folder: Path) -> List[Dict[str, Any]]:
         entries: List[Dict[str, Any]] = []
@@ -138,7 +216,71 @@ def regenerate_mkdocs_config(out_dir: Path, debug: bool = False) -> None:
                 entries.append({_humanize_title(child.name): child_entries})
         return entries
 
-    nav: List[Dict[str, Any]] = _nav_for_folder(docs_dir)
+    nav: List[Dict[str, Any]] = []
+    repo_map = _load_component_repo_map()
+    repo_root = Path(out_dir).parent / "repos"
+    repo_names = sorted([p.name for p in repo_root.iterdir() if p.is_dir()]) if repo_root.exists() else []
+    skip_dirs = {"assets", "families", "constellations", "quality", "evidence", "plan", "rag"}
+    component_dirs = [
+        child for child in sorted(docs_dir.iterdir())
+        if child.is_dir() and child.name not in skip_dirs
+    ]
+    components_by_repo: Dict[str, List[Path]] = defaultdict(list)
+    for comp_dir in component_dirs:
+        repo_name = repo_map.get(comp_dir.name)
+        if not repo_name:
+            if comp_dir.name in repo_names:
+                repo_name = comp_dir.name
+            elif len(repo_names) == 1:
+                repo_name = repo_names[0]
+            else:
+                repo_name = "workspace"
+        components_by_repo[repo_name].append(comp_dir)
+
+    workspace_entries: List[Dict[str, Any]] = []
+    if index_path.exists():
+        workspace_entries.append({"Home": index_path.relative_to(docs_dir).as_posix()})
+    repo_doc = docs_dir / "repo_comprehensive.md"
+    if repo_doc.exists():
+        workspace_entries.append({"Repository Overview": repo_doc.relative_to(docs_dir).as_posix()})
+    for folder_name, label in (
+        ("quality", "Quality"),
+        ("rag", "RAG"),
+        ("plan", "Plan"),
+        ("evidence", "Evidence"),
+    ):
+        entries = _nav_for_folder(docs_dir / folder_name)
+        if entries:
+            workspace_entries.append({label: entries})
+    readme_layout = docs_dir / "README_LAYOUT.md"
+    if readme_layout.exists():
+        workspace_entries.append({"Readme Layout": readme_layout.relative_to(docs_dir).as_posix()})
+    for md in sorted(docs_dir.glob("*.md")):
+        if md.name in {"index.md", "repo_comprehensive.md", "README_LAYOUT.md"}:
+            continue
+        workspace_entries.append({_humanize_title(md.stem): md.relative_to(docs_dir).as_posix()})
+
+    repo_group_names = sorted(components_by_repo.keys())
+    if repo_group_names:
+        if len(repo_group_names) == 1:
+            repo_name = repo_group_names[0]
+            comp_entries: List[Dict[str, Any]] = []
+            for comp_dir in components_by_repo[repo_name]:
+                comp_entries.append({_humanize_title(comp_dir.name): _nav_for_folder(comp_dir)})
+            repo_entries = list(workspace_entries)
+            if comp_entries:
+                repo_entries.append({"Components": comp_entries})
+            nav.append({_humanize_title(repo_name): repo_entries or [{"Overview": index_path.relative_to(docs_dir).as_posix()}]})
+        else:
+            if workspace_entries:
+                nav.append({"Workspace": workspace_entries})
+            for repo_name in repo_group_names:
+                comp_entries: List[Dict[str, Any]] = []
+                for comp_dir in components_by_repo[repo_name]:
+                    comp_entries.append({_humanize_title(comp_dir.name): _nav_for_folder(comp_dir)})
+                nav.append({_humanize_title(repo_name): [{"Components": comp_entries}] if comp_entries else [{"Overview": index_path.relative_to(docs_dir).as_posix()}]})
+    else:
+        nav = _nav_for_folder(docs_dir)
 
     if not nav:
         placeholder = docs_dir / "README.md"
@@ -154,10 +296,11 @@ def regenerate_mkdocs_config(out_dir: Path, debug: bool = False) -> None:
                 {"scheme": "default", "primary": "blue grey", "accent": "teal"},
             ],
             "features": [
-                "navigation.instant",
-                "navigation.tabs",
-                "navigation.sections",
-                "navigation.top",
+            "navigation.instant",
+            "navigation.tabs",
+            "navigation.sections",
+            "navigation.expand",
+            "navigation.top",
                 "content.code.copy",
                 "content.tabs.link",
                 "search.highlight",
@@ -165,6 +308,7 @@ def regenerate_mkdocs_config(out_dir: Path, debug: bool = False) -> None:
             ],
         },
         "plugins": ["search"],
+        "extra_css": ["assets/styles/theme.css"],
         "markdown_extensions": [
             "admonition",
             "attr_list",
@@ -209,6 +353,8 @@ def sync_docs_assets(out_dir: Path) -> None:
             shutil.copytree(src, dst)
 
     _copy_tree("evidence", dst_suffix="evidence/packets")
+    _copy_tree("diagrams/llm_svg", dst_suffix="assets/diagrams/llm_svg")
+    _copy_tree("diagrams/deterministic_svg", dst_suffix="assets/diagrams/deterministic_svg")
 
 
 def write_evidence_manifest_doc(
@@ -1314,7 +1460,7 @@ def run_scan(
         if debug:
             rprint(f"[green]Exported workflow graphs to {out_base / 'diagrams' / 'flows_json'} ({len(flow_graph_paths)} files)[/green]")
         if flow_graph_paths:
-            render_flow_diagrams(flow_graph_paths, out_base)
+            render_flow_diagrams(flow_graph_paths, out_base, settings=CFG)
             if debug:
                 rprint(f"[green]Rendered workflow diagrams under {out_base / 'diagrams' / 'deterministic_svg'}[/green]")
     except Exception as e:

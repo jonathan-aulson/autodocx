@@ -6,6 +6,9 @@ docs:
   profile: full  # business | technical | full
   visuals:
     enable_flow_diagrams: true
+    docs.visuals.graphviz_timeout_sec: 30
+  mkdocs:
+    primary_color: "#36464e"
   sections:
     show_confidence: true
     show_interdependencies: true

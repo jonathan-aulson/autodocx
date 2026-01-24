@@ -11,7 +11,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 import yaml
 
 from autodocx.llm.provider import call_openai_meta
-from autodocx.render.markdown_style import decorate_markdown
+from autodocx.render.markdown_style import decorate_markdown, strip_llm_outro
 
 PLAN_FILENAME = "dox_draft_plan.md"
 PROCESS_SUBDIR = "processes"
@@ -36,8 +36,8 @@ CURATION_PROMPT_TEMPLATE = textwrap.dedent(
     - Each section must contain at least {min_words} words.
     - Preserve every concrete fact from the sources; do not invent new systems, data, or personas.
     - Keep evidence wording but smooth the narration so it reads naturally for business stakeholders.
-    - Prefix every section heading with a mkdocs-material icon shortcode, e.g. `## :material-clipboard-text: Executive summary`.
     - Use Markdown tables whenever listing multiple attributes (interfaces, dependencies, risks, inputs/outputs).
+    - Do not include assistant meta commentary, offers, or next steps. End after the last required section.
     - Required sections (Markdown, in this order):
       1. ## Executive summary (what/why in 2–4 bullets)
       2. ## Workflow narrative (inputs → activities → outputs, referencing the exact system names)
@@ -56,8 +56,8 @@ CONSTELLATION_PROMPT_TEMPLATE = textwrap.dedent(
     """
     You produce constellation briefs that stitch together multiple components, workflows, and shared data paths.
     - Each section must contain at least {min_words} words.
-    - Prefix every section heading with a mkdocs-material icon shortcode, e.g. `## :material-map: End-to-end workflow`.
     - Prefer Markdown tables when listing entry points, interfaces, or risks.
+    - Do not include assistant meta commentary, offers, or next steps. End after the last required section.
     - Required sections:
       1. ## Executive summary – describe the business outcome, participating components, and why this constellation matters.
       2. ## End-to-end workflow – narrate the step-by-step flow (inputs → activities → outputs) citing evidence snippets.
@@ -75,8 +75,8 @@ ANTI_PATTERN_PROMPT_TEMPLATE = textwrap.dedent(
     """
     You compile an evidence-backed anti-pattern register for the repository.
     - Each section must contain at least {min_words} words.
-    - Prefix every section heading with a mkdocs-material icon shortcode, e.g. `## :material-alert-circle: Overview`.
     - Use Markdown tables for findings where possible.
+    - Do not include assistant meta commentary, offers, or next steps. End after the last required section.
     - Required sections:
       1. ## Overview – summarize scanning coverage, tools (Semgrep/heuristics), and key risk themes.
       2. ## Findings by severity – separate subsections for High/Medium/Low; enumerate rule id, file:line, impacted component, and remediation guidance.
@@ -219,8 +219,7 @@ def _normalize_slug_for_match(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "", (value or "").lower())
 
 
-def _match_assets_dir(docs_dir: Path, component_slug: str) -> Optional[Path]:
-    assets_root = docs_dir / "assets" / "graphs"
+def _match_assets_dir(assets_root: Path, component_slug: str) -> Optional[Path]:
     if not assets_root.exists():
         return None
     target = _normalize_slug_for_match(component_slug)
@@ -228,6 +227,50 @@ def _match_assets_dir(docs_dir: Path, component_slug: str) -> Optional[Path]:
         if child.is_dir() and _normalize_slug_for_match(child.name) == target:
             return child
     return None
+
+
+def _svg_is_stub(path: Path) -> bool:
+    try:
+        content = path.read_text(encoding="utf-8", errors="ignore")
+    except Exception:
+        return False
+    lowered = content.lower()
+    if "llm diagram unavailable" in lowered:
+        return True
+    return len(content.strip()) < 800
+
+
+def _collect_diagrams_from_root(
+    docs_dir: Path,
+    component_slug: str,
+    root_rel: str,
+    *,
+    limit: int,
+    skip_stub: bool = False,
+) -> List[Path]:
+    assets_root = docs_dir / root_rel
+    roots = [assets_root]
+    if root_rel.startswith("assets/diagrams/"):
+        suffix = root_rel.replace("assets/diagrams/", "")
+        roots.append(docs_dir.parent / "diagrams" / suffix)
+    for root in roots:
+        group_dir = _match_assets_dir(root, component_slug)
+        if not group_dir:
+            continue
+        svgs: List[Path] = []
+        for svg in sorted(group_dir.rglob("*.svg")):
+            if skip_stub and _svg_is_stub(svg):
+                continue
+            if root.is_relative_to(docs_dir):
+                svgs.append(svg)
+            else:
+                rel = svg.relative_to(docs_dir.parent / "diagrams")
+                svgs.append(docs_dir / "assets" / "diagrams" / rel)
+            if len(svgs) >= limit:
+                break
+        if svgs:
+            return svgs
+    return []
 
 
 def _collect_diagram_paths(docs_dir: Path, spec: Dict[str, Any]) -> List[Path]:
@@ -240,18 +283,39 @@ def _collect_diagram_paths(docs_dir: Path, spec: Dict[str, Any]) -> List[Path]:
     if not parts:
         return []
     component_slug = parts[0]
-    group_dir = _match_assets_dir(docs_dir, component_slug)
-    if not group_dir:
-        return []
     if doc_type == "component":
-        return list(group_dir.rglob("*.svg"))[:8]
+        llm = _collect_diagrams_from_root(docs_dir, component_slug, "assets/diagrams/llm_svg", limit=6, skip_stub=True)
+        if llm:
+            return llm
+        deterministic = _collect_diagrams_from_root(
+            docs_dir, component_slug, "assets/diagrams/deterministic_svg", limit=6
+        )
+        if deterministic:
+            return deterministic
+        return _collect_diagrams_from_root(docs_dir, component_slug, "assets/graphs", limit=6)
     process_key = target.get("process") or (parts[-1].replace(".md", "") if parts else "")
     if not process_key:
         return []
     target_norm = _normalize_slug_for_match(process_key)
-    for subdir in sorted(group_dir.iterdir()):
-        if subdir.is_dir() and _normalize_slug_for_match(subdir.name) == target_norm:
-            return list(subdir.rglob("*.svg"))[:6]
+    for root_rel in ("assets/diagrams/deterministic_svg", "assets/diagrams/llm_svg", "assets/graphs"):
+        assets_root = docs_dir / root_rel
+        group_dir = _match_assets_dir(assets_root, component_slug)
+        if not group_dir:
+            continue
+        for subdir in sorted(group_dir.iterdir()):
+            if subdir.is_dir() and _normalize_slug_for_match(subdir.name) == target_norm:
+                svgs = list(subdir.rglob("*.svg"))[:6]
+                if root_rel.endswith("llm_svg"):
+                    svgs = [svg for svg in svgs if not _svg_is_stub(svg)]
+                if svgs:
+                    return svgs
+        if root_rel.endswith("deterministic_svg"):
+            matched = []
+            for svg in sorted(group_dir.glob("*.svg")):
+                if _normalize_slug_for_match(svg.stem) == target_norm:
+                    matched.append(svg)
+            if matched:
+                return matched[:6]
     return []
 
 
@@ -288,7 +352,8 @@ def _write_curated_doc(docs_dir: Path, spec: Dict[str, Any], body: str) -> Path:
         "generated_at": _now_iso(),
     }
     fm_block = yaml.safe_dump(fm, sort_keys=False).strip()
-    decorated = decorate_markdown(body.strip())
+    cleaned = strip_llm_outro(body.strip())
+    decorated = decorate_markdown(cleaned)
     decorated = _append_diagram_section(decorated, out_path, docs_dir, spec)
     out_path.write_text(f"---\n{fm_block}\n---\n\n{decorated}", encoding="utf-8")
     return out_path

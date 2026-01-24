@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import re
 import textwrap
 import xml.etree.ElementTree as ET
@@ -7,7 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from autodocx.llm.provider import call_openai_meta
-from autodocx.render.markdown_style import decorate_markdown
+from autodocx.render.markdown_style import decorate_markdown, strip_llm_outro
 
 PLAN_PROMPT = textwrap.dedent(
     """
@@ -36,14 +37,32 @@ RAG_PROMPT = textwrap.dedent(
     Follow these rules:
     - Start with "# {page.title}".
     - Create sections matching `page.sections` in the provided order (use level-2 headings).
-    - Prefix every heading with a mkdocs-material icon shortcode, e.g. `## :material-book: Section`.
     - Prefer Markdown tables for multi-column facts (endpoints, metrics, dependencies).
+    - Do not include assistant meta commentary, offers, or next steps. End after the last section.
     - Use the `retrieved_context` entries as primary evidence. When referencing one, cite `(source: {cite})`.
     - When referencing an evidence packet, cite `(evidence: path/to/packet.json)`.
     - Keep the tone business-friendly and explain *why* facts matter.
     - Never hallucinate; if information is missing, explicitly state the limitation.
     """
 ).strip()
+
+
+def _int_env(name: str, default: int) -> int:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        return default
+
+
+def _rag_limits() -> Dict[str, int]:
+    return {
+        "max_hits": _int_env("AUTODOCX_RAG_MAX_HITS", 6),
+        "max_text_chars": _int_env("AUTODOCX_RAG_MAX_TEXT_CHARS", 2000),
+        "max_total_chars": _int_env("AUTODOCX_RAG_MAX_TOTAL_CHARS", 120000),
+    }
 
 
 def generate_xml_doc_plan(
@@ -94,18 +113,12 @@ def build_rag_docs(
     generated_paths: List[Path] = []
     constellations = doc_context.get("constellations", {})
     responder = llm_callable or call_openai_meta
+    limits = _rag_limits()
+    top_k = max(1, min(top_k, limits["max_hits"]))
     for page in pages:
         query = f"{page['title']} {' '.join(page['sections'])}"
         retrieved = embedding_service.query(query, top_k=top_k)
-        retrieved_context = [
-            {
-                "cite": f"{hit['path']}#L{hit['start_line']}-L{hit['end_line']}",
-                "text": hit["text"],
-                "component": hit.get("component"),
-                "score": hit.get("score"),
-            }
-            for hit in retrieved
-        ]
+        retrieved_context = _trim_retrieved_context(retrieved, limits)
         packet_refs = _packets_for_components(constellations, retrieved_context)
         payload = {
             "page": {"title": page["title"], "sections": page["sections"]},
@@ -113,7 +126,8 @@ def build_rag_docs(
             "evidence_packets": packet_refs,
         }
         response = responder(RAG_PROMPT, payload)
-        body = decorate_markdown(response.get("text", "").strip())
+        body = strip_llm_outro(response.get("text", "").strip())
+        body = decorate_markdown(body)
         md_path = rag_dir / f"{page['slug']}.md"
         fm = [
             "---",
@@ -151,6 +165,34 @@ def _summarize_repo_tree(repo_root: Path, *, max_entries: int = 200) -> str:
         else:
             entries.append(f"[F] {rel}")
     return "\n".join(entries)
+
+
+def _trim_retrieved_context(
+    retrieved: List[Dict[str, Any]],
+    limits: Dict[str, int],
+) -> List[Dict[str, Any]]:
+    max_text_chars = limits.get("max_text_chars", 2000)
+    max_total_chars = limits.get("max_total_chars", 120000)
+    trimmed: List[Dict[str, Any]] = []
+    total = 0
+    for hit in retrieved:
+        text = (hit.get("text") or "")
+        if max_text_chars > 0:
+            text = text[:max_text_chars]
+        entry = {
+            "cite": f"{hit.get('path', '')}#L{hit.get('start_line', 0)}-L{hit.get('end_line', 0)}",
+            "text": text,
+            "component": hit.get("component"),
+            "score": hit.get("score"),
+        }
+        projected = total + len(text)
+        if max_total_chars > 0 and projected > max_total_chars:
+            if not trimmed:
+                trimmed.append(entry)
+            break
+        trimmed.append(entry)
+        total = projected
+    return trimmed
 
 
 def _parse_plan(plan_path: Path) -> List[Dict[str, Any]]:

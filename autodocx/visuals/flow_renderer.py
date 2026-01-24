@@ -3,6 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, List, Sequence
 
+import os
+import shutil
+import subprocess
+
 import html
 import json
 import re
@@ -19,6 +23,7 @@ except Exception:
     Digraph = None
 
 _GRAPHVIZ_WARNED = False
+_DEFAULT_GRAPHVIZ_TIMEOUT_SEC = 30.0
 
 
 def _warn_graphviz_missing() -> None:
@@ -33,7 +38,76 @@ def _warn_graphviz_missing() -> None:
         print("Graphviz Python bindings missing; diagrams skipped.")
 
 
-def render_flow_diagrams(exported_paths: Sequence[Path], out_dir: Path) -> None:
+def _graphviz_timeout_sec(settings: Dict[str, Any] | None = None) -> float:
+    env_val = os.getenv("AUTODOCX_GRAPHVIZ_TIMEOUT_SEC")
+    if env_val:
+        try:
+            return float(env_val)
+        except ValueError:
+            pass
+    if isinstance(settings, dict):
+        docs_cfg = settings.get("docs")
+        if isinstance(docs_cfg, dict):
+            visuals_cfg = docs_cfg.get("visuals")
+            if isinstance(visuals_cfg, dict) and "graphviz_timeout_sec" in visuals_cfg:
+                try:
+                    return float(visuals_cfg["graphviz_timeout_sec"])
+                except (TypeError, ValueError):
+                    pass
+        visuals_cfg = settings.get("visuals")
+        if isinstance(visuals_cfg, dict) and "graphviz_timeout_sec" in visuals_cfg:
+            try:
+                return float(visuals_cfg["graphviz_timeout_sec"])
+            except (TypeError, ValueError):
+                pass
+        df_cfg = settings.get("distance_features")
+        if isinstance(df_cfg, dict):
+            df_visuals = df_cfg.get("visuals")
+            if isinstance(df_visuals, dict) and "graphviz_timeout_sec" in df_visuals:
+                try:
+                    return float(df_visuals["graphviz_timeout_sec"])
+                except (TypeError, ValueError):
+                    pass
+    return _DEFAULT_GRAPHVIZ_TIMEOUT_SEC
+
+
+def _render_svg(dot: Digraph, svg_path: Path, timeout_sec: float, label: str) -> bool:
+    dot_cmd = shutil.which("dot")
+    if not dot_cmd:
+        _warn_graphviz_missing()
+        return False
+    timeout = None if timeout_sec <= 0 else timeout_sec
+    try:
+        proc = subprocess.run(
+            [dot_cmd, "-Kdot", "-Tsvg", "-o", str(svg_path)],
+            input=dot.source,
+            text=True,
+            capture_output=True,
+            timeout=timeout,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        try:
+            rprint(f"[yellow]Graphviz timed out after {timeout_sec:.0f}s for {label}; skipping SVG.[/yellow]")
+        except Exception:
+            print(f"Graphviz timed out after {timeout_sec:.0f}s for {label}; skipping SVG.")
+        return False
+    if proc.returncode != 0:
+        err = (proc.stderr or "").strip()
+        if err:
+            try:
+                rprint(f"[yellow]Graphviz failed for {label}: {err[:200]}[/yellow]")
+            except Exception:
+                print(f"Graphviz failed for {label}: {err[:200]}")
+        return False
+    return True
+
+
+def render_flow_diagrams(
+    exported_paths: Sequence[Path],
+    out_dir: Path,
+    settings: Dict[str, Any] | None = None,
+) -> None:
     """
     Render SVG diagrams for each exported workflow graph JSON.
     Outputs are stored in out/diagrams/deterministic_svg/<component>/<workflow>.svg.
@@ -41,6 +115,7 @@ def render_flow_diagrams(exported_paths: Sequence[Path], out_dir: Path) -> None:
     if Digraph is None:
         _warn_graphviz_missing()
         return
+    timeout_sec = _graphviz_timeout_sec(settings)
     for json_path in exported_paths:
         try:
             data = json.loads(Path(json_path).read_text(encoding="utf-8"))
@@ -54,9 +129,7 @@ def render_flow_diagrams(exported_paths: Sequence[Path], out_dir: Path) -> None:
         dot = _build_graphviz_diagram(data)
         if dot is None:
             continue
-        try:
-            dot.render(filename=svg_path.with_suffix("").as_posix(), format="svg", cleanup=True)
-        except Exception:
+        if not _render_svg(dot, svg_path, timeout_sec, f"{component}/{workflow}"):
             continue
 
 
@@ -386,16 +459,29 @@ def _edge_label_payload(kind: str | None, label: str | None) -> Dict[str, str]:
     if not text:
         return payload
     if (kind or "").lower() == "branch":
+        color = _branch_color(text)
         payload["taillabel"] = text
         payload["labeldistance"] = "0.15"
         payload["labelangle"] = "0"
         payload["labelfontsize"] = "10"
+        payload["color"] = color
+        payload["fontcolor"] = color
+        payload["penwidth"] = "1.6"
         payload["_label"] = ""
         return payload
     payload["_label"] = text
     payload["labeldistance"] = "0.35"
     payload["labelangle"] = "0"
     return payload
+
+
+def _branch_color(label: str) -> str:
+    low = label.strip().lower()
+    if low in {"true", "yes", "success", "ok", "pass"}:
+        return "#2E7D32"
+    if low in {"false", "no", "failure", "fail", "error", "else"}:
+        return "#C62828"
+    return "#7C8FB5"
 
 
 def _dominant_out_directions(edges: Sequence[Dict[str, Any]]) -> Dict[str, str]:

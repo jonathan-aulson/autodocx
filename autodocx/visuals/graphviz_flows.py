@@ -2,12 +2,21 @@
 from __future__ import annotations
 from pathlib import Path
 from typing import Dict, Any, List, Optional
+import os
 import re
+import shutil
+import subprocess
 
 try:
     from graphviz import Digraph
 except Exception:
     Digraph = None  # We'll guard usage at call sites
+
+try:
+    from rich import print as rprint
+except Exception:  # pragma: no cover
+    def rprint(msg):
+        print(msg)
 
 word_re = re.compile(r"[A-Za-z0-9.:/\-]+")
 
@@ -25,6 +34,73 @@ _DEFAULT_VISUALS_CFG: Dict[str, Any] = {
     "match_whitelist_prefixes": [],  # optional list of prefixes to prefer for exact matching
     "slug_match_strip_prefix": True,
 }
+_DEFAULT_GRAPHVIZ_TIMEOUT_SEC = 30.0
+
+
+def _graphviz_timeout_sec(settings: Optional[Dict[str, Any]] = None) -> float:
+    env_val = os.getenv("AUTODOCX_GRAPHVIZ_TIMEOUT_SEC")
+    if env_val:
+        try:
+            return float(env_val)
+        except ValueError:
+            pass
+    if isinstance(settings, dict):
+        docs_cfg = settings.get("docs")
+        if isinstance(docs_cfg, dict):
+            visuals_cfg = docs_cfg.get("visuals")
+            if isinstance(visuals_cfg, dict) and "graphviz_timeout_sec" in visuals_cfg:
+                try:
+                    return float(visuals_cfg["graphviz_timeout_sec"])
+                except (TypeError, ValueError):
+                    pass
+        visuals_cfg = settings.get("visuals")
+        if isinstance(visuals_cfg, dict) and "graphviz_timeout_sec" in visuals_cfg:
+            try:
+                return float(visuals_cfg["graphviz_timeout_sec"])
+            except (TypeError, ValueError):
+                pass
+        df_cfg = settings.get("distance_features")
+        if isinstance(df_cfg, dict):
+            df_visuals = df_cfg.get("visuals")
+            if isinstance(df_visuals, dict) and "graphviz_timeout_sec" in df_visuals:
+                try:
+                    return float(df_visuals["graphviz_timeout_sec"])
+                except (TypeError, ValueError):
+                    pass
+    return _DEFAULT_GRAPHVIZ_TIMEOUT_SEC
+
+
+def _render_graphviz_svg(
+    dot: Digraph,
+    svg_path: Path,
+    settings: Optional[Dict[str, Any]] = None,
+    label: str = "",
+) -> bool:
+    dot_cmd = shutil.which("dot")
+    if not dot_cmd:
+        return False
+    timeout_sec = _graphviz_timeout_sec(settings)
+    timeout = None if timeout_sec <= 0 else timeout_sec
+    try:
+        proc = subprocess.run(
+            [dot_cmd, "-Kdot", "-Tsvg", "-o", str(svg_path)],
+            input=dot.source,
+            text=True,
+            capture_output=True,
+            timeout=timeout,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        display = label or svg_path.name
+        rprint(f"[yellow]Graphviz timed out after {timeout_sec:.0f}s for {display}; skipping SVG.[/yellow]")
+        return False
+    if proc.returncode != 0:
+        err = (proc.stderr or "").strip()
+        if err:
+            display = label or svg_path.name
+            rprint(f"[yellow]Graphviz failed for {display}: {err[:200]}[/yellow]")
+        return False
+    return True
 
 
 def _get_visuals_cfg(settings: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -412,10 +488,7 @@ def render_bw_process_flow_svg(
         except Exception:
             pass
 
-    try:
-        # render: provide filename without extension
-        dot.render(filename=svg_path.with_suffix("").as_posix(), format="svg", cleanup=True)
-    except Exception:
+    if not _render_graphviz_svg(dot, svg_path, settings, f"{group_id}/{component_key}/{file_slug}"):
         return None
 
     try:
@@ -487,9 +560,7 @@ def render_relationship_sequence_svg(
 
     assets_dir = ensure_assets_dir(out_docs_dir, group_id, component_key)
     svg_path = assets_dir / f"{_safe_slug(component_key)}-relationships.svg"
-    try:
-        dot.render(filename=svg_path.with_suffix("").as_posix(), format="svg", cleanup=True)
-    except Exception:
+    if not _render_graphviz_svg(dot, svg_path, settings, f"{group_id}/{component_key}/relationships"):
         return None
 
     try:
@@ -549,9 +620,7 @@ def render_rollup_journey_svgs(
             dot.edge(src, dst)
 
         svg_path = assets_dir / f"{_safe_slug(component_key)}-journey-{idx}.svg"
-        try:
-            dot.render(filename=svg_path.with_suffix("").as_posix(), format="svg", cleanup=True)
-        except Exception:
+        if not _render_graphviz_svg(dot, svg_path, None, f"{group_id}/{component_key}/journey-{idx}"):
             continue
 
         try:
@@ -671,9 +740,7 @@ def render_component_overview_svg(
         except Exception:
             pass
 
-    try:
-        dot.render(filename=svg_path.with_suffix("").as_posix(), format="svg", cleanup=True)
-    except Exception:
+    if not _render_graphviz_svg(dot, svg_path, settings, f"{group_id}/{component_key}/overview"):
         return None
 
     try:

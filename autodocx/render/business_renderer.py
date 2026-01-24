@@ -232,8 +232,7 @@ def _normalize_slug_for_match(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "", (value or "").lower())
 
 
-def _match_assets_dir(out_docs_dir: Path, group_id: str) -> Optional[Path]:
-    assets_root = out_docs_dir / "assets" / "graphs"
+def _match_assets_dir(assets_root: Path, group_id: str) -> Optional[Path]:
     if not assets_root.exists():
         return None
     target = _normalize_slug_for_match(group_id)
@@ -245,11 +244,83 @@ def _match_assets_dir(out_docs_dir: Path, group_id: str) -> Optional[Path]:
     return None
 
 
+def _svg_is_stub(path: Path) -> bool:
+    try:
+        content = path.read_text(encoding="utf-8", errors="ignore")
+    except Exception:
+        return False
+    lowered = content.lower()
+    if "llm diagram unavailable" in lowered:
+        return True
+    return len(content.strip()) < 800
+
+
+def _docs_diagram_path(out_docs_dir: Path, svg_path: Path) -> Path:
+    try:
+        rel = svg_path.resolve().relative_to(out_docs_dir.resolve())
+        return out_docs_dir / rel
+    except Exception:
+        pass
+    out_base = out_docs_dir.parent
+    try:
+        rel = svg_path.resolve().relative_to((out_base / "diagrams").resolve())
+        return out_docs_dir / "assets" / "diagrams" / rel
+    except Exception:
+        return svg_path
+
+
+def _collect_llm_diagram_svgs(out_docs_dir: Path, group_id: str, limit: int = 6) -> List[Path]:
+    roots = [
+        out_docs_dir / "assets" / "diagrams" / "llm_svg",
+        out_docs_dir.parent / "diagrams" / "llm_svg",
+    ]
+    for root in roots:
+        matched = _match_assets_dir(root, group_id)
+        if not matched:
+            continue
+        svgs: List[Path] = []
+        for svg in sorted(matched.rglob("*.svg")):
+            if _svg_is_stub(svg):
+                continue
+            svgs.append(_docs_diagram_path(out_docs_dir, svg))
+            if len(svgs) >= limit:
+                break
+        if svgs:
+            return svgs
+    return []
+
+
+def _collect_deterministic_diagram_svgs(out_docs_dir: Path, group_id: str, limit: int = 8) -> List[Path]:
+    roots = [
+        out_docs_dir / "assets" / "diagrams" / "deterministic_svg",
+        out_docs_dir.parent / "diagrams" / "deterministic_svg",
+    ]
+    for root in roots:
+        matched = _match_assets_dir(root, group_id)
+        if not matched:
+            continue
+        svgs: List[Path] = []
+        for svg in sorted(matched.rglob("*.svg")):
+            svgs.append(_docs_diagram_path(out_docs_dir, svg))
+            if len(svgs) >= limit:
+                break
+        if svgs:
+            return svgs
+    return []
+
+
 def _collect_group_diagram_svgs(out_docs_dir: Path, group_id: str, limit: int = 12) -> List[Path]:
-    matched = _match_assets_dir(out_docs_dir, group_id)
+    llm = _collect_llm_diagram_svgs(out_docs_dir, group_id, limit=limit)
+    if llm:
+        return llm
+    deterministic = _collect_deterministic_diagram_svgs(out_docs_dir, group_id, limit=limit)
+    if deterministic:
+        return deterministic
+    graphs_root = out_docs_dir / "assets" / "graphs"
+    matched = _match_assets_dir(graphs_root, group_id)
     if not matched:
         return []
-    svgs = []
+    svgs: List[Path] = []
     for svg in sorted(matched.rglob("*.svg")):
         svgs.append(svg)
         if len(svgs) >= limit:
@@ -705,6 +776,7 @@ def _append_technical_appendix(
     ui_components: List[Dict[str, Any]],
     integrations: List[Dict[str, Any]],
     code_entities: List[Dict[str, Any]],
+    group_id: str,
     doc_path: Optional[Path] = None,
     docs_root: Optional[Path] = None,
 ) -> None:
@@ -748,6 +820,16 @@ def _append_technical_appendix(
                 f"![Journey]({_resolve_asset_path(journey.get('path') or '', doc_path=doc_path, docs_root=docs_root)})"
             )
         md.append("")
+    if docs_root:
+        llm_svgs = _collect_llm_diagram_svgs(docs_root, group_id)
+        deterministic_svgs = _collect_deterministic_diagram_svgs(docs_root, group_id)
+        preferred = llm_svgs or deterministic_svgs
+        if preferred:
+            md.append("### Final workflow diagrams")
+            for svg in preferred:
+                rel = svg.relative_to(docs_root).as_posix()
+                md.append(f"![Workflow diagram]({_resolve_asset_path(rel, doc_path=doc_path, docs_root=docs_root)})")
+            md.append("")
     if overview_svg:
         md.append("### Component overview")
         md.append(f"![Component overview]({_resolve_asset_path(overview_svg, doc_path=doc_path, docs_root=docs_root)})")
@@ -1255,6 +1337,7 @@ def render_business_component_page(
         ui_components=_collect_ui_components_from_sirs(sirs),
         integrations=_collect_integrations_from_sirs(sirs),
         code_entities=_collect_code_entities(sirs),
+        group_id=group_id,
         doc_path=page_path,
         docs_root=out_docs_dir,
     )

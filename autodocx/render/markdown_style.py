@@ -7,9 +7,9 @@ from typing import Iterable, List
 HEADING_ICON_MAP = {
     "executive summary": ":material-clipboard-text:",
     "workflow narrative": ":material-sitemap:",
-    "interfaces & dependencies": ":material-api:",
+    "interfaces and dependencies": ":material-api:",
     "key data handled": ":material-database:",
-    "risks & follow-ups": ":material-alert-circle:",
+    "risks and follow ups": ":material-alert-circle:",
     "related documents": ":material-link-variant:",
     "overview": ":material-eye:",
     "summary": ":material-clipboard-check:",
@@ -18,7 +18,7 @@ HEADING_ICON_MAP = {
     "integration summary": ":material-link-variant:",
     "integration catalog": ":material-cloud-sync:",
     "ui entry points": ":material-monitor:",
-    "glossary & roles": ":material-book-open-variant:",
+    "glossary and roles": ":material-book-open-variant:",
     "process diagrams": ":material-vector-polyline:",
     "workflow diagrams": ":material-vector-polyline:",
     "technical appendix": ":material-clipboard-list:",
@@ -30,14 +30,14 @@ HEADING_ICON_MAP = {
     "generated journey maps": ":material-map:",
     "component overview": ":material-view-dashboard-outline:",
     "interfaces exposed": ":material-api:",
-    "invokes / dependencies": ":material-call-merge:",
+    "invokes dependencies": ":material-call-merge:",
     "interdependency map": ":material-sitemap:",
-    "key inputs & outputs": ":material-database:",
-    "errors & logging": ":material-alert:",
+    "key inputs and outputs": ":material-database:",
+    "errors and logging": ":material-alert:",
     "error handling": ":material-bug:",
-    "logging & telemetry": ":material-chart-line:",
+    "logging and telemetry": ":material-chart-line:",
     "extrapolations": ":material-lightbulb-on:",
-    "packaging & artifacts": ":material-package-variant:",
+    "packaging and artifacts": ":material-package-variant:",
     "traceability": ":material-link:",
     "evidence appendix": ":material-file-document:",
     "screens and apis they see": ":material-monitor:",
@@ -45,7 +45,7 @@ HEADING_ICON_MAP = {
     "analyst insights": ":material-magnify:",
     "coverage audit": ":material-shield-check:",
     "change log": ":material-history:",
-    "runbooks & playbooks": ":material-book-open-variant:",
+    "runbooks and playbooks": ":material-book-open-variant:",
 }
 
 DEFAULT_HEADING_ICONS = {
@@ -57,9 +57,62 @@ DEFAULT_HEADING_ICONS = {
     6: ":material-circle-small:",
 }
 
+ICON_REPLACEMENTS = {
+    ":material-flow-branch:": ":material-source-branch:",
+    ":material-bug-report:": ":material-bug:",
+    ":material-flash-on:": ":material-flash:",
+    ":material-info-outline:": ":material-information-outline:",
+    ":material-library-books:": ":material-library:",
+    ":material-input:": ":material-import:",
+}
+
+OUTRO_PATTERNS = [
+    r"^[-*•]\\s*if you want\\b",
+    r"^[-*•]\\s*if you'd like\\b",
+    r"^[-*•]\\s*if you would like\\b",
+    r"^[-*•]\\s*if you want me\\b",
+    r"^[-*•]\\s*if you'd like me\\b",
+    r"^[-*•]\\s*if you would like me\\b",
+    r"^[-*•]\\s*i can\\b",
+    r"^[-*•]\\s*let me know\\b",
+    r"^[-*•]\\s*happy to\\b",
+    r"^[-*•]\\s*feel free to\\b",
+    r"^[-*•]\\s*would you like\\b",
+    r"^[-*•]\\s*need me to\\b",
+    r"^[-*•]\\s*next recommended actions\\b",
+    r"^[-*•]\\s*next recommended action\\b",
+    r"^if you want\\b",
+    r"^if you'd like\\b",
+    r"^if you would like\\b",
+    r"^if you want me\\b",
+    r"^if you'd like me\\b",
+    r"^if you would like me\\b",
+    r"^i can\\b",
+    r"^let me know\\b",
+    r"^happy to\\b",
+    r"^feel free to\\b",
+    r"^would you like\\b",
+    r"^need me to\\b",
+    r"^next recommended actions\\b",
+    r"^next recommended action\\b",
+]
+
 
 def _normalize_heading(text: str) -> str:
-    return re.sub(r"\s+", " ", text.strip().lower())
+    stripped = re.sub(r"\([^)]*\)", "", text)
+    stripped = stripped.replace("&", " and ")
+    stripped = re.sub(r"[^a-zA-Z0-9\\s/]+", " ", stripped)
+    stripped = stripped.replace("/", " ")
+    return re.sub(r"\s+", " ", stripped.strip().lower())
+
+
+def _strip_heading_icon(text: str) -> str:
+    cleaned = text.strip()
+    cleaned = re.sub(r"^:[^:]+:\\s*", "", cleaned)
+    parts = cleaned.split()
+    if parts and any(ord(ch) > 127 for ch in parts[0]):
+        cleaned = " ".join(parts[1:]) if len(parts) > 1 else ""
+    return cleaned.strip() or text.strip()
 
 
 def _heading_has_icon(text: str) -> bool:
@@ -95,20 +148,54 @@ def decorate_headings(lines: Iterable[str]) -> List[str]:
         if in_code_fence:
             out.append(line)
             continue
+        for old, new in ICON_REPLACEMENTS.items():
+            if old in line:
+                line = line.replace(old, new)
         match = re.match(r"^(#{1,6})\\s+(.*)$", line)
         if not match:
             out.append(line)
             continue
         hashes, title = match.groups()
+        cleaned = _strip_heading_icon(title)
+        normalized = _normalize_heading(cleaned)
+        icon = HEADING_ICON_MAP.get(normalized)
+        if icon:
+            out.append(f"{hashes} {icon} {cleaned}")
+            continue
         if _heading_has_icon(title):
             out.append(line)
             continue
-        normalized = _normalize_heading(title)
-        icon = HEADING_ICON_MAP.get(normalized) or DEFAULT_HEADING_ICONS.get(len(hashes), ":material-star-outline:")
-        out.append(f"{hashes} {icon} {title}")
+        icon = DEFAULT_HEADING_ICONS.get(len(hashes), ":material-star-outline:")
+        out.append(f"{hashes} {icon} {cleaned}")
     return out
 
 
 def decorate_markdown(text: str) -> str:
     lines = text.splitlines()
     return "\n".join(decorate_headings(lines))
+
+
+def strip_llm_outro(text: str, *, max_lines_from_end: int = 20) -> str:
+    lines = text.splitlines()
+    if not lines:
+        return text
+    in_code_fence = False
+    last_nonempty = -1
+    for idx, line in enumerate(lines):
+        if line.strip():
+            last_nonempty = idx
+    if last_nonempty == -1:
+        return text
+    cutoff = max(0, last_nonempty - max_lines_from_end)
+    for idx, line in enumerate(lines):
+        if line.strip().startswith("```"):
+            in_code_fence = not in_code_fence
+            continue
+        if in_code_fence or idx < cutoff:
+            continue
+        stripped = line.strip()
+        lower = stripped.lower()
+        for pattern in OUTRO_PATTERNS:
+            if re.search(pattern, lower):
+                return "\n".join(lines[:idx]).rstrip()
+    return text.rstrip()
