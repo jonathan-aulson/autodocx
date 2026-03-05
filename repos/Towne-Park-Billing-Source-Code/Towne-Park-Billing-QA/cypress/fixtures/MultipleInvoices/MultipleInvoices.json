@@ -1,9 +1,0 @@
-{
-    "MultipleInvoices":{
-        "SiteId" : ["0245"],
-        "title1Invoice" : ["Title test 1"],
-        "Description1Invoice" : ["Description test 1"],
-        "title2Invoice" : ["Title test 2"],
-        "Description2Invoice" : ["Description test 2"]
-    }
-}
