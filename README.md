@@ -63,7 +63,7 @@ Day-to-day, you only touch 3 places:
   ```
 
 - Optionally add Azure CLI + Bicep: `curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash && az bicep install`.
-- Create the virtualenv with `python3.10 -m venv .venv && source .venv/bin/activate`, then run `pip install -e .[treesitter]`.
+- Create the virtualenv with `python3.10 -m venv .venv && source .venv/bin/activate`, then run `pip install -e .`.
 - Run `python -m autodocx_cli doctor` (or `python3 -m ...`) to confirm Graphviz, MkDocs, Azure CLI/Bicep, and `OPENAI_API_KEY` are available before scanning.
 - Set `AUTODOCX_SKIP_PYCLEAN=1` if the repo ever lives on `/mnt/c` to skip the aggressive `__pycache__` purge during CLI startup.
 

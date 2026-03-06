@@ -5,22 +5,24 @@ description = "Universal auto-documentation engine"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-  "pyyaml",
-  "jinja2",
-  "rich",
-  "python-dotenv",
-  "python-hcl2",
-  "prance",
-  "openapi-spec-validator",
-  "pathspec",
-  "mkdocs-material",
-  "lxml",
-  "rapidfuzz",
-  "graphviz",
-  "networkx",
-  "tree_sitter",
-  "jsonschema",
-  "qdrant-client"
+  "pyyaml>=6.0.3",
+  "jinja2>=3.1.6",
+  "rich>=13.5.3",
+  "python-dotenv>=1.2.1",
+  "python-hcl2>=7.3.1",
+  "lxml>=6.0.2",
+  "jsonschema>=4.25.1",
+  "graphviz>=0.21",
+  "networkx>=3.5",
+  "openai>=2.8.1",
+  "mkdocs-material>=9.7.0",
+  "prance>=25.4.8.0",
+  "openapi-spec-validator>=0.7.2",
+  "tree-sitter>=0.20.4",
+  "tree-sitter-languages>=1.10.2",
+  "pydantic>=2.12.4",
+  "qdrant-client>=1.17.0",
+  "pytest>=9.0.1"
 ]
 
 [project.scripts]
@@ -51,9 +53,6 @@ typescript_project = "autodocx.extractors.typescript_project:TypeScriptProjectEx
 powerbuilder = "autodocx.extractors.powerbuilder:PowerBuilderExtractor"
 mulesoft = "autodocx.extractors.mulesoft:MuleSoftExtractor"
 biztalk_logicapps = "autodocx.extractors.biztalk_logicapps:BizTalkLogicAppsExtractor"
-
-[project.optional-dependencies]
-treesitter = ["tree-sitter-languages>=1.9.0"]
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]
