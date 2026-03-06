@@ -36,7 +36,7 @@ Day-to-day, you only touch 3 places:
 
 - Create venv and install: `pip install -e .`
 - Run: `autodocx scan /path/to/repo --out out`
-- Eg: autodocx scan ./repos/Towne-Park-Billing-Source-Code --out out --debug --mkdocs-build --llm-rollup
+- Eg: autodocx scan ./repos --out out --debug --mkdocs-build --llm-rollup
 - Review: curated parent docs live under `out/docs/<component>/<component>.md` with detailed component docs under `out/docs/<component>/components/`. Run `mkdocs serve -f out/mkdocs.yml -a 127.0.0.1:8000` to browse the regenerated navigation.
 
 > `--llm-rollup` is now an additive option; the base scan always invokes the LLM to fulfill the standard doc plan.

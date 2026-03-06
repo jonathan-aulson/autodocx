@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import textwrap
 from datetime import datetime, timezone
@@ -321,11 +322,15 @@ def _collect_diagram_paths(docs_dir: Path, spec: Dict[str, Any]) -> List[Path]:
 
 def _relative_asset_path(doc_path: Path, docs_dir: Path, asset_path: Path) -> str:
     try:
-        rel = asset_path.resolve().relative_to(docs_dir.resolve())
-        return (docs_dir / rel).resolve().relative_to(doc_path.parent.resolve()).as_posix()
+        docs_root = docs_dir.resolve()
+        doc_parent = doc_path.parent.resolve()
+        resolved = asset_path.resolve()
+        resolved.relative_to(docs_root)
+        return Path(os.path.relpath(resolved, start=doc_parent)).as_posix()
     except Exception:
         try:
-            return asset_path.relative_to(docs_dir).as_posix()
+            resolved = (docs_dir / asset_path).resolve()
+            return Path(os.path.relpath(resolved, start=doc_path.parent.resolve())).as_posix()
         except Exception:
             return asset_path.as_posix()
 

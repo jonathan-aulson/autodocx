@@ -1,7 +1,9 @@
 [autodocx.extractors]
+aws_lambda = autodocx.extractors.aws_lambda:AWSLambdaExtractor
 azure_functions = autodocx.extractors.azure_functions:AzureFunctionsExtractor
 azure_pipelines = autodocx.extractors.azure_pipelines:AzurePipelinesExtractor
 bicep = autodocx.extractors.bicep:BicepExtractor
+biztalk_logicapps = autodocx.extractors.biztalk_logicapps:BizTalkLogicAppsExtractor
 business_entities = autodocx.extractors.business_entities:BusinessEntityExtractor
 express = autodocx.extractors.express:ExpressJSExtractor
 github_actions = autodocx.extractors.github_actions:GitHubActionsExtractor
@@ -9,14 +11,17 @@ integration_imports = autodocx.extractors.integration_imports:IntegrationImports
 k8s = autodocx.extractors.k8s_manifests:K8sManifestsExtractor
 logicapps = autodocx.extractors.logicapps:LogicAppsWDLExtractor
 markdown_docs = autodocx.extractors.markdown_docs:MarkdownDocsExtractor
+mulesoft = autodocx.extractors.mulesoft:MuleSoftExtractor
 openapi = autodocx.extractors.openapi:OpenAPIExtractor
 power_automate = autodocx.extractors.power_automate:PowerAutomateExtractor
+powerbuilder = autodocx.extractors.powerbuilder:PowerBuilderExtractor
 process_diagrams = autodocx.extractors.process_diagrams:ProcessDiagramExtractor
 sql_migrations = autodocx.extractors.sql_migrations:SQLMigrationsExtractor
 terraform = autodocx.extractors.terraform:TerraformExtractor
 tibco_bw = autodocx.extractors.tibco_bw:TibcoBWExtractor
 tibco_project_artifacts = autodocx.extractors.tibco_project_artifacts:TibcoProjectArtifactsExtractor
 tree_sitter_code = autodocx.extractors.tree_sitter_code:TreeSitterCodeExtractor
+typescript_project = autodocx.extractors.typescript_project:TypeScriptProjectExtractor
 ui_components = autodocx.extractors.ui_components:UIComponentsExtractor
 
 [console_scripts]
